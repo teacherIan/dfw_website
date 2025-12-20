@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { PresentationControls } from "@react-three/drei";
-import { useMemo, useRef, useEffect, useLayoutEffect } from "react";
+import { useMemo, useRef, useEffect, useLayoutEffect, useState } from "react";
 import { useControls } from "leva";
 import type { SplatMesh as SparkSplatMesh } from "@sparkjsdev/spark";
 import { dyno } from "@sparkjsdev/spark";
@@ -20,8 +20,18 @@ declare global {
 }
 
 function App() {
+  const [showText, setShowText] = useState(false);
+
+  useEffect(() => {
+    // Start showing the text after the splat animation has mostly assembled
+    const timer = setTimeout(() => {
+      setShowText(true);
+    }, 6000); 
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <div className="relative h-screen w-screen bg-gradient-to-b from-sky-200 to-blue-300">
+    <div className="relative h-screen w-screen bg-[#fdfcfb]">
       {/* Main 3D Canvas */}
       <Canvas 
         gl={{ antialias: false }}
@@ -31,11 +41,12 @@ function App() {
       </Canvas>
 
       {/* Text Overlay */}
-      <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
-      <div className="absolute bottom-4 left-1 pointer-events-none select-none">
-        <h1 className="font-cursive text-6xl md:text-8xl text-white drop-shadow-[0_2px_20px_rgba(0,0,0,0.8)] text-center">
-          Doug's Found Wood
-        </h1>
+      <div className="absolute bottom-8 left-8 pointer-events-none select-none">
+        {showText && (
+          <h1 className="font-cursive text-6xl md:text-8xl text-[#4a3728] writing-animation drop-shadow-sm">
+            Doug's Found Wood
+          </h1>
+        )}
       </div>
     </div>
   );
