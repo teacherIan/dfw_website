@@ -23,10 +23,10 @@ function App() {
   const [showText, setShowText] = useState(false);
 
   useEffect(() => {
-    // Start showing the text after the splat animation has mostly assembled
+    // Start showing the text after the splat animation has fully finished
     const timer = setTimeout(() => {
       setShowText(true);
-    }, 6000); 
+    }, 13000); 
     return () => clearTimeout(timer);
   }, []);
 
@@ -41,9 +41,9 @@ function App() {
       </Canvas>
 
       {/* Text Overlay */}
-      <div className="absolute bottom-8 left-8 pointer-events-none select-none">
+      <div className="absolute bottom-10 left-10 pointer-events-none select-none">
         {showText && (
-          <h1 className="font-cursive text-6xl md:text-8xl text-[#4a3728] writing-animation drop-shadow-sm">
+          <h1 className="font-cursive text-6xl md:text-8xl text-white writing-animation drop-shadow-lg">
             Doug's Found Wood
           </h1>
         )}
@@ -157,6 +157,11 @@ const Scene = () => {
               ${outputs.gsplat}.center = effectResult.xyz;
               // Smoother scaling based on progress
               ${outputs.gsplat}.scales = scales * effectResult.w;
+
+              // Darken the area under the text for better legibility
+              // We target points that are in the foreground-left area (Negative X, Negative Y in local space)
+              float darkenArea = smoothstep(1.0, -4.0, localPos.x) * smoothstep(2.0, -6.0, localPos.y);
+              ${outputs.gsplat}.colors.rgb *= (1.0 - darkenArea * 0.7);
             `),
           });
 
