@@ -81,6 +81,7 @@ const Scene = () => {
     () =>
       ({
         url: "/assets/dfw_logo_2_fixed_together.spz",
+        stream: true,
       }) as const,
     [],
   );
@@ -112,17 +113,17 @@ const Scene = () => {
                   vec3 h = hash(pos);
                   // Staggered start based on radial distance and hash
                   float dist = length(pos.xz);
-                  float start = dist * 0.4 + h.x * 2.5;
-                  float s = smoothstep(start, start + 2.5, t);
+                  float start = dist * 0.8 + h.x * 4.0;
+                  float s = smoothstep(start, start + 4.0, t);
                   
-                  // Initial state: scattered much further away to avoid "double splat" look
-                  vec3 scattered = pos + (h - 0.5) * 20.0 * (1.0 - s);
+                  // Initial state: scattered much further away
+                  vec3 scattered = pos + (h - 0.5) * 30.0 * (1.0 - s);
                   
                   // Add a vertical offset: assembly from below
-                  scattered.y -= 10.0 * (1.0 - s);
+                  scattered.y -= 15.0 * (1.0 - s);
                   
                   // Add a slight swirl during entrance
-                  float angle = (1.0 - s) * 3.0;
+                  float angle = (1.0 - s) * 4.0;
                   float cosA = cos(angle);
                   float sinA = sin(angle);
                   float x = scattered.x * cosA - scattered.z * sinA;
