@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { PresentationControls } from "@react-three/drei";
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { useControls } from "leva";
 import type { SplatMesh as SparkSplatMesh } from "@sparkjsdev/spark";
 import { dyno } from "@sparkjsdev/spark";
@@ -9,33 +9,34 @@ import "./components/spark/SparkRenderer";
 
 // TypeScript declaration for extended R3F elements
 declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      sparkRenderer: any;
-      splatMesh: any;
+  namespace React {
+    namespace JSX {
+      interface IntrinsicElements {
+        sparkRenderer: any;
+        splatMesh: any;
+      }
     }
   }
 }
 
 function App() {
   return (
-    <div className="relative h-screen w-screen bg-gradient-to-b from-sky-100 to-sky-200">
-      {/* Logo */}
-      <header className="absolute top-8 left-8 z-10">
-        <img 
-          src="/assets/dfw_logo_3d.png" 
-          alt="DFW Furniture" 
-          className="h-48 w-auto drop-shadow-2xl"
-        />
-      </header>
-
-      {/* 3D Canvas */}
+    <div className="relative h-screen w-screen bg-gradient-to-b from-sky-200 to-blue-300">
+      {/* Main 3D Canvas */}
       <Canvas 
         gl={{ antialias: false }}
         camera={{ position: [0, 2, 4], fov: 50 }}
       >
         <Scene />
       </Canvas>
+
+      {/* Text Overlay */}
+      <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+      <div className="absolute bottom-4 left-1 pointer-events-none select-none">
+        <h1 className="font-cursive text-6xl md:text-8xl text-white drop-shadow-[0_2px_20px_rgba(0,0,0,0.8)] text-center">
+          Doug's Found Wood
+        </h1>
+      </div>
     </div>
   );
 }
@@ -79,13 +80,14 @@ const Scene = () => {
   const splatMeshArgs = useMemo(
     () =>
       ({
-        url: "/assets/full_scene.spz",
+        url: "/assets/dfw_logo_2_fixed_together.spz",
       }) as const,
     [],
   );
 
-  // Setup rain effect modifier AFTER mesh loads
-  useEffect(() => {
+  // Setup entrance effect modifier AFTER mesh loads
+  // Use useLayoutEffect to minimize flicker
+  useLayoutEffect(() => {
     if (meshRef.current && !effectSetupRef.current) {
       effectSetupRef.current = true;
       
@@ -96,7 +98,7 @@ const Scene = () => {
           const d = new dyno.Dyno({
             inTypes: { gsplat: dyno.Gsplat, t: "float" },
             outTypes: { gsplat: dyno.Gsplat },
-            globals: ({ inputs }) => [
+            globals: () => [
               dyno.unindent(`
                 // Hash function for pseudo-random values
                 vec3 hash(vec3 p) {
@@ -105,15 +107,30 @@ const Scene = () => {
                   return fract((p.xxy + p.yxx) * p.zyx);
                 }
 
-                // Rain weather effect from top
-                vec4 rain(vec3 pos, vec3 scale, float t) {
+                // Graceful entrance effect: particles assemble from a swirl
+                vec4 assemble(vec3 pos, vec3 scale, float t) {
                   vec3 h = hash(pos);
-                  // Use y position instead of radial distance for top-down effect
-                  float s = pow(smoothstep(0., 5., t*t*.1 - pos.y*2.5 + h.x*1.), .5 + h.x);
-                  float y = pos.y;
-                  pos.y = min(-10. + s*15., pos.y);
-                  pos.xz = mix(pos.xz*.3, pos.xz, s);
-                  return vec4(pos, smoothstep(-10., y, pos.y));
+                  // Staggered start based on radial distance and hash
+                  float dist = length(pos.xz);
+                  float start = dist * 0.4 + h.x * 2.5;
+                  float s = smoothstep(start, start + 2.5, t);
+                  
+                  // Initial state: scattered much further away to avoid "double splat" look
+                  vec3 scattered = pos + (h - 0.5) * 20.0 * (1.0 - s);
+                  
+                  // Add a vertical offset: assembly from below
+                  scattered.y -= 10.0 * (1.0 - s);
+                  
+                  // Add a slight swirl during entrance
+                  float angle = (1.0 - s) * 3.0;
+                  float cosA = cos(angle);
+                  float sinA = sin(angle);
+                  float x = scattered.x * cosA - scattered.z * sinA;
+                  float z = scattered.x * sinA + scattered.z * cosA;
+                  scattered.x = x;
+                  scattered.z = z;
+                  
+                  return vec4(scattered, s);
                 }
               `)
             ],
@@ -123,10 +140,11 @@ const Scene = () => {
               vec3 localPos = ${inputs.gsplat}.center;
               float t = ${inputs.t};
               
-              // Apply rain effect
-              vec4 effectResult = rain(localPos, scales, t);
+              // Apply graceful entrance effect
+              vec4 effectResult = assemble(localPos, scales, t);
               ${outputs.gsplat}.center = effectResult.xyz;
-              ${outputs.gsplat}.scales = mix(vec3(.005), scales, pow(effectResult.w, 30.));
+              // Smoother scaling based on progress
+              ${outputs.gsplat}.scales = scales * effectResult.w;
             `),
           });
 
@@ -144,7 +162,7 @@ const Scene = () => {
     }
   }, [meshRef.current]);
 
-  // Animate the rain effect
+  // Animate the entrance effect
   useFrame((_, delta) => {
     baseTimeRef.current += delta;
     animateT.current.value = baseTimeRef.current;
@@ -158,8 +176,7 @@ const Scene = () => {
     <>
       <PresentationControls
         global
-        config={{ mass: 2, tension: 500 }}
-        snap={{ mass: 4, tension: 1500 }}
+        snap
         rotation={[0, 0, 0]}
         polar={[-Math.PI / 3, Math.PI / 3]}
         azimuth={[-Math.PI / 1.4, Math.PI / 1.4]}
