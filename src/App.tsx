@@ -41,9 +41,9 @@ function App() {
       </Canvas>
 
       {/* Text Overlay */}
-      <div className="absolute bottom-10 left-10 pointer-events-none select-none">
+      <div className="absolute bottom-10 left-10 pointer-events-none select-none overflow-visible">
         {showText && (
-          <h1 className="font-cursive text-6xl md:text-8xl text-white writing-animation drop-shadow-lg">
+          <h1 className="font-cursive text-6xl md:text-8xl text-white writing-animation drop-shadow-lg py-4 px-2">
             Doug's Found Wood
           </h1>
         )}
