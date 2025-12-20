@@ -161,7 +161,7 @@ const Scene = () => {
               // Darken the area under the text for better legibility
               // We target points that are in the foreground-left area (Negative X, Negative Y in local space)
               float darkenArea = smoothstep(1.0, -4.0, localPos.x) * smoothstep(2.0, -6.0, localPos.y);
-              ${outputs.gsplat}.colors.rgb *= (1.0 - darkenArea * 0.7);
+              ${outputs.gsplat}.rgba.rgb *= (1.0 - darkenArea * 0.7);
             `),
           });
 
