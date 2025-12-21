@@ -27,6 +27,118 @@
   animation: writing-reveal 5s ease-out forwards;
 }
 
+.gallery-button-wrapper {
+  transform: rotate(-8deg);
+  transform-origin: bottom right;
+  pointer-events: none;
+}
+
+.gallery-button {
+  position: relative;
+  width: clamp(240px, 30vw, 360px);
+  aspect-ratio: 1.55 / 1;
+  clip-path: polygon(8% 6%, 85% 0%, 100% 40%, 92% 100%, 20% 95%, 0% 55%);
+  border: 1.8px solid rgba(246, 237, 214, 0.8);
+  background: linear-gradient(135deg, rgba(12, 16, 18, 0.85), rgba(5, 7, 8, 0.9));
+  color: #f5efe5;
+  padding: 1.4rem;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.48);
+  overflow: hidden;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.gallery-button:hover {
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+}
+
+.gallery-button::before,
+.gallery-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.gallery-button::before {
+  background-image: repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px,
+      transparent 12px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.04) 0px,
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px,
+      transparent 12px
+    );
+  opacity: 0.4;
+}
+
+.gallery-button::after {
+  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.12), transparent 55%);
+  mix-blend-mode: screen;
+}
+
+.gallery-button__grain {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(96, 68, 35, 0.4), transparent 60%);
+  opacity: 0.6;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.gallery-button__scribe {
+  position: absolute;
+  border: 1px dashed rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.gallery-button__scribe--arc {
+  width: 140px;
+  height: 80px;
+  bottom: 10%;
+  left: 8%;
+  border-top: none;
+  border-left: none;
+  transform: rotate(-18deg);
+}
+
+.gallery-button__scribe--tick {
+  width: 90px;
+  height: 40px;
+  top: 10%;
+  right: 14%;
+  border-bottom: none;
+  border-left: none;
+}
+
+.gallery-button__grid,
+.gallery-button__label,
+.gallery-button__note,
+.gallery-button__measurements,
+.gallery-button__tag,
+.gallery-button__pencil,
+.gallery-button__pencil--one,
+.gallery-button__pencil--two {
+  display: none;
+}
+
+.gallery-note {
+  text-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+  text-align: right;
+}
+
+.gallery-arrow {
+  width: clamp(120px, 20vw, 180px);
+  opacity: 0.8;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
