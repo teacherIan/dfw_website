@@ -27,98 +27,264 @@
   animation: writing-reveal 5s ease-out forwards;
 }
 
-.gallery-button-wrapper {
-  transform: rotate(-8deg);
-  transform-origin: bottom right;
+/* ========================================
+   Navigation - Compact Edge Buttons
+   ======================================== */
+
+/* Navigation container */
+.nav-container {
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.4));
+}
+
+/* Individual nav item */
+.nav-item {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* Navigation Label */
+.nav-label {
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7), 0 1px 3px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.02em;
+}
+
+/* Playful arrows between label and button */
+.nav-arrow {
+  width: clamp(70px, 10vw, 120px);
+  height: auto;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
+}
+
+/* Circular Blueprint Button */
+.nav-button-circle {
+  position: relative;
+  width: clamp(60px, 8vw, 90px);
+  height: clamp(60px, 8vw, 90px);
+  border-radius: 50%;
+  border: none;
+  background: 
+    radial-gradient(
+      circle at 30% 30%,
+      rgba(22, 26, 32, 0.95) 0%,
+      rgba(10, 12, 16, 0.98) 50%,
+      rgba(14, 16, 20, 0.95) 100%
+    );
+  color: rgba(245, 235, 220, 0.9);
+  padding: 0;
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.55),
+    0 3px 8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.nav-button-circle::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  border: 1px solid rgba(200, 190, 170, 0.4);
   pointer-events: none;
 }
 
-.gallery-button {
-  position: relative;
-  width: clamp(240px, 30vw, 360px);
-  aspect-ratio: 1.55 / 1;
-  clip-path: polygon(8% 6%, 85% 0%, 100% 40%, 92% 100%, 20% 95%, 0% 55%);
-  border: 1.8px solid rgba(246, 237, 214, 0.8);
-  background: linear-gradient(135deg, rgba(12, 16, 18, 0.85), rgba(5, 7, 8, 0.9));
-  color: #f5efe5;
-  padding: 1.4rem;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.48);
-  overflow: hidden;
-  transition: border-color 0.4s ease, box-shadow 0.4s ease;
-}
-
-.gallery-button:hover {
-  border-color: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
-}
-
-.gallery-button::before,
-.gallery-button::after {
+.nav-button-circle::after {
   content: "";
   position: absolute;
   inset: 0;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
   pointer-events: none;
 }
 
-.gallery-button::before {
-  background-image: repeating-linear-gradient(
+.nav-button-circle:hover {
+  transform: scale(1.12);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.6),
+    0 3px 10px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.nav-button-circle:hover::before {
+  border-color: rgba(255, 250, 240, 0.6);
+}
+
+/* Circular button grid pattern */
+.nav-circle__grid {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-image: 
+    repeating-linear-gradient(
       90deg,
       rgba(255, 255, 255, 0.05) 0px,
       rgba(255, 255, 255, 0.05) 1px,
       transparent 1px,
-      transparent 12px
+      transparent 6px
     ),
     repeating-linear-gradient(
       0deg,
       rgba(255, 255, 255, 0.04) 0px,
       rgba(255, 255, 255, 0.04) 1px,
       transparent 1px,
-      transparent 12px
+      transparent 6px
     );
-  opacity: 0.4;
-}
-
-.gallery-button::after {
-  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.12), transparent 55%);
-  mix-blend-mode: screen;
-}
-
-.gallery-button__grain {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(120deg, rgba(96, 68, 35, 0.4), transparent 60%);
-  opacity: 0.6;
-  mix-blend-mode: soft-light;
   pointer-events: none;
 }
 
+/* Circular button ring */
+.nav-circle__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(245, 235, 220, 0.75);
+  pointer-events: none;
+}
+
+/* Circular button crosshair */
+.nav-circle__crosshair {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(245, 235, 220, 0.65);
+  pointer-events: none;
+}
+
+/* Circular button compass arcs */
+.nav-circle__arcs {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(245, 235, 220, 0.55);
+  pointer-events: none;
+}
+
+/* Wood grain texture overlay */
+.gallery-button__grain {
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(
+      125deg,
+      rgba(139, 90, 43, 0.15) 0%,
+      transparent 40%,
+      rgba(101, 67, 33, 0.1) 70%,
+      transparent 100%
+    );
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* Blueprint grid pattern */
+.gallery-button__grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 16px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.025) 0px,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px,
+      transparent 16px
+    );
+  pointer-events: none;
+}
+
+/* Corner registration marks */
+.gallery-button__corners {
+  position: absolute;
+  inset: 8%;
+  width: 84%;
+  height: 84%;
+  color: rgba(245, 235, 220, 0.6);
+  pointer-events: none;
+}
+
+/* Dimension lines */
+.gallery-button__dimensions {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(245, 235, 220, 0.5);
+  pointer-events: none;
+}
+
+/* Scribe arcs - compass marks */
 .gallery-button__scribe {
   position: absolute;
-  border: 1px dashed rgba(255, 255, 255, 0.45);
+  border: 1px dashed rgba(255, 255, 255, 0.35);
   border-radius: 999px;
   pointer-events: none;
 }
 
 .gallery-button__scribe--arc {
-  width: 140px;
-  height: 80px;
-  bottom: 10%;
-  left: 8%;
+  width: clamp(80px, 45%, 120px);
+  height: clamp(45px, 30%, 70px);
+  bottom: 12%;
+  left: 10%;
   border-top: none;
   border-left: none;
-  transform: rotate(-18deg);
+  transform: rotate(-15deg);
 }
 
 .gallery-button__scribe--tick {
-  width: 90px;
-  height: 40px;
-  top: 10%;
-  right: 14%;
+  width: clamp(50px, 30%, 80px);
+  height: clamp(25px, 18%, 40px);
+  top: 15%;
+  right: 15%;
   border-bottom: none;
   border-left: none;
 }
 
-.gallery-button__grid,
+/* Center crosshair */
+.gallery-button__crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40%;
+  height: 40%;
+  transform: translate(-50%, -50%);
+  color: rgba(245, 235, 220, 0.4);
+  pointer-events: none;
+}
+
+/* Pencil sketch lines */
+.gallery-button__sketch {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(245, 235, 220, 0.35);
+  pointer-events: none;
+}
+
+/* Measurement annotation */
+.gallery-button__measurement {
+  position: absolute;
+  bottom: 12%;
+  right: 12%;
+  font-family: 'Courier New', monospace;
+  font-size: clamp(8px, 1.2vw, 11px);
+  color: rgba(245, 235, 220, 0.45);
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+/* Legacy classes - hidden */
 .gallery-button__label,
 .gallery-button__note,
 .gallery-button__measurements,
@@ -127,16 +293,6 @@
 .gallery-button__pencil--one,
 .gallery-button__pencil--two {
   display: none;
-}
-
-.gallery-note {
-  text-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
-  text-align: right;
-}
-
-.gallery-arrow {
-  width: clamp(120px, 20vw, 180px);
-  opacity: 0.8;
 }
 
 * {

@@ -1,53 +1,231 @@
-const OverlayHUD = () => {
-  return (
-    <div className="pointer-events-none absolute inset-0 z-30">
-      <div className="gallery-button-wrapper absolute bottom-[-2vw] right-[-3vw] sm:bottom-[-1.5vw] sm:right-[-2.5vw] lg:bottom-[-1vw] lg:right-[-2vw]">
-        <button
-          type="button"
-          className="gallery-button pointer-events-auto"
-          aria-label="Open gallery mock-up"
-        >
-          <span className="gallery-button__grain" aria-hidden />
-          <span className="gallery-button__scribe gallery-button__scribe--arc" aria-hidden />
-          <span className="gallery-button__scribe gallery-button__scribe--tick" aria-hidden />
-          <span className="sr-only">View gallery</span>
-        </button>
-      </div>
+import { useEffect, useState } from "react";
 
-      <div className="gallery-note absolute bottom-24 right-16 sm:right-24 md:bottom-34 md:right-36 text-white flex flex-col items-end gap-3">
-        <span className="gallery-note__label font-cursive text-3xl sm:text-[3rem] leading-none">
-          Gallery
-        </span>
-        <svg
-          className="gallery-arrow"
-          viewBox="0 0 220 170"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M20 20C65 25 110 70 135 110C155 144 185 155 210 145"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray="6 10"
+// Navigation items configuration - easily extendable
+const navItems = [
+  { id: "gallery", label: "Gallery", delay: 0, arrowType: "loop" },
+  { id: "ethos", label: "Ethos", delay: 150, arrowType: "spiral" },
+  { id: "contact", label: "Contact", delay: 300, arrowType: "wave" },
+];
+
+// Different arrow designs for each button
+const ArrowDesigns = {
+  // Playful looping arrow for Gallery
+  loop: (
+    <svg
+      className="nav-arrow"
+      viewBox="0 0 80 50"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M2 25 
+           C 10 25, 14 15, 20 12
+           C 26 9, 30 18, 27 24
+           C 24 30, 18 27, 21 21
+           C 24 15, 34 12, 44 16
+           C 54 20, 60 25, 68 25"
+        stroke="white"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="3 4"
+        opacity="0.85"
+      />
+      <path
+        d="M62 21 L72 25 L62 29"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        opacity="0.85"
+      />
+    </svg>
+  ),
+  // Spiral arrow for Ethos
+  spiral: (
+    <svg
+      className="nav-arrow"
+      viewBox="0 0 80 50"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M5 25
+           C 12 35, 22 38, 30 32
+           C 38 26, 35 18, 28 18
+           C 21 18, 20 25, 26 28
+           C 32 31, 42 28, 50 25
+           C 58 22, 64 24, 70 25"
+        stroke="white"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="4 3"
+        opacity="0.85"
+      />
+      <path
+        d="M64 21 L74 25 L64 29"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        opacity="0.85"
+      />
+    </svg>
+  ),
+  // Wavy arrow for Contact
+  wave: (
+    <svg
+      className="nav-arrow"
+      viewBox="0 0 80 50"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M5 25
+           C 15 15, 25 35, 35 25
+           C 45 15, 55 35, 68 25"
+        stroke="white"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="5 3"
+        opacity="0.85"
+      />
+      <path
+        d="M62 21 L72 25 L62 29"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        opacity="0.85"
+      />
+    </svg>
+  ),
+};
+
+// Small circular blueprint button component
+const BlueprintButton = ({ 
+  label, 
+  isVisible, 
+  delay,
+  arrowType
+}: { 
+  label: string; 
+  isVisible: boolean; 
+  delay: number;
+  arrowType: keyof typeof ArrowDesigns;
+}) => {
+  return (
+    <div 
+      className="nav-item flex items-center gap-3"
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateX(0)' : 'translateX(20px)',
+        transition: `all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
+      }}
+    >
+      {/* Label */}
+      <span className="nav-label font-cursive text-xl sm:text-2xl md:text-3xl text-white/90">
+        {label}
+      </span>
+      
+      {/* Unique arrow for each button */}
+      {ArrowDesigns[arrowType]}
+
+      {/* Circular Blueprint Button */}
+      <button
+        type="button"
+        className="nav-button-circle pointer-events-auto"
+        aria-label={`Open ${label.toLowerCase()}`}
+      >
+        {/* Blueprint grid pattern */}
+        <span className="nav-circle__grid" aria-hidden="true" />
+        
+        {/* Outer ring */}
+        <svg className="nav-circle__ring" viewBox="0 0 100 100">
+          <circle 
+            cx="50" cy="50" r="46" 
+            stroke="currentColor" 
+            strokeWidth="1.5" 
+            strokeDasharray="4 3"
+            fill="none" 
+            opacity="0.6" 
           />
-          <path
-            d="M198 132L214 153"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M196 151L215 151"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
+          <circle 
+            cx="50" cy="50" r="40" 
+            stroke="currentColor" 
+            strokeWidth="1" 
+            fill="none" 
+            opacity="0.4" 
           />
         </svg>
+
+        {/* Center crosshair */}
+        <svg className="nav-circle__crosshair" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="6" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.6" />
+          <line x1="50" y1="28" x2="50" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+          <line x1="50" y1="58" x2="50" y2="72" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+          <line x1="28" y1="50" x2="42" y2="50" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+          <line x1="58" y1="50" x2="72" y2="50" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+        </svg>
+
+        {/* Compass arc marks */}
+        <svg className="nav-circle__arcs" viewBox="0 0 100 100">
+          <path 
+            d="M28 68 A28 28 0 0 1 36 36" 
+            stroke="currentColor" 
+            strokeWidth="1" 
+            strokeDasharray="2 2"
+            fill="none" 
+            opacity="0.45" 
+          />
+          <path 
+            d="M72 32 A28 28 0 0 1 64 64" 
+            stroke="currentColor" 
+            strokeWidth="1" 
+            strokeDasharray="2 2"
+            fill="none" 
+            opacity="0.45" 
+          />
+        </svg>
+
+        <span className="sr-only">View {label.toLowerCase()}</span>
+      </button>
+    </div>
+  );
+};
+
+const GalleryOverlay = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // Animate in after the main content has loaded
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 14000); // Slightly after the text overlay appears
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-30">
+      {/* Navigation - positioned along right edge, vertically centered-bottom */}
+      <div className="gallery-nav absolute right-3 sm:right-4 bottom-16 sm:bottom-20 flex flex-col items-end gap-3 sm:gap-4">
+        {navItems.map((item) => (
+          <BlueprintButton
+            key={item.id}
+            label={item.label}
+            isVisible={isVisible}
+            delay={item.delay}
+            arrowType={item.arrowType as keyof typeof ArrowDesigns}
+          />
+        ))}
       </div>
     </div>
   );
 };
 
-export default OverlayHUD;
+export default GalleryOverlay;
