@@ -14,14 +14,14 @@
     opacity: 1;
   }
   100% {
-    mask-position: 0% 0;
+    mask-position: 0 0;
     opacity: 1;
     transform: translateY(0);
   }
 }
 
 .writing-animation {
-  mask-image: linear-gradient(115deg, black 45%, transparent 55%);
+  mask-image: linear-gradient(115deg, black 60%, transparent 70%);
   mask-size: 250% 100%;
   mask-repeat: no-repeat;
   animation: writing-reveal 5s ease-out forwards;
