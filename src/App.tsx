@@ -2,7 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { useEffect, useState } from "react";
 import Scene from "./components/Scene";
 import TextOverlay from "./components/TextOverlay";
-import GalleryOverlay from "./components/GalleryOverlay";
+import MenuOverlay from "./components/MenuOverlay";
 import "./types/r3f.d";
 
 function App() {
@@ -32,7 +32,7 @@ function App() {
       </div>
 
       {/* Overlays */}
-      <GalleryOverlay />
+      <MenuOverlay />
       <TextOverlay show={showText} />
     </div>
   );

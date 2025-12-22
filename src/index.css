@@ -72,13 +72,16 @@
   color: rgba(245, 235, 220, 0.9);
   padding: 0;
   box-shadow: 
-    0 6px 20px rgba(0, 0, 0, 0.55),
-    0 3px 8px rgba(0, 0, 0, 0.35),
+    0 0 20px rgba(0, 0, 0, 0.55),
+    0 0 8px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
     inset 0 -1px 0 rgba(0, 0, 0, 0.35);
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transform: rotate(0deg);
+  transition: 
+    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.4s ease-out;
 }
 
 .nav-button-circle::before {
@@ -100,11 +103,12 @@
 }
 
 .nav-button-circle:hover {
-  transform: scale(1.12);
+  transform: rotate(180deg);
   box-shadow: 
-    0 8px 24px rgba(0, 0, 0, 0.6),
-    0 3px 10px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 28px rgba(41, 94, 65, 0.4),
+    0 0 12px rgba(0, 0, 0, 0.4),
+    0 0 24px rgba(139, 169, 139, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
     inset 0 -1px 0 rgba(0, 0, 0, 0.4);
 }
 
