@@ -17,9 +17,7 @@ function App() {
   }, []);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#040605] text-white">
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_top,_rgba(41,94,65,0.55),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(14,7,5,0.8),_transparent_60%)]" />
-      <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-[#020302]/70 via-[#05170b]/60 to-[#070208]/70 mix-blend-screen" />
+    <div className="relative h-screen w-screen overflow-hidden bg-white text-white">
 
       {/* Main 3D Canvas */}
       <div className="relative z-0 h-full w-full">

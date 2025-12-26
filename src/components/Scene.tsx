@@ -25,6 +25,8 @@ const Scene = () => {
   const camera = useThree((state) => state.camera);
   const meshRef = useRef<SparkSplatMesh>(null);
   const animateT = useRef(dyno.dynoFloat(0));
+  const depthOffsetRef = useRef(dyno.dynoFloat(15.0));
+  const grassDarkenRef = useRef(dyno.dynoFloat(0.5));
   const baseTimeRef = useRef(0);
   const effectSetupRef = useRef(false);
   const cameraAnimationComplete = useRef(false);
@@ -48,6 +50,16 @@ const Scene = () => {
     startX: { value: 2, min: -10, max: 10, step: 0.1, label: 'Start X' },
     startY: { value: 4, min: -5, max: 15, step: 0.1, label: 'Start Y' },
     startZ: { value: 8, min: 0.5, max: 20, step: 0.1, label: 'Start Z' },
+  });
+
+  // Leva controls for entrance animation
+  const { depthOffset } = useControls('Entrance Animation', {
+    depthOffset: { value: 15.0, min: 0, max: 30, step: 0.5, label: 'Depth Offset' },
+  });
+
+  // Leva controls for visual adjustments
+  const { grassDarkenAmount } = useControls('Visual Adjustments', {
+    grassDarkenAmount: { value: 0.5, min: 0, max: 2, step: 0.05, label: 'Grass Darken' },
   });
 
   // Leva controls for splat rotation
@@ -106,7 +118,7 @@ const Scene = () => {
         { gsplat: dyno.Gsplat },
         ({ gsplat }) => {
           const d = new dyno.Dyno({
-            inTypes: { gsplat: dyno.Gsplat, t: "float" },
+            inTypes: { gsplat: dyno.Gsplat, t: "float", depthOffset: "float", grassDarken: "float" },
             outTypes: { gsplat: dyno.Gsplat },
             globals: () => [
               dyno.unindent(`
@@ -118,8 +130,9 @@ const Scene = () => {
                 }
 
                 // Graceful entrance effect: particles assemble from a swirl
-                // Smaller particles appear first, building up to larger ones
-                vec4 assemble(vec3 pos, vec3 scale, float t) {
+                // Far particles appear first, building the scene towards the camera
+                // Smaller particles appear before larger ones
+                vec4 assemble(vec3 pos, vec3 scale, float t, float depthOffset) {
                   vec3 h = hash(pos);
                   
                   // Calculate particle size magnitude (average of scale components)
@@ -130,14 +143,20 @@ const Scene = () => {
                   // Using log scale for more pleasing distribution since scales vary widely
                   float normalizedScale = clamp(log(scaleMag + 1.0) * 0.5, 0.0, 1.0);
                   
-                  // Radial distance still adds some spatial variation
+                  // Depth factor: particles further back (higher y due to rotation) appear first
+                  // Negative multiplier means higher y = earlier appearance
+                  // Add offset to ensure all start times are positive
+                  float depthFactor = -pos.y * 2.5 + depthOffset;
+                  
+                  // Radial distance adds spatial variation
                   float dist = length(pos.xz);
                   
-                  // Stagger formula: smaller particles appear first
-                  // - normalizedScale * 12.0: larger particles delayed more (primary factor)
-                  // - dist * 0.5: slight radial wave effect (secondary)
-                  // - h.x * 2.5: subtle randomness for organic feel
-                  float start = normalizedScale * 12.0 + dist * 0.5 + h.x * 2.5;
+                  // Stagger formula: far particles and smaller particles appear first
+                  // - depthFactor: higher y (farther back) = lower start time (primary factor)
+                  // - normalizedScale * 8.0: larger particles delayed more (secondary factor)
+                  // - dist * 0.2: subtle radial wave effect
+                  // - h.x * 1.5: randomness for organic feel
+                  float start = depthFactor + normalizedScale * 8.0 + dist * 0.2 + h.x * 1.5;
                   
                   // Longer transition window for smoother, slower appearance
                   float s = smoothstep(start, start + 5.0, t);
@@ -176,26 +195,53 @@ const Scene = () => {
               vec3 scales = ${inputs.gsplat}.scales;
               vec3 localPos = ${inputs.gsplat}.center;
               float t = ${inputs.t};
+              float depthOffset = ${inputs.depthOffset};
+              float grassDarken = ${inputs.grassDarken};
               
               // Apply graceful entrance effect
-              vec4 effectResult = assemble(localPos, scales, t);
+              vec4 effectResult = assemble(localPos, scales, t, depthOffset);
               ${outputs.gsplat}.center = effectResult.xyz;
               
               // Smoother scaling with eased-in appearance
               // Smaller particles pop in quickly, larger ones grow more gradually
               float scaleProgress = effectResult.w * effectResult.w; // Ease-in curve
               ${outputs.gsplat}.scales = scales * scaleProgress;
+              
+              // Fade in opacity for smoother entrance
+              ${outputs.gsplat}.rgba.a *= effectResult.w;
 
               // Darken the area under the text for better legibility
               // We target points that are in the foreground-left area (Negative X, Negative Y in local space)
               float darkenArea = smoothstep(1.0, -4.0, localPos.x) * smoothstep(2.0, -6.0, localPos.y);
               ${outputs.gsplat}.rgba.rgb *= (1.0 - darkenArea * 0.7);
+              
+              // Darken green grass areas in lower right to improve contrast with white text
+              // Detect green by checking if green channel is dominant
+              vec3 color = ${outputs.gsplat}.rgba.rgb;
+              float greenness = color.g - max(color.r, color.b);
+              float isGreen = smoothstep(0.05, 0.15, greenness);
+              
+              // Also check that it's actually a greenish color (not too dark/light)
+              float brightness = (color.r + color.g + color.b) / 3.0;
+              float isGrassColor = smoothstep(0.2, 0.4, brightness) * smoothstep(0.9, 0.7, brightness);
+              
+              // Target lower right area where white text appears
+              // Right side: positive X
+              float isRight = smoothstep(-1.0, 3.0, localPos.x);
+              // Lower area: negative Y
+              float isLower = smoothstep(0.0, -4.0, localPos.y);
+              
+              // Combine all factors with gradient falloff
+              float grassDarkenFactor = isGreen * isGrassColor * isRight * isLower * grassDarken;
+              ${outputs.gsplat}.rgba.rgb *= (1.0 - grassDarkenFactor);
             `),
           });
 
           gsplat = d.apply({
             gsplat,
             t: animateT.current,
+            depthOffset: depthOffsetRef.current,
+            grassDarken: grassDarkenRef.current,
           }).gsplat;
 
           return { gsplat };
@@ -211,6 +257,8 @@ const Scene = () => {
   useFrame((_, delta) => {
     baseTimeRef.current += delta;
     animateT.current.value = baseTimeRef.current;
+    depthOffsetRef.current.value = depthOffset;
+    grassDarkenRef.current.value = grassDarkenAmount;
     
     // Animate camera position during startup
     if (animateCamera && !cameraAnimationComplete.current) {
