@@ -27,6 +27,13 @@ const Scene = () => {
   const animateT = useRef(dyno.dynoFloat(0));
   const depthOffsetRef = useRef(dyno.dynoFloat(15.0));
   const grassDarkenRef = useRef(dyno.dynoFloat(0.5));
+  const syntheticBrightnessRef = useRef(dyno.dynoFloat(1.0));
+  const syntheticSaturationRef = useRef(dyno.dynoFloat(1.0));
+  const syntheticOpacityRef = useRef(dyno.dynoFloat(1.0));
+  const syntheticZMinRef = useRef(dyno.dynoFloat(-5.0));
+  const syntheticZMaxRef = useRef(dyno.dynoFloat(2.0));
+  const syntheticYMinRef = useRef(dyno.dynoFloat(-10.0));
+  const syntheticYMaxRef = useRef(dyno.dynoFloat(5.0));
   const baseTimeRef = useRef(0);
   const effectSetupRef = useRef(false);
   const cameraAnimationComplete = useRef(false);
@@ -67,6 +74,25 @@ const Scene = () => {
     rotationX: { value: -1.6, min: -Math.PI, max: Math.PI, step: 0.01 },
     rotationY: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
     rotationZ: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
+  });
+
+  // Leva controls for splat blending (synthetic vs camera-captured)
+  const { 
+    syntheticBrightness, 
+    syntheticSaturation, 
+    syntheticOpacity,
+    syntheticZMin,
+    syntheticZMax,
+    syntheticYMin,
+    syntheticYMax,
+  } = useControls('Splat Blending', {
+    syntheticBrightness: { value: 1.0, min: 0.1, max: 2.0, step: 0.05, label: 'Synthetic Brightness' },
+    syntheticSaturation: { value: 1.0, min: 0.0, max: 1.5, step: 0.05, label: 'Synthetic Saturation' },
+    syntheticOpacity: { value: 1.0, min: 0.1, max: 1.0, step: 0.05, label: 'Synthetic Opacity' },
+    syntheticZMin: { value: -5.0, min: -20, max: 20, step: 0.5, label: 'Synthetic Zone Z Min' },
+    syntheticZMax: { value: 2.0, min: -20, max: 20, step: 0.5, label: 'Synthetic Zone Z Max' },
+    syntheticYMin: { value: -10.0, min: -20, max: 20, step: 0.5, label: 'Synthetic Zone Y Min' },
+    syntheticYMax: { value: 5.0, min: -20, max: 20, step: 0.5, label: 'Synthetic Zone Y Max' },
   });
 
   // Leva monitor for current camera position (read-only, updates in real-time)
@@ -118,7 +144,19 @@ const Scene = () => {
         { gsplat: dyno.Gsplat },
         ({ gsplat }) => {
           const d = new dyno.Dyno({
-            inTypes: { gsplat: dyno.Gsplat, t: "float", depthOffset: "float", grassDarken: "float" },
+            inTypes: { 
+              gsplat: dyno.Gsplat, 
+              t: "float", 
+              depthOffset: "float", 
+              grassDarken: "float",
+              syntheticBrightness: "float",
+              syntheticSaturation: "float",
+              syntheticOpacity: "float",
+              syntheticZMin: "float",
+              syntheticZMax: "float",
+              syntheticYMin: "float",
+              syntheticYMax: "float",
+            },
             outTypes: { gsplat: dyno.Gsplat },
             globals: () => [
               dyno.unindent(`
@@ -197,6 +235,13 @@ const Scene = () => {
               float t = ${inputs.t};
               float depthOffset = ${inputs.depthOffset};
               float grassDarken = ${inputs.grassDarken};
+              float syntheticBrightness = ${inputs.syntheticBrightness};
+              float syntheticSaturation = ${inputs.syntheticSaturation};
+              float syntheticOpacity = ${inputs.syntheticOpacity};
+              float syntheticZMin = ${inputs.syntheticZMin};
+              float syntheticZMax = ${inputs.syntheticZMax};
+              float syntheticYMin = ${inputs.syntheticYMin};
+              float syntheticYMax = ${inputs.syntheticYMax};
               
               // Apply graceful entrance effect
               vec4 effectResult = assemble(localPos, scales, t, depthOffset);
@@ -234,6 +279,26 @@ const Scene = () => {
               // Combine all factors with gradient falloff
               float grassDarkenFactor = isGreen * isGrassColor * isRight * isLower * grassDarken;
               ${outputs.gsplat}.rgba.rgb *= (1.0 - grassDarkenFactor);
+              
+              // Detect synthetic data region based on position
+              // Smooth transitions at boundaries
+              float inZRange = smoothstep(syntheticZMin - 1.0, syntheticZMin, localPos.z) * 
+                               smoothstep(syntheticZMax + 1.0, syntheticZMax, localPos.z);
+              float inYRange = smoothstep(syntheticYMin - 1.0, syntheticYMin, localPos.y) * 
+                               smoothstep(syntheticYMax + 1.0, syntheticYMax, localPos.y);
+              float isSynthetic = inZRange * inYRange;
+              
+              // Apply brightness adjustment to synthetic region
+              ${outputs.gsplat}.rgba.rgb *= mix(1.0, syntheticBrightness, isSynthetic);
+              
+              // Apply saturation adjustment to synthetic region
+              vec3 gray = vec3(dot(${outputs.gsplat}.rgba.rgb, vec3(0.299, 0.587, 0.114)));
+              ${outputs.gsplat}.rgba.rgb = mix(${outputs.gsplat}.rgba.rgb, 
+                                               mix(gray, ${outputs.gsplat}.rgba.rgb, syntheticSaturation), 
+                                               isSynthetic);
+              
+              // Apply opacity adjustment to synthetic region
+              ${outputs.gsplat}.rgba.a *= mix(1.0, syntheticOpacity, isSynthetic);
             `),
           });
 
@@ -242,6 +307,13 @@ const Scene = () => {
             t: animateT.current,
             depthOffset: depthOffsetRef.current,
             grassDarken: grassDarkenRef.current,
+            syntheticBrightness: syntheticBrightnessRef.current,
+            syntheticSaturation: syntheticSaturationRef.current,
+            syntheticOpacity: syntheticOpacityRef.current,
+            syntheticZMin: syntheticZMinRef.current,
+            syntheticZMax: syntheticZMaxRef.current,
+            syntheticYMin: syntheticYMinRef.current,
+            syntheticYMax: syntheticYMaxRef.current,
           }).gsplat;
 
           return { gsplat };
@@ -259,6 +331,13 @@ const Scene = () => {
     animateT.current.value = baseTimeRef.current;
     depthOffsetRef.current.value = depthOffset;
     grassDarkenRef.current.value = grassDarkenAmount;
+    syntheticBrightnessRef.current.value = syntheticBrightness;
+    syntheticSaturationRef.current.value = syntheticSaturation;
+    syntheticOpacityRef.current.value = syntheticOpacity;
+    syntheticZMinRef.current.value = syntheticZMin;
+    syntheticZMaxRef.current.value = syntheticZMax;
+    syntheticYMinRef.current.value = syntheticYMin;
+    syntheticYMaxRef.current.value = syntheticYMax;
     
     // Animate camera position during startup
     if (animateCamera && !cameraAnimationComplete.current) {
