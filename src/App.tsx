@@ -7,6 +7,7 @@ import "./types/r3f.d";
 
 function App() {
   const [showText, setShowText] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
 
   useEffect(() => {
     // Start showing the text after the splat animation has fully finished
@@ -14,6 +15,15 @@ function App() {
       setShowText(true);
     }, 13000);
     return () => clearTimeout(timer);
+  }, [animationKey]);
+
+  useEffect(() => {
+    const handleReset = () => {
+      setShowText(false);
+      setAnimationKey(prev => prev + 1);
+    };
+    window.addEventListener('resetAnimation', handleReset);
+    return () => window.removeEventListener('resetAnimation', handleReset);
   }, []);
 
   return (
@@ -31,7 +41,7 @@ function App() {
 
       {/* Overlays */}
       <MenuOverlay />
-      <TextOverlay show={showText} />
+      <TextOverlay key={animationKey} show={showText} />
     </div>
   );
 }

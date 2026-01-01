@@ -1,7 +1,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { PresentationControls } from "@react-three/drei";
 import { useMemo, useRef, useEffect, useLayoutEffect } from "react";
-import { useControls, monitor } from "leva";
+import { useControls, monitor, button } from "leva";
 import type { SplatMesh as SparkSplatMesh } from "@sparkjsdev/spark";
 import { dyno } from "@sparkjsdev/spark";
 import "./spark";
@@ -62,6 +62,18 @@ const Scene = () => {
   // Leva controls for entrance animation
   const { depthOffset } = useControls('Entrance Animation', {
     depthOffset: { value: 15.0, min: 0, max: 30, step: 0.5, label: 'Depth Offset' },
+    resetAnimation: button(() => {
+      baseTimeRef.current = 0;
+      animateT.current.value = 0;
+      cameraAnimationComplete.current = false;
+      if (animateCamera) {
+        camera.position.set(startX, startY, startZ);
+      }
+      if (meshRef.current) {
+        meshRef.current.updateVersion();
+      }
+      window.dispatchEvent(new Event('resetAnimation'));
+    }),
   });
 
   // Leva controls for visual adjustments
@@ -86,13 +98,13 @@ const Scene = () => {
     syntheticYMin,
     syntheticYMax,
   } = useControls('Splat Blending', {
-    syntheticBrightness: { value: 1.0, min: 0.1, max: 2.0, step: 0.05, label: 'Synthetic Brightness' },
-    syntheticSaturation: { value: 1.0, min: 0.0, max: 1.5, step: 0.05, label: 'Synthetic Saturation' },
-    syntheticOpacity: { value: 1.0, min: 0.1, max: 1.0, step: 0.05, label: 'Synthetic Opacity' },
-    syntheticZMin: { value: -5.0, min: -20, max: 20, step: 0.5, label: 'Synthetic Zone Z Min' },
-    syntheticZMax: { value: 2.0, min: -20, max: 20, step: 0.5, label: 'Synthetic Zone Z Max' },
-    syntheticYMin: { value: -10.0, min: -20, max: 20, step: 0.5, label: 'Synthetic Zone Y Min' },
-    syntheticYMax: { value: 5.0, min: -20, max: 20, step: 0.5, label: 'Synthetic Zone Y Max' },
+    syntheticBrightness: { value: 1.0, min: 0.1, max: 2.0, step: 0.05, label: 'Brightness' },
+    syntheticSaturation: { value: 1.0, min: 0.0, max: 1.5, step: 0.05, label: 'Saturation' },
+    syntheticOpacity: { value: 1.0, min: 0.1, max: 1.0, step: 0.05, label: 'Opacity' },
+    syntheticZMin: { value: -5.0, min: -20, max: 20, step: 0.5, label: 'Z Min' },
+    syntheticZMax: { value: 2.0, min: -20, max: 20, step: 0.5, label: 'Z Max' },
+    syntheticYMin: { value: -10.0, min: -20, max: 20, step: 0.5, label: 'Y Min' },
+    syntheticYMax: { value: 5.0, min: -20, max: 20, step: 0.5, label: 'Y Max' },
   });
 
   // Leva monitor for current camera position (read-only, updates in real-time)
@@ -127,7 +139,7 @@ const Scene = () => {
   const splatMeshArgs = useMemo(
     () =>
       ({
-        url: "/assets/full_scene_remove_blue_two_splat.spz",
+        url: "/assets/scene_addMesh_fixed.spz",
         stream: true,
       }) as const,
     [],
@@ -170,7 +182,8 @@ const Scene = () => {
                 // Graceful entrance effect: particles assemble from a swirl
                 // Far particles appear first, building the scene towards the camera
                 // Smaller particles appear before larger ones
-                vec4 assemble(vec3 pos, vec3 scale, float t, float depthOffset) {
+                // Dark/grayscale objects appear first (sketch-like), then colorful elements
+                vec4 assemble(vec3 pos, vec3 scale, vec3 color, float t, float depthOffset) {
                   vec3 h = hash(pos);
                   
                   // Calculate particle size magnitude (average of scale components)
@@ -189,12 +202,21 @@ const Scene = () => {
                   // Radial distance adds spatial variation
                   float dist = length(pos.xz);
                   
+                  // Color-based timing: dark/grayscale objects appear first
+                  float brightness = (color.r + color.g + color.b) / 3.0;
+                  float saturation = max(color.r, max(color.g, color.b)) - min(color.r, min(color.g, color.b));
+                  
+                  // Bright and saturated colors are delayed
+                  // This makes dark wireframe/mesh appear first, then colorful furniture/grass
+                  float colorDelay = brightness * 4.0 + saturation * 6.0;
+                  
                   // Stagger formula: far particles and smaller particles appear first
                   // - depthFactor: higher y (farther back) = lower start time (primary factor)
                   // - normalizedScale * 8.0: larger particles delayed more (secondary factor)
+                  // - colorDelay: dark/gray objects first, then colorful (NEW!)
                   // - dist * 0.2: subtle radial wave effect
                   // - h.x * 1.5: randomness for organic feel
-                  float start = depthFactor + normalizedScale * 8.0 + dist * 0.2 + h.x * 1.5;
+                  float start = depthFactor + normalizedScale * 8.0 + colorDelay + dist * 0.2 + h.x * 1.5;
                   
                   // Longer transition window for smoother, slower appearance
                   float s = smoothstep(start, start + 5.0, t);
@@ -232,6 +254,7 @@ const Scene = () => {
               ${outputs.gsplat} = ${inputs.gsplat};
               vec3 scales = ${inputs.gsplat}.scales;
               vec3 localPos = ${inputs.gsplat}.center;
+              vec3 particleColor = ${inputs.gsplat}.rgba.rgb;
               float t = ${inputs.t};
               float depthOffset = ${inputs.depthOffset};
               float grassDarken = ${inputs.grassDarken};
@@ -243,8 +266,8 @@ const Scene = () => {
               float syntheticYMin = ${inputs.syntheticYMin};
               float syntheticYMax = ${inputs.syntheticYMax};
               
-              // Apply graceful entrance effect
-              vec4 effectResult = assemble(localPos, scales, t, depthOffset);
+              // Apply graceful entrance effect with color-based timing
+              vec4 effectResult = assemble(localPos, scales, particleColor, t, depthOffset);
               ${outputs.gsplat}.center = effectResult.xyz;
               
               // Smoother scaling with eased-in appearance
