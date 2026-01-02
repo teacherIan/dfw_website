@@ -58,8 +58,8 @@
 /* Circular Blueprint Button */
 .nav-button-circle {
   position: relative;
-  width: clamp(60px, 8vw, 90px);
-  height: clamp(60px, 8vw, 90px);
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   border: none;
   background: 
@@ -82,6 +82,13 @@
   transition: 
     transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.4s ease-out;
+}
+
+@media (min-width: 768px) {
+  .nav-button-circle {
+    width: clamp(60px, 8vw, 90px);
+    height: clamp(60px, 8vw, 90px);
+  }
 }
 
 .nav-button-circle::before {

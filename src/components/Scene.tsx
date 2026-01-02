@@ -1,7 +1,6 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { PresentationControls } from "@react-three/drei";
-import { useMemo, useRef, useEffect, useLayoutEffect } from "react";
-import { useControls, monitor, button } from "leva";
+import { useMemo, useRef, useEffect, useLayoutEffect, useState } from "react";
 import type { SplatMesh as SparkSplatMesh } from "@sparkjsdev/spark";
 import { dyno } from "@sparkjsdev/spark";
 import "./spark";
@@ -28,6 +27,15 @@ const Scene = () => {
   const depthOffsetRef = useRef(dyno.dynoFloat(15.0));
   const animationSpeedRef = useRef(dyno.dynoFloat(1.0));
   const grassDarkenRef = useRef(dyno.dynoFloat(0.5));
+  const bottomLeftMultiplierRef = useRef(dyno.dynoFloat(0.9));
+  const bottomRightMultiplierRef = useRef(dyno.dynoFloat(0.0));
+  const holeFillMultiplierRef = useRef(dyno.dynoFloat(0.0));
+  const holeXMinRef = useRef(dyno.dynoFloat(-2.0));
+  const holeXMaxRef = useRef(dyno.dynoFloat(2.0));
+  const holeYMinRef = useRef(dyno.dynoFloat(3.0));
+  const holeYMaxRef = useRef(dyno.dynoFloat(7.0));
+  const holeZMinRef = useRef(dyno.dynoFloat(-2.0));
+  const holeZMaxRef = useRef(dyno.dynoFloat(3.0));
   const syntheticBrightnessRef = useRef(dyno.dynoFloat(1.0));
   const syntheticSaturationRef = useRef(dyno.dynoFloat(1.0));
   const syntheticOpacityRef = useRef(dyno.dynoFloat(1.0));
@@ -39,82 +47,69 @@ const Scene = () => {
   const effectSetupRef = useRef(false);
   const cameraAnimationComplete = useRef(false);
   
-  // Refs for monitoring current camera position
+  // Detect mobile viewport
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Refs for current camera position
   const currentCameraX = useRef(0);
   const currentCameraY = useRef(0);
   const currentCameraZ = useRef(0);
 
-  // Leva controls for camera position (target position)
-  const { cameraX, cameraY, cameraZ } = useControls('Camera', {
-    cameraX: { value: 0, min: -10, max: 10, step: 0.1 },
-    cameraY: { value: 1.6, min: -5, max: 10, step: 0.1 },
-    cameraZ: { value: 3.1, min: 0.5, max: 10, step: 0.1 },
-  });
+  // Mobile vs desktop camera positions
+  const mobileCameraDefaults = { x: 0, y: 2.5, z: 4.0 };
+  const desktopCameraDefaults = { x: 0, y: 1.6, z: 3.1 };
+  const cameraDefaults = isMobile ? mobileCameraDefaults : desktopCameraDefaults;
 
-  // Leva controls for camera animation
-  const { animateCamera, animationDuration, startX, startY, startZ } = useControls('Camera Animation', {
-    animateCamera: { value: true, label: 'Animate on Start' },
-    animationDuration: { value: 20, min: 1, max: 30, step: 0.5, label: 'Duration (s)' },
-    startX: { value: -1.0, min: -10, max: 10, step: 0.1, label: 'Start X' },
-    startY: { value: 15.0, min: -5, max: 25, step: 0.1, label: 'Start Y' },
-    startZ: { value: 20.0, min: 0.5, max: 30, step: 0.1, label: 'Start Z' },
-  });
+  // Camera position constants
+  const cameraX = cameraDefaults.x;
+  const cameraY = cameraDefaults.y;
+  const cameraZ = cameraDefaults.z;
 
-  // Leva controls for entrance animation
-  const { depthOffset, animationSpeed } = useControls('Entrance Animation', {
-    depthOffset: { value: 10.5, min: 0, max: 30, step: 0.5, label: 'Depth Offset' },
-    animationSpeed: { value: 1.5, min: 0.1, max: 3.0, step: 0.1, label: 'Animation Speed' },
-    resetAnimation: button(() => {
-      baseTimeRef.current = 0;
-      animateT.current.value = 0;
-      cameraAnimationComplete.current = false;
-      if (animateCamera) {
-        camera.position.set(startX, startY, startZ);
-      }
-      if (meshRef.current) {
-        meshRef.current.updateVersion();
-      }
-      window.dispatchEvent(new Event('resetAnimation'));
-    }),
-  });
+  // Camera animation constants
+  const animateCamera = true;
+  const animationDuration = 20;
+  const startX = -1.0;
+  const startY = 15.0;
+  const startZ = 20.0;
 
-  // Leva controls for visual adjustments
-  const { grassDarkenAmount } = useControls('Visual Adjustments', {
-    grassDarkenAmount: { value: 2.0, min: 0, max: 5, step: 0.05, label: 'Grass Darken' },
-  });
+  // Entrance animation constants
+  const depthOffset = 10.5;
+  const animationSpeed = 1.5;
 
-  // Leva controls for splat rotation
-  const { rotationX, rotationY, rotationZ } = useControls('Splat Rotation', {
-    rotationX: { value: -1.6, min: -Math.PI, max: Math.PI, step: 0.01 },
-    rotationY: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
-    rotationZ: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
-  });
+  // Visual adjustment constants
+  const grassDarkenAmount = 2.35;
+  const bottomLeftMultiplier = 0.55;
+  const bottomRightMultiplier = 0.55;
+  const holeFillMultiplier = 0.0;
+  const holeXMin = -2.0;
+  const holeXMax = 2.0;
+  const holeYMin = 3.0;
+  const holeYMax = 7.0;
+  const holeZMin = -2.0;
+  const holeZMax = 3.0;
 
-  // Leva controls for splat blending (synthetic vs camera-captured)
-  const { 
-    syntheticBrightness, 
-    syntheticSaturation, 
-    syntheticOpacity,
-    syntheticZMin,
-    syntheticZMax,
-    syntheticYMin,
-    syntheticYMax,
-  } = useControls('Splat Blending', {
-    syntheticBrightness: { value: 1.0, min: 0.1, max: 2.0, step: 0.05, label: 'Brightness' },
-    syntheticSaturation: { value: 0.55, min: 0.0, max: 1.5, step: 0.05, label: 'Saturation' },
-    syntheticOpacity: { value: 1.0, min: 0.1, max: 1.0, step: 0.05, label: 'Opacity' },
-    syntheticZMin: { value: -5.0, min: -20, max: 20, step: 0.5, label: 'Z Min' },
-    syntheticZMax: { value: 2.0, min: -20, max: 20, step: 0.5, label: 'Z Max' },
-    syntheticYMin: { value: -10.0, min: -20, max: 20, step: 0.5, label: 'Y Min' },
-    syntheticYMax: { value: 5.0, min: -20, max: 20, step: 0.5, label: 'Y Max' },
-  });
+  // Splat rotation constants
+  const rotationX = -1.6;
+  const rotationY = 0;
+  const rotationZ = 0;
 
-  // Leva monitor for current camera position (read-only, updates in real-time)
-  useControls('Current Camera Position', {
-    x: monitor(() => currentCameraX.current, { graph: false }),
-    y: monitor(() => currentCameraY.current, { graph: false }),
-    z: monitor(() => currentCameraZ.current, { graph: false }),
-  });
+  // Splat blending constants (synthetic vs camera-captured)
+  const syntheticBrightness = 1.0;
+  const syntheticSaturation = 0.55;
+  const syntheticOpacity = 1.0;
+  const syntheticZMin = -5.0;
+  const syntheticZMax = 2.0;
+  const syntheticYMin = -10.0;
+  const syntheticYMax = 5.0;
 
   // Initialize camera to starting position if animation is enabled
   useEffect(() => {
@@ -125,7 +120,7 @@ const Scene = () => {
     }
   }, []);
 
-  // Update camera position from Leva controls when animation is complete or disabled
+  // Update camera position when animation is complete or disabled
   useEffect(() => {
     if (!animateCamera || cameraAnimationComplete.current) {
       camera.position.set(cameraX, cameraY, cameraZ);
@@ -164,6 +159,15 @@ const Scene = () => {
               depthOffset: "float", 
               animationSpeed: "float",
               grassDarken: "float",
+              bottomLeftMultiplier: "float",
+              bottomRightMultiplier: "float",
+              holeFillMultiplier: "float",
+              holeXMin: "float",
+              holeXMax: "float",
+              holeYMin: "float",
+              holeYMax: "float",
+              holeZMin: "float",
+              holeZMax: "float",
               syntheticBrightness: "float",
               syntheticSaturation: "float",
               syntheticOpacity: "float",
@@ -264,6 +268,15 @@ const Scene = () => {
               float depthOffset = ${inputs.depthOffset};
               float animationSpeed = ${inputs.animationSpeed};
               float grassDarken = ${inputs.grassDarken};
+              float bottomLeftMultiplier = ${inputs.bottomLeftMultiplier};
+              float bottomRightMultiplier = ${inputs.bottomRightMultiplier};
+              float holeFillMultiplier = ${inputs.holeFillMultiplier};
+              float holeXMin = ${inputs.holeXMin};
+              float holeXMax = ${inputs.holeXMax};
+              float holeYMin = ${inputs.holeYMin};
+              float holeYMax = ${inputs.holeYMax};
+              float holeZMin = ${inputs.holeZMin};
+              float holeZMax = ${inputs.holeZMax};
               float syntheticBrightness = ${inputs.syntheticBrightness};
               float syntheticSaturation = ${inputs.syntheticSaturation};
               float syntheticOpacity = ${inputs.syntheticOpacity};
@@ -288,6 +301,24 @@ const Scene = () => {
               // We target points that are in the foreground-left area (Negative X, Negative Y in local space)
               float darkenArea = smoothstep(1.0, -4.0, localPos.x) * smoothstep(2.0, -6.0, localPos.y);
               ${outputs.gsplat}.rgba.rgb *= (1.0 - darkenArea * 0.7);
+              
+              // Scale up splats in bottom areas to provide better coverage and hide white background
+              // Due to rotation, we target low Z values (bottom in screen space)
+              
+              // Bottom left area
+              float scaleAreaBottomLeft = smoothstep(3.0, -2.0, localPos.z) * smoothstep(1.5, -1.5, localPos.x);
+              ${outputs.gsplat}.scales *= (1.0 + scaleAreaBottomLeft * bottomLeftMultiplier);
+              
+              // Bottom right area (where main title appears)
+              float scaleAreaBottomRight = smoothstep(3.0, -2.0, localPos.z) * smoothstep(-1.5, 1.5, localPos.x);
+              ${outputs.gsplat}.scales *= (1.0 + scaleAreaBottomRight * bottomRightMultiplier);
+              
+              // Fill the white hole - adjustable bounds via sliders
+              float holeAreaX = smoothstep(holeXMin - 1.0, holeXMin, localPos.x) * smoothstep(holeXMax + 1.0, holeXMax, localPos.x);
+              float holeAreaY = smoothstep(holeYMin - 1.0, holeYMin, localPos.y) * smoothstep(holeYMax + 1.0, holeYMax, localPos.y);
+              float holeAreaZ = smoothstep(holeZMin - 1.0, holeZMin, localPos.z) * smoothstep(holeZMax + 1.0, holeZMax, localPos.z);
+              float holeFillArea = holeAreaX * holeAreaY * holeAreaZ;
+              ${outputs.gsplat}.scales *= (1.0 + holeFillArea * holeFillMultiplier);
               
               // Darken green grass areas on the right side to improve contrast with menu items
               // Detect green by checking if green channel is dominant
@@ -337,6 +368,15 @@ const Scene = () => {
             depthOffset: depthOffsetRef.current,
             animationSpeed: animationSpeedRef.current,
             grassDarken: grassDarkenRef.current,
+            bottomLeftMultiplier: bottomLeftMultiplierRef.current,
+            bottomRightMultiplier: bottomRightMultiplierRef.current,
+            holeFillMultiplier: holeFillMultiplierRef.current,
+            holeXMin: holeXMinRef.current,
+            holeXMax: holeXMaxRef.current,
+            holeYMin: holeYMinRef.current,
+            holeYMax: holeYMaxRef.current,
+            holeZMin: holeZMinRef.current,
+            holeZMax: holeZMaxRef.current,
             syntheticBrightness: syntheticBrightnessRef.current,
             syntheticSaturation: syntheticSaturationRef.current,
             syntheticOpacity: syntheticOpacityRef.current,
@@ -362,6 +402,15 @@ const Scene = () => {
     depthOffsetRef.current.value = depthOffset;
     animationSpeedRef.current.value = animationSpeed;
     grassDarkenRef.current.value = grassDarkenAmount;
+    bottomLeftMultiplierRef.current.value = bottomLeftMultiplier;
+    bottomRightMultiplierRef.current.value = bottomRightMultiplier;
+    holeFillMultiplierRef.current.value = holeFillMultiplier;
+    holeXMinRef.current.value = holeXMin;
+    holeXMaxRef.current.value = holeXMax;
+    holeYMinRef.current.value = holeYMin;
+    holeYMaxRef.current.value = holeYMax;
+    holeZMinRef.current.value = holeZMin;
+    holeZMaxRef.current.value = holeZMax;
     syntheticBrightnessRef.current.value = syntheticBrightness;
     syntheticSaturationRef.current.value = syntheticSaturation;
     syntheticOpacityRef.current.value = syntheticOpacity;
@@ -388,7 +437,7 @@ const Scene = () => {
       }
     }
     
-    // Update current camera position refs for Leva monitoring
+    // Update current camera position refs
     currentCameraX.current = Math.round(camera.position.x * 100) / 100;
     currentCameraY.current = Math.round(camera.position.y * 100) / 100;
     currentCameraZ.current = Math.round(camera.position.z * 100) / 100;

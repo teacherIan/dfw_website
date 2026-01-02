@@ -29,7 +29,8 @@ const ArrowDesigns = {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeDasharray="3 4"
-        opacity="0.85"
+        opacity="0.95"
+        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
       />
       <path
         d="M62 21 L72 25 L62 29"
@@ -38,7 +39,8 @@ const ArrowDesigns = {
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
-        opacity="0.85"
+        opacity="0.95"
+        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
       />
     </svg>
   ),
@@ -62,7 +64,8 @@ const ArrowDesigns = {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeDasharray="4 3"
-        opacity="0.85"
+        opacity="0.95"
+        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
       />
       <path
         d="M64 21 L74 25 L64 29"
@@ -71,7 +74,8 @@ const ArrowDesigns = {
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
-        opacity="0.85"
+        opacity="0.95"
+        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
       />
     </svg>
   ),
@@ -92,7 +96,8 @@ const ArrowDesigns = {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeDasharray="5 3"
-        opacity="0.85"
+        opacity="0.95"
+        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
       />
       <path
         d="M62 21 L72 25 L62 29"
@@ -101,7 +106,8 @@ const ArrowDesigns = {
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
-        opacity="0.85"
+        opacity="0.95"
+        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
       />
     </svg>
   ),
@@ -128,13 +134,22 @@ const BlueprintButton = ({
         transition: `all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
       }}
     >
-      {/* Label */}
-      <span className="nav-label font-cursive text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white/95 drop-shadow-sm">
+      {/* Label - desktop only */}
+      <span 
+        className="nav-label hidden md:block font-cursive text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white/95"
+        style={{
+          textShadow: '0 3px 6px rgba(0, 0, 0, 0.5)',
+          WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.7)',
+          paintOrder: 'stroke fill',
+        }}
+      >
         {label}
       </span>
       
-      {/* Unique arrow for each button */}
-      {ArrowDesigns[arrowType]}
+      {/* Unique arrow for each button - desktop only */}
+      <span className="hidden md:block">
+        {ArrowDesigns[arrowType]}
+      </span>
 
       {/* Circular Blueprint Button */}
       <button
@@ -223,8 +238,119 @@ const MenuOverlay = () => {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-30">
-      {/* Navigation - positioned along right edge, vertically centered-bottom */}
-      <div className="gallery-nav absolute right-3 sm:right-4 bottom-16 sm:bottom-20 flex flex-col items-end gap-3 sm:gap-4">
+      {/* Mobile: Labels and arrows below title, flowing to buttons */}
+      <div className="md:hidden absolute bottom-6 left-0 right-0 flex justify-center items-start px-4">
+        <svg 
+          viewBox="0 0 360 90" 
+          className="w-full max-w-sm h-auto"
+          style={{
+            opacity: isVisible ? 1 : 0,
+            transition: `opacity 0.8s ease ${150}ms`,
+          }}
+        >
+          {/* Gallery - left side with looping playful arrow */}
+          <text 
+            x="80" 
+            y="15" 
+            className="font-cursive text-[22px]"
+            textAnchor="middle"
+            fill="white"
+            stroke="rgba(0, 0, 0, 0.7)"
+            strokeWidth="1"
+            paintOrder="stroke fill"
+            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))"
+          >
+            Gallery
+          </text>
+          {/* Playful looping arrow from Gallery to left button */}
+          <path
+            d="M 80 20 
+               C 85 28, 95 32, 100 38
+               C 105 44, 98 50, 90 50
+               C 82 50, 78 44, 82 38
+               C 86 32, 98 32, 105 38
+               C 110 44, 108 50, 105 54
+               L 105 68"
+            stroke="white"
+            strokeWidth="1.2"
+            fill="none"
+            strokeDasharray="4 3"
+            opacity="0.95"
+            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
+            strokeLinecap="round"
+          />
+          <path d="M 101 62 L 105 68 L 109 62" stroke="white" strokeWidth="1.3" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))" strokeLinecap="round" />
+
+          {/* Ethos - center with spiral arrow */}
+          <text 
+            x="180" 
+            y="12" 
+            className="font-cursive text-[22px]"
+            textAnchor="middle"
+            fill="white"
+            stroke="rgba(0, 0, 0, 0.7)"
+            strokeWidth="1"
+            paintOrder="stroke fill"
+            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))"
+          >
+            Ethos
+          </text>
+          {/* Spiral arrow from Ethos to center button */}
+          <path
+            d="M 180 17
+               C 188 24, 196 30, 200 38
+               C 204 46, 196 52, 188 52
+               C 180 52, 176 45, 180 38
+               C 184 32, 194 33, 196 40
+               C 197 46, 192 50, 186 52
+               L 180 68"
+            stroke="white"
+            strokeWidth="1.2"
+            fill="none"
+            strokeDasharray="3 4"
+            opacity="0.95"
+            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
+            strokeLinecap="round"
+          />
+          <path d="M 176 62 L 180 68 L 184 62" stroke="white" strokeWidth="1.3" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))" strokeLinecap="round" />
+
+          {/* Contact - right side with wavy arrow */}
+          <text 
+            x="280" 
+            y="15" 
+            className="font-cursive text-[22px]"
+            textAnchor="middle"
+            fill="white"
+            stroke="rgba(0, 0, 0, 0.7)"
+            strokeWidth="1"
+            paintOrder="stroke fill"
+            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))"
+          >
+            Contact
+          </text>
+          {/* Wavy arrow from Contact to right button */}
+          <path
+            d="M 280 20
+               C 270 26, 260 32, 255 38
+               C 250 44, 260 50, 268 50
+               C 275 50, 273 44, 268 40
+               C 263 36, 258 38, 258 44
+               C 258 50, 262 54, 260 58
+               L 255 68"
+            stroke="white"
+            strokeWidth="1.2"
+            fill="none"
+            strokeDasharray="5 3"
+            opacity="0.95"
+            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
+            strokeLinecap="round"
+          />
+          <path d="M 251 62 L 255 68 L 259 62" stroke="white" strokeWidth="1.3" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))" strokeLinecap="round" />
+        </svg>
+      </div>
+
+      {/* Buttons - horizontal on mobile, vertical on desktop */}
+      <div className="gallery-nav absolute bottom-2 left-1/2 -translate-x-1/2 md:left-auto md:right-4 md:bottom-20 md:translate-x-0 flex flex-row md:flex-col items-center md:items-end gap-8 md:gap-4">
         {navItems.map((item) => (
           <BlueprintButton
             key={item.id}
