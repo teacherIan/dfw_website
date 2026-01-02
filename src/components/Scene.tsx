@@ -26,6 +26,7 @@ const Scene = () => {
   const meshRef = useRef<SparkSplatMesh>(null);
   const animateT = useRef(dyno.dynoFloat(0));
   const depthOffsetRef = useRef(dyno.dynoFloat(15.0));
+  const animationSpeedRef = useRef(dyno.dynoFloat(1.0));
   const grassDarkenRef = useRef(dyno.dynoFloat(0.5));
   const syntheticBrightnessRef = useRef(dyno.dynoFloat(1.0));
   const syntheticSaturationRef = useRef(dyno.dynoFloat(1.0));
@@ -53,15 +54,16 @@ const Scene = () => {
   // Leva controls for camera animation
   const { animateCamera, animationDuration, startX, startY, startZ } = useControls('Camera Animation', {
     animateCamera: { value: true, label: 'Animate on Start' },
-    animationDuration: { value: 8, min: 1, max: 20, step: 0.5, label: 'Duration (s)' },
-    startX: { value: 2, min: -10, max: 10, step: 0.1, label: 'Start X' },
-    startY: { value: 4, min: -5, max: 15, step: 0.1, label: 'Start Y' },
-    startZ: { value: 8, min: 0.5, max: 20, step: 0.1, label: 'Start Z' },
+    animationDuration: { value: 20, min: 1, max: 30, step: 0.5, label: 'Duration (s)' },
+    startX: { value: -1.0, min: -10, max: 10, step: 0.1, label: 'Start X' },
+    startY: { value: 15.0, min: -5, max: 25, step: 0.1, label: 'Start Y' },
+    startZ: { value: 20.0, min: 0.5, max: 30, step: 0.1, label: 'Start Z' },
   });
 
   // Leva controls for entrance animation
-  const { depthOffset } = useControls('Entrance Animation', {
-    depthOffset: { value: 15.0, min: 0, max: 30, step: 0.5, label: 'Depth Offset' },
+  const { depthOffset, animationSpeed } = useControls('Entrance Animation', {
+    depthOffset: { value: 10.5, min: 0, max: 30, step: 0.5, label: 'Depth Offset' },
+    animationSpeed: { value: 1.5, min: 0.1, max: 3.0, step: 0.1, label: 'Animation Speed' },
     resetAnimation: button(() => {
       baseTimeRef.current = 0;
       animateT.current.value = 0;
@@ -78,7 +80,7 @@ const Scene = () => {
 
   // Leva controls for visual adjustments
   const { grassDarkenAmount } = useControls('Visual Adjustments', {
-    grassDarkenAmount: { value: 0.5, min: 0, max: 2, step: 0.05, label: 'Grass Darken' },
+    grassDarkenAmount: { value: 2.0, min: 0, max: 5, step: 0.05, label: 'Grass Darken' },
   });
 
   // Leva controls for splat rotation
@@ -99,7 +101,7 @@ const Scene = () => {
     syntheticYMax,
   } = useControls('Splat Blending', {
     syntheticBrightness: { value: 1.0, min: 0.1, max: 2.0, step: 0.05, label: 'Brightness' },
-    syntheticSaturation: { value: 1.0, min: 0.0, max: 1.5, step: 0.05, label: 'Saturation' },
+    syntheticSaturation: { value: 0.55, min: 0.0, max: 1.5, step: 0.05, label: 'Saturation' },
     syntheticOpacity: { value: 1.0, min: 0.1, max: 1.0, step: 0.05, label: 'Opacity' },
     syntheticZMin: { value: -5.0, min: -20, max: 20, step: 0.5, label: 'Z Min' },
     syntheticZMax: { value: 2.0, min: -20, max: 20, step: 0.5, label: 'Z Max' },
@@ -139,7 +141,7 @@ const Scene = () => {
   const splatMeshArgs = useMemo(
     () =>
       ({
-        url: "/assets/scene_addMesh_fixed.spz",
+        url: "/assets/v_one_final.spz",
         stream: true,
       }) as const,
     [],
@@ -160,6 +162,7 @@ const Scene = () => {
               gsplat: dyno.Gsplat, 
               t: "float", 
               depthOffset: "float", 
+              animationSpeed: "float",
               grassDarken: "float",
               syntheticBrightness: "float",
               syntheticSaturation: "float",
@@ -183,7 +186,9 @@ const Scene = () => {
                 // Far particles appear first, building the scene towards the camera
                 // Smaller particles appear before larger ones
                 // Dark/grayscale objects appear first (sketch-like), then colorful elements
-                vec4 assemble(vec3 pos, vec3 scale, vec3 color, float t, float depthOffset) {
+                vec4 assemble(vec3 pos, vec3 scale, vec3 color, float t, float depthOffset, float speed) {
+                  // Apply speed multiplier to time for faster/slower animation
+                  t = t * speed;
                   vec3 h = hash(pos);
                   
                   // Calculate particle size magnitude (average of scale components)
@@ -257,6 +262,7 @@ const Scene = () => {
               vec3 particleColor = ${inputs.gsplat}.rgba.rgb;
               float t = ${inputs.t};
               float depthOffset = ${inputs.depthOffset};
+              float animationSpeed = ${inputs.animationSpeed};
               float grassDarken = ${inputs.grassDarken};
               float syntheticBrightness = ${inputs.syntheticBrightness};
               float syntheticSaturation = ${inputs.syntheticSaturation};
@@ -266,8 +272,8 @@ const Scene = () => {
               float syntheticYMin = ${inputs.syntheticYMin};
               float syntheticYMax = ${inputs.syntheticYMax};
               
-              // Apply graceful entrance effect with color-based timing
-              vec4 effectResult = assemble(localPos, scales, particleColor, t, depthOffset);
+              // Apply graceful entrance effect with color-based timing and adjustable speed
+              vec4 effectResult = assemble(localPos, scales, particleColor, t, depthOffset, animationSpeed);
               ${outputs.gsplat}.center = effectResult.xyz;
               
               // Smoother scaling with eased-in appearance
@@ -283,7 +289,7 @@ const Scene = () => {
               float darkenArea = smoothstep(1.0, -4.0, localPos.x) * smoothstep(2.0, -6.0, localPos.y);
               ${outputs.gsplat}.rgba.rgb *= (1.0 - darkenArea * 0.7);
               
-              // Darken green grass areas in lower right to improve contrast with white text
+              // Darken green grass areas on the right side to improve contrast with menu items
               // Detect green by checking if green channel is dominant
               vec3 color = ${outputs.gsplat}.rgba.rgb;
               float greenness = color.g - max(color.r, color.b);
@@ -293,14 +299,14 @@ const Scene = () => {
               float brightness = (color.r + color.g + color.b) / 3.0;
               float isGrassColor = smoothstep(0.2, 0.4, brightness) * smoothstep(0.9, 0.7, brightness);
               
-              // Target lower right area where white text appears
-              // Right side: positive X
-              float isRight = smoothstep(-1.0, 3.0, localPos.x);
-              // Lower area: negative Y
-              float isLower = smoothstep(0.0, -4.0, localPos.y);
+              // Target right side area where menu items appear (expanded coverage)
+              // Right side: positive X (expanded to cover more area)
+              float isRight = smoothstep(-2.0, 4.0, localPos.x);
+              // Lower-middle area: negative Y (where menu sits)
+              float isInMenuArea = smoothstep(2.0, -6.0, localPos.y);
               
               // Combine all factors with gradient falloff
-              float grassDarkenFactor = isGreen * isGrassColor * isRight * isLower * grassDarken;
+              float grassDarkenFactor = isGreen * isGrassColor * isRight * isInMenuArea * grassDarken;
               ${outputs.gsplat}.rgba.rgb *= (1.0 - grassDarkenFactor);
               
               // Detect synthetic data region based on position
@@ -329,6 +335,7 @@ const Scene = () => {
             gsplat,
             t: animateT.current,
             depthOffset: depthOffsetRef.current,
+            animationSpeed: animationSpeedRef.current,
             grassDarken: grassDarkenRef.current,
             syntheticBrightness: syntheticBrightnessRef.current,
             syntheticSaturation: syntheticSaturationRef.current,
@@ -353,6 +360,7 @@ const Scene = () => {
     baseTimeRef.current += delta;
     animateT.current.value = baseTimeRef.current;
     depthOffsetRef.current.value = depthOffset;
+    animationSpeedRef.current.value = animationSpeed;
     grassDarkenRef.current.value = grassDarkenAmount;
     syntheticBrightnessRef.current.value = syntheticBrightness;
     syntheticSaturationRef.current.value = syntheticSaturation;

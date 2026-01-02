@@ -129,7 +129,7 @@ const BlueprintButton = ({
       }}
     >
       {/* Label */}
-      <span className="nav-label font-cursive text-2xl sm:text-3xl md:text-4xl text-white/90">
+      <span className="nav-label font-cursive text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white/95 drop-shadow-sm">
         {label}
       </span>
       
@@ -201,13 +201,24 @@ const BlueprintButton = ({
 
 const MenuOverlay = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
 
   useEffect(() => {
     // Animate in after the main content has loaded
+    setIsVisible(false);
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, 14000); // Slightly after the text overlay appears
     return () => clearTimeout(timer);
+  }, [animationKey]);
+
+  useEffect(() => {
+    const handleReset = () => {
+      setIsVisible(false);
+      setAnimationKey(prev => prev + 1);
+    };
+    window.addEventListener('resetAnimation', handleReset);
+    return () => window.removeEventListener('resetAnimation', handleReset);
   }, []);
 
   return (
