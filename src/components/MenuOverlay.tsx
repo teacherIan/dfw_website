@@ -239,7 +239,7 @@ const MenuOverlay = () => {
   return (
     <div className="pointer-events-none absolute inset-0 z-30">
       {/* Mobile: Labels and arrows below title, flowing to buttons */}
-      <div className="md:hidden absolute bottom-6 left-0 right-0 flex justify-center items-start px-4">
+      <div className="md:hidden absolute bottom-8 left-0 right-0 flex justify-center items-start px-4">
         <svg 
           viewBox="0 0 360 90" 
           className="w-full max-w-sm h-auto"
