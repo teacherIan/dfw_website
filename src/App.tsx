@@ -27,10 +27,10 @@ function App() {
   }, []);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-white text-white">
+    <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
 
       {/* Main 3D Canvas */}
-      <div className="relative z-0 h-full w-full">
+      <div className="relative z-0 h-full w-full" style={{ touchAction: 'none' }}>
         <Canvas
           gl={{ antialias: false }}
           camera={{ position: [0, 2, 4], fov: 50 }}
