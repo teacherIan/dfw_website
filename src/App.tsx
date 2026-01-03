@@ -1,6 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useState } from "react";
-import Scene from "./components/Scene";
+import Scene, { ANIMATION_TIMING } from "./components/Scene";
 import TextOverlay from "./components/TextOverlay";
 import MenuOverlay from "./components/MenuOverlay";
 import "./types/r3f.d";
@@ -13,7 +13,7 @@ function App() {
     // Start showing the text after the splat animation has fully finished
     const timer = setTimeout(() => {
       setShowText(true);
-    }, 13000);
+    }, ANIMATION_TIMING.TEXT_APPEAR);
     return () => clearTimeout(timer);
   }, [animationKey]);
 

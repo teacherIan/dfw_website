@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ANIMATION_TIMING } from "./Scene";
 
 // Navigation items configuration - easily extendable
 const navItems = [
@@ -8,6 +9,7 @@ const navItems = [
 ];
 
 // Different arrow designs for each button
+// All arrows have a straight "approach" segment before the arrowhead for cleaner look
 const ArrowDesigns = {
   // Playful looping arrow for Gallery
   loop: (
@@ -18,12 +20,13 @@ const ArrowDesigns = {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M2 25 
+        d="M2 25
            C 10 25, 14 15, 20 12
            C 26 9, 30 18, 27 24
            C 24 30, 18 27, 21 21
            C 24 15, 34 12, 44 16
-           C 54 20, 60 25, 68 25"
+           C 52 19, 56 24, 58 25
+           L 66 25"
         stroke="white"
         strokeWidth="1"
         strokeLinecap="round"
@@ -57,8 +60,9 @@ const ArrowDesigns = {
            C 12 35, 22 38, 30 32
            C 38 26, 35 18, 28 18
            C 21 18, 20 25, 26 28
-           C 32 31, 42 28, 50 25
-           C 58 22, 64 24, 70 25"
+           C 32 31, 40 28, 48 25
+           C 52 23, 56 24, 58 25
+           L 66 25"
         stroke="white"
         strokeWidth="1"
         strokeLinecap="round"
@@ -68,7 +72,7 @@ const ArrowDesigns = {
         filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
       />
       <path
-        d="M64 21 L74 25 L64 29"
+        d="M62 21 L72 25 L62 29"
         stroke="white"
         strokeWidth="1.2"
         strokeLinecap="round"
@@ -90,7 +94,8 @@ const ArrowDesigns = {
       <path
         d="M5 25
            C 15 15, 25 35, 35 25
-           C 45 15, 55 35, 68 25"
+           C 43 17, 51 30, 58 25
+           L 66 25"
         stroke="white"
         strokeWidth="1"
         strokeLinecap="round"
@@ -223,7 +228,7 @@ const MenuOverlay = () => {
     setIsVisible(false);
     const timer = setTimeout(() => {
       setIsVisible(true);
-    }, 14000); // Slightly after the text overlay appears
+    }, ANIMATION_TIMING.MENU_APPEAR);
     return () => clearTimeout(timer);
   }, [animationKey]);
 
@@ -238,119 +243,203 @@ const MenuOverlay = () => {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-30">
-      {/* Mobile: Labels and arrows below title, flowing to buttons */}
-      <div className="md:hidden absolute bottom-6 left-0 right-0 flex justify-center items-start px-4">
-        <svg 
-          viewBox="0 0 360 90" 
-          className="w-full max-w-sm h-auto"
+      {/* Mobile: Woodworker marks layout - Gallery on LEFT edge, Contact on RIGHT edge, Ethos at BOTTOM center */}
+      <div className="md:hidden">
+        {/* GALLERY - Left side, half off the left edge */}
+        <div
+          className="absolute left-0 bottom-[18vh] flex items-center"
           style={{
             opacity: isVisible ? 1 : 0,
-            transition: `opacity 0.8s ease ${150}ms`,
+            transform: isVisible ? 'translateX(0)' : 'translateX(-30px)',
+            transition: `all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 100ms`,
           }}
         >
-          {/* Gallery - left side with looping playful arrow */}
-          <text 
-            x="80" 
-            y="15" 
-            className="font-cursive text-[22px]"
-            textAnchor="middle"
-            fill="white"
-            stroke="rgba(0, 0, 0, 0.7)"
-            strokeWidth="1"
-            paintOrder="stroke fill"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))"
+          {/* Button - half off left edge */}
+          <button
+            type="button"
+            className="nav-button-circle nav-button-circle--mobile-large nav-button-circle--left-edge pointer-events-auto"
+            aria-label="Open gallery"
+          >
+            <span className="nav-circle__grid" aria-hidden="true" />
+            <svg className="nav-circle__ring" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3" fill="none" opacity="0.6" />
+              <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.4" />
+            </svg>
+            <svg className="nav-circle__crosshair" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="6" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.6" />
+              <line x1="50" y1="28" x2="50" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+              <line x1="50" y1="58" x2="50" y2="72" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+              <line x1="28" y1="50" x2="42" y2="50" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+              <line x1="58" y1="50" x2="72" y2="50" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+            </svg>
+            <svg className="nav-circle__arcs" viewBox="0 0 100 100">
+              <path d="M28 68 A28 28 0 0 1 36 36" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2" fill="none" opacity="0.45" />
+              <path d="M72 32 A28 28 0 0 1 64 64" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2" fill="none" opacity="0.45" />
+            </svg>
+            <span className="sr-only">View gallery</span>
+          </button>
+          
+          {/* Large decorative arrow curving from label to button */}
+          <svg viewBox="0 0 80 60" className="w-20 h-14 -ml-2" fill="none">
+            {/* Ornate looping path like a woodworker's flourish */}
+            <path
+              d="M75 8 C 65 8, 55 5, 45 12 C 35 19, 40 32, 30 35 C 20 38, 15 30, 20 25 C 25 20, 35 25, 28 35 C 21 45, 8 42, 5 50"
+              stroke="white"
+              strokeWidth="1.8"
+              strokeDasharray="5 4"
+              opacity="0.95"
+              filter="drop-shadow(0 2px 6px rgba(0, 0, 0, 0.8))"
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* Arrowhead */}
+            <path d="M2 44 L5 52 L12 48" stroke="white" strokeWidth="2" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8))" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          
+          {/* Label */}
+          <span
+            className="font-cursive text-4xl text-white/95"
+            style={{
+              textShadow: '0 3px 10px rgba(0, 0, 0, 0.9), 0 1px 4px rgba(0, 0, 0, 1)',
+              WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.85)',
+              paintOrder: 'stroke fill',
+            }}
           >
             Gallery
-          </text>
-          {/* Playful looping arrow from Gallery to left button */}
-          <path
-            d="M 80 20 
-               C 85 28, 95 32, 100 38
-               C 105 44, 98 50, 90 50
-               C 82 50, 78 44, 82 38
-               C 86 32, 98 32, 105 38
-               C 110 44, 108 50, 105 54
-               L 105 68"
-            stroke="white"
-            strokeWidth="1.2"
-            fill="none"
-            strokeDasharray="4 3"
-            opacity="0.95"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-            strokeLinecap="round"
-          />
-          <path d="M 101 62 L 105 68 L 109 62" stroke="white" strokeWidth="1.3" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))" strokeLinecap="round" />
+          </span>
+        </div>
 
-          {/* Ethos - center with spiral arrow */}
-          <text 
-            x="180" 
-            y="12" 
-            className="font-cursive text-[22px]"
-            textAnchor="middle"
-            fill="white"
-            stroke="rgba(0, 0, 0, 0.7)"
-            strokeWidth="1"
-            paintOrder="stroke fill"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))"
-          >
-            Ethos
-          </text>
-          {/* Spiral arrow from Ethos to center button */}
-          <path
-            d="M 180 17
-               C 188 24, 196 30, 200 38
-               C 204 46, 196 52, 188 52
-               C 180 52, 176 45, 180 38
-               C 184 32, 194 33, 196 40
-               C 197 46, 192 50, 186 52
-               L 180 68"
-            stroke="white"
-            strokeWidth="1.2"
-            fill="none"
-            strokeDasharray="3 4"
-            opacity="0.95"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-            strokeLinecap="round"
-          />
-          <path d="M 176 62 L 180 68 L 184 62" stroke="white" strokeWidth="1.3" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))" strokeLinecap="round" />
-
-          {/* Contact - right side with wavy arrow */}
-          <text 
-            x="280" 
-            y="15" 
-            className="font-cursive text-[22px]"
-            textAnchor="middle"
-            fill="white"
-            stroke="rgba(0, 0, 0, 0.7)"
-            strokeWidth="1"
-            paintOrder="stroke fill"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))"
+        {/* CONTACT - Right side, half off the right edge */}
+        <div
+          className="absolute right-0 bottom-[18vh] flex items-center"
+          style={{
+            opacity: isVisible ? 1 : 0,
+            transform: isVisible ? 'translateX(0)' : 'translateX(30px)',
+            transition: `all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 300ms`,
+          }}
+        >
+          {/* Label */}
+          <span
+            className="font-cursive text-4xl text-white/95"
+            style={{
+              textShadow: '0 3px 10px rgba(0, 0, 0, 0.9), 0 1px 4px rgba(0, 0, 0, 1)',
+              WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.85)',
+              paintOrder: 'stroke fill',
+            }}
           >
             Contact
-          </text>
-          {/* Wavy arrow from Contact to right button */}
-          <path
-            d="M 280 20
-               C 270 26, 260 32, 255 38
-               C 250 44, 260 50, 268 50
-               C 275 50, 273 44, 268 40
-               C 263 36, 258 38, 258 44
-               C 258 50, 262 54, 260 58
-               L 255 68"
-            stroke="white"
-            strokeWidth="1.2"
-            fill="none"
-            strokeDasharray="5 3"
-            opacity="0.95"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-            strokeLinecap="round"
-          />
-          <path d="M 251 62 L 255 68 L 259 62" stroke="white" strokeWidth="1.3" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))" strokeLinecap="round" />
-        </svg>
+          </span>
+          
+          {/* Large decorative arrow curving from label to button */}
+          <svg viewBox="0 0 80 60" className="w-20 h-14 -mr-2" fill="none">
+            {/* Ornate wavy path like a woodworker's flourish */}
+            <path
+              d="M5 8 C 15 8, 25 5, 35 12 C 45 19, 40 32, 50 35 C 60 38, 65 30, 60 25 C 55 20, 45 25, 52 35 C 59 45, 72 42, 75 50"
+              stroke="white"
+              strokeWidth="1.8"
+              strokeDasharray="5 4"
+              opacity="0.95"
+              filter="drop-shadow(0 2px 6px rgba(0, 0, 0, 0.8))"
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* Arrowhead */}
+            <path d="M68 48 L75 52 L78 44" stroke="white" strokeWidth="2" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8))" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          
+          {/* Button - half off right edge */}
+          <button
+            type="button"
+            className="nav-button-circle nav-button-circle--mobile-large nav-button-circle--right-edge pointer-events-auto"
+            aria-label="Open contact"
+          >
+            <span className="nav-circle__grid" aria-hidden="true" />
+            <svg className="nav-circle__ring" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3" fill="none" opacity="0.6" />
+              <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.4" />
+            </svg>
+            <svg className="nav-circle__crosshair" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="6" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.6" />
+              <line x1="50" y1="28" x2="50" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+              <line x1="50" y1="58" x2="50" y2="72" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+              <line x1="28" y1="50" x2="42" y2="50" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+              <line x1="58" y1="50" x2="72" y2="50" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+            </svg>
+            <svg className="nav-circle__arcs" viewBox="0 0 100 100">
+              <path d="M28 68 A28 28 0 0 1 36 36" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2" fill="none" opacity="0.45" />
+              <path d="M72 32 A28 28 0 0 1 64 64" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2" fill="none" opacity="0.45" />
+            </svg>
+            <span className="sr-only">View contact</span>
+          </button>
+        </div>
+
+        {/* ETHOS - Bottom center, half off the bottom edge */}
+        <div
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center"
+          style={{
+            opacity: isVisible ? 1 : 0,
+            transform: isVisible ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(30px)',
+            transition: `all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 200ms`,
+          }}
+        >
+          {/* Label */}
+          <span
+            className="font-cursive text-4xl text-white/95 mb-1"
+            style={{
+              textShadow: '0 3px 10px rgba(0, 0, 0, 0.9), 0 1px 4px rgba(0, 0, 0, 1)',
+              WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.85)',
+              paintOrder: 'stroke fill',
+            }}
+          >
+            Ethos
+          </span>
+          
+          {/* Decorative spiral arrow pointing down */}
+          <svg viewBox="0 0 50 45" className="w-12 h-10 -mb-1" fill="none">
+            {/* Spiral flourish going down */}
+            <path
+              d="M25 2 C 18 5, 12 8, 15 15 C 18 22, 28 18, 30 12 C 32 6, 22 8, 20 16 C 18 24, 25 28, 25 38"
+              stroke="white"
+              strokeWidth="1.8"
+              strokeDasharray="4 4"
+              opacity="0.95"
+              filter="drop-shadow(0 2px 6px rgba(0, 0, 0, 0.8))"
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* Arrowhead */}
+            <path d="M20 34 L25 42 L30 34" stroke="white" strokeWidth="2" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8))" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          
+          {/* Button - half off bottom edge */}
+          <button
+            type="button"
+            className="nav-button-circle nav-button-circle--mobile-large nav-button-circle--bottom-edge pointer-events-auto"
+            aria-label="Open ethos"
+          >
+            <span className="nav-circle__grid" aria-hidden="true" />
+            <svg className="nav-circle__ring" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3" fill="none" opacity="0.6" />
+              <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.4" />
+            </svg>
+            <svg className="nav-circle__crosshair" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="6" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.6" />
+              <line x1="50" y1="28" x2="50" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+              <line x1="50" y1="58" x2="50" y2="72" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+              <line x1="28" y1="50" x2="42" y2="50" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+              <line x1="58" y1="50" x2="72" y2="50" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+            </svg>
+            <svg className="nav-circle__arcs" viewBox="0 0 100 100">
+              <path d="M28 68 A28 28 0 0 1 36 36" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2" fill="none" opacity="0.45" />
+              <path d="M72 32 A28 28 0 0 1 64 64" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2" fill="none" opacity="0.45" />
+            </svg>
+            <span className="sr-only">View ethos</span>
+          </button>
+        </div>
       </div>
 
-      {/* Buttons - horizontal on mobile, vertical on desktop */}
-      <div className="gallery-nav absolute bottom-2 left-1/2 -translate-x-1/2 md:left-auto md:right-4 md:bottom-20 md:translate-x-0 flex flex-row md:flex-col items-center md:items-end gap-8 md:gap-4">
+      {/* Desktop: Buttons with labels and arrows */}
+      <div className="gallery-nav hidden md:flex absolute md:left-auto md:right-4 md:bottom-20 md:translate-x-0 flex-col items-end gap-4">
         {navItems.map((item) => (
           <BlueprintButton
             key={item.id}

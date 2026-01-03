@@ -1,10 +1,19 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { PresentationControls } from "@react-three/drei";
-import { useMemo, useRef, useEffect, useLayoutEffect, useState } from "react";
+import { useMemo, useRef, useEffect, useCallback, useState } from "react";
 import { useControls, monitor, button } from "leva";
 import type { SplatMesh as SparkSplatMesh } from "@sparkjsdev/spark";
 import { dyno } from "@sparkjsdev/spark";
 import "./spark";
+
+// Centralized animation timing constants (in milliseconds)
+export const ANIMATION_TIMING = {
+  ENTRANCE_DURATION: 13000,    // When splat assembly completes
+  TEXT_APPEAR: 13000,          // When title starts appearing
+  MENU_APPEAR: 14000,          // When menu buttons start appearing
+  CAMERA_DURATION: 20,         // Camera animation duration in seconds
+  WRITING_DURATION: 5000,      // Text writing animation duration
+} as const;
 
 // Easing function for smooth camera animation (ease-out cubic)
 const easeOutCubic = (t: number): number => {
@@ -23,7 +32,15 @@ const lerp = (start: number, end: number, t: number): number => {
 const Scene = () => {
   const renderer = useThree((state) => state.gl);
   const camera = useThree((state) => state.camera);
-  const meshRef = useRef<SparkSplatMesh>(null);
+  // Use state + callback ref pattern so we can properly react to mesh being ready
+  const [meshReady, setMeshReady] = useState<SparkSplatMesh | null>(null);
+  const meshRef = useRef<SparkSplatMesh | null>(null);
+  const meshCallbackRef = useCallback((node: SparkSplatMesh | null) => {
+    meshRef.current = node;
+    if (node) {
+      setMeshReady(node);
+    }
+  }, []);
   const animateT = useRef(dyno.dynoFloat(0));
   const depthOffsetRef = useRef(dyno.dynoFloat(15.0));
   const animationSpeedRef = useRef(dyno.dynoFloat(1.0));
@@ -183,12 +200,12 @@ const Scene = () => {
   );
 
   // Setup entrance effect modifier AFTER mesh loads
-  // Use useLayoutEffect to minimize flicker
-  useLayoutEffect(() => {
-    if (meshRef.current && !effectSetupRef.current) {
+  // Using meshReady state (via callback ref) ensures this runs when mesh is actually available
+  useEffect(() => {
+    if (meshReady && !effectSetupRef.current) {
       effectSetupRef.current = true;
-      
-      meshRef.current.objectModifier = dyno.dynoBlock(
+
+      meshReady.objectModifier = dyno.dynoBlock(
         { gsplat: dyno.Gsplat },
         { gsplat: dyno.Gsplat },
         ({ gsplat }) => {
@@ -431,9 +448,9 @@ const Scene = () => {
       );
       
       // Trigger update after setting up the modifier
-      meshRef.current.updateGenerator();
+      meshReady.updateGenerator();
     }
-  }, [meshRef.current]);
+  }, [meshReady]);
 
   // Animate the entrance effect and camera
   useFrame((_, delta) => {
@@ -497,9 +514,9 @@ const Scene = () => {
         azimuth={[-Math.PI / 1.4, Math.PI / 1.4]}
       >
         <sparkRenderer args={[sparkRendererArgs]}>
-          <splatMesh 
-            ref={meshRef} 
-            args={[splatMeshArgs]} 
+          <splatMesh
+            ref={meshCallbackRef}
+            args={[splatMeshArgs]}
             position={[0, -0.5, 0]}
             rotation={[rotationX, rotationY, rotationZ]}
           />
