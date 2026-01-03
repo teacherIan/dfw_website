@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ANIMATION_TIMING } from "./Scene";
+import { useControls } from "leva";
 
 // Navigation items configuration - easily extendable
 const navItems = [
@@ -25,10 +26,9 @@ const ArrowDesigns = {
            C 26 9, 30 18, 27 24
            C 24 30, 18 27, 21 21
            C 24 15, 34 12, 44 16
-           C 52 19, 56 24, 58 25
-           L 66 25"
+           C 54 20, 60 25, 66 25"
         stroke="white"
-        strokeWidth="1"
+        strokeWidth="1.1"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeDasharray="3 4"
@@ -36,9 +36,9 @@ const ArrowDesigns = {
         filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
       />
       <path
-        d="M62 21 L72 25 L62 29"
+        d="M66 25 L72 25 L68 21 M72 25 L68 29"
         stroke="white"
-        strokeWidth="1.2"
+        strokeWidth="1.1"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
@@ -60,11 +60,10 @@ const ArrowDesigns = {
            C 12 35, 22 38, 30 32
            C 38 26, 35 18, 28 18
            C 21 18, 20 25, 26 28
-           C 32 31, 40 28, 48 25
-           C 52 23, 56 24, 58 25
-           L 66 25"
+           C 32 31, 42 28, 50 25
+           C 58 22, 64 24, 68 25"
         stroke="white"
-        strokeWidth="1"
+        strokeWidth="0.9"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeDasharray="4 3"
@@ -72,9 +71,9 @@ const ArrowDesigns = {
         filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
       />
       <path
-        d="M62 21 L72 25 L62 29"
+        d="M68 25 L74 25 L70 21 M74 25 L70 29"
         stroke="white"
-        strokeWidth="1.2"
+        strokeWidth="0.9"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
@@ -94,10 +93,9 @@ const ArrowDesigns = {
       <path
         d="M5 25
            C 15 15, 25 35, 35 25
-           C 43 17, 51 30, 58 25
-           L 66 25"
+           C 45 15, 55 35, 66 25"
         stroke="white"
-        strokeWidth="1"
+        strokeWidth="1.05"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeDasharray="5 3"
@@ -105,9 +103,9 @@ const ArrowDesigns = {
         filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
       />
       <path
-        d="M62 21 L72 25 L62 29"
+        d="M66 25 L72 25 L68 21 M72 25 L68 29"
         stroke="white"
-        strokeWidth="1.2"
+        strokeWidth="1.05"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
@@ -123,12 +121,14 @@ const BlueprintButton = ({
   label, 
   isVisible, 
   delay,
-  arrowType
+  arrowType,
+  currentFont
 }: { 
   label: string; 
   isVisible: boolean; 
   delay: number;
   arrowType: keyof typeof ArrowDesigns;
+  currentFont: string;
 }) => {
   return (
     <div 
@@ -141,8 +141,9 @@ const BlueprintButton = ({
     >
       {/* Label - desktop only */}
       <span 
-        className="nav-label hidden md:block font-cursive text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white/95"
+        className="nav-label hidden md:block text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white/95"
         style={{
+          fontFamily: currentFont,
           textShadow: '0 3px 6px rgba(0, 0, 0, 0.5)',
           WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.7)',
           paintOrder: 'stroke fill',
@@ -223,6 +224,33 @@ const MenuOverlay = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
 
+  // Leva controls for menu font selection
+  const { menuFont } = useControls('Menu Style', {
+    menuFont: {
+      value: 'Architects Daughter',
+      options: [
+        'Architects Daughter',
+        'Caveat',
+        'Patrick Hand',
+        'Indie Flower',
+        'Permanent Marker',
+        'Shadows Into Light'
+      ]
+    }
+  });
+
+  // Map font names to CSS font families
+  const fontFamilyMap: Record<string, string> = {
+    'Architects Daughter': '"Architects Daughter", cursive',
+    'Caveat': '"Caveat", cursive',
+    'Patrick Hand': '"Patrick Hand", cursive',
+    'Indie Flower': '"Indie Flower", cursive',
+    'Permanent Marker': '"Permanent Marker", cursive',
+    'Shadows Into Light': '"Shadows Into Light", cursive'
+  };
+
+  const currentFont = fontFamilyMap[menuFont];
+
   useEffect(() => {
     // Animate in after the main content has loaded
     setIsVisible(false);
@@ -298,8 +326,9 @@ const MenuOverlay = () => {
           
           {/* Label */}
           <span
-            className="font-cursive text-4xl text-white/95"
+            className="text-4xl text-white/95"
             style={{
+              fontFamily: currentFont,
               textShadow: '0 3px 10px rgba(0, 0, 0, 0.9), 0 1px 4px rgba(0, 0, 0, 1)',
               WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.85)',
               paintOrder: 'stroke fill',
@@ -320,8 +349,9 @@ const MenuOverlay = () => {
         >
           {/* Label */}
           <span
-            className="font-cursive text-4xl text-white/95"
+            className="text-4xl text-white/95"
             style={{
+              fontFamily: currentFont,
               textShadow: '0 3px 10px rgba(0, 0, 0, 0.9), 0 1px 4px rgba(0, 0, 0, 1)',
               WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.85)',
               paintOrder: 'stroke fill',
@@ -384,8 +414,9 @@ const MenuOverlay = () => {
         >
           {/* Label */}
           <span
-            className="font-cursive text-4xl text-white/95 mb-1"
+            className="text-4xl text-white/95 mb-1"
             style={{
+              fontFamily: currentFont,
               textShadow: '0 3px 10px rgba(0, 0, 0, 0.9), 0 1px 4px rgba(0, 0, 0, 1)',
               WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.85)',
               paintOrder: 'stroke fill',
@@ -447,6 +478,7 @@ const MenuOverlay = () => {
             isVisible={isVisible}
             delay={item.delay}
             arrowType={item.arrowType as keyof typeof ArrowDesigns}
+            currentFont={currentFont}
           />
         ))}
       </div>

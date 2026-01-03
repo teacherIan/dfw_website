@@ -2,6 +2,12 @@
 
 @theme {
   --font-cursive: "Pinyon Script", cursive;
+  --font-handdrawn-architects: "Architects Daughter", cursive;
+  --font-handdrawn-caveat: "Caveat", cursive;
+  --font-handdrawn-patrick: "Patrick Hand", cursive;
+  --font-handdrawn-indie: "Indie Flower", cursive;
+  --font-handdrawn-marker: "Permanent Marker", cursive;
+  --font-handdrawn-shadows: "Shadows Into Light", cursive;
 }
 
 @keyframes writing-reveal {
