@@ -1,6 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useState } from "react";
-import { useControls } from "leva";
+import { useControls, Leva } from "leva";
 import Scene, { ANIMATION_TIMING } from "./components/Scene";
 import TextOverlay from "./components/TextOverlay";
 import MenuOverlay from "./components/MenuOverlay";
@@ -34,6 +34,8 @@ function App() {
 
   return (
     <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
+      {/* Hide Leva controls on main branch */}
+      <Leva hidden />
 
       {/* Main 3D Canvas */}
       <div className="relative z-0 h-full w-full" style={{ touchAction: 'none' }}>
