@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import { ANIMATION_TIMING } from "./Scene";
+import { useControls } from "leva";
+import MobileNavLayout from "./MobileNavLayout";
+import { LoopArrow, SpiralArrow, WaveArrow } from "./DesktopArrows";
 
 // Navigation items configuration - easily extendable
 const navItems = [
@@ -7,110 +11,11 @@ const navItems = [
   { id: "contact", label: "Contact", delay: 300, arrowType: "wave" },
 ];
 
-// Different arrow designs for each button
-const ArrowDesigns = {
-  // Playful looping arrow for Gallery
-  loop: (
-    <svg
-      className="nav-arrow"
-      viewBox="0 0 80 50"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M2 25 
-           C 10 25, 14 15, 20 12
-           C 26 9, 30 18, 27 24
-           C 24 30, 18 27, 21 21
-           C 24 15, 34 12, 44 16
-           C 54 20, 60 25, 68 25"
-        stroke="white"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeDasharray="3 4"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-      <path
-        d="M62 21 L72 25 L62 29"
-        stroke="white"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-    </svg>
-  ),
-  // Spiral arrow for Ethos
-  spiral: (
-    <svg
-      className="nav-arrow"
-      viewBox="0 0 80 50"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M5 25
-           C 12 35, 22 38, 30 32
-           C 38 26, 35 18, 28 18
-           C 21 18, 20 25, 26 28
-           C 32 31, 42 28, 50 25
-           C 58 22, 64 24, 70 25"
-        stroke="white"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeDasharray="4 3"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-      <path
-        d="M64 21 L74 25 L64 29"
-        stroke="white"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-    </svg>
-  ),
-  // Wavy arrow for Contact
-  wave: (
-    <svg
-      className="nav-arrow"
-      viewBox="0 0 80 50"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M5 25
-           C 15 15, 25 35, 35 25
-           C 45 15, 55 35, 68 25"
-        stroke="white"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeDasharray="5 3"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-      <path
-        d="M62 21 L72 25 L62 29"
-        stroke="white"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-    </svg>
-  ),
+// Arrow component mapping for desktop navigation
+const ArrowComponents = {
+  loop: LoopArrow,
+  spiral: SpiralArrow,
+  wave: WaveArrow,
 };
 
 // Small circular blueprint button component
@@ -118,12 +23,14 @@ const BlueprintButton = ({
   label, 
   isVisible, 
   delay,
-  arrowType
+  arrowType,
+  currentFont
 }: { 
   label: string; 
   isVisible: boolean; 
   delay: number;
-  arrowType: keyof typeof ArrowDesigns;
+  arrowType: keyof typeof ArrowComponents;
+  currentFont: string;
 }) => {
   return (
     <div 
@@ -136,8 +43,9 @@ const BlueprintButton = ({
     >
       {/* Label - desktop only */}
       <span 
-        className="nav-label hidden md:block font-cursive text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white/95"
+        className="nav-label hidden md:block text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white/95"
         style={{
+          fontFamily: currentFont,
           textShadow: '0 3px 6px rgba(0, 0, 0, 0.5)',
           WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.7)',
           paintOrder: 'stroke fill',
@@ -147,8 +55,11 @@ const BlueprintButton = ({
       </span>
       
       {/* Unique arrow for each button - desktop only */}
-      <span className="hidden md:block">
-        {ArrowDesigns[arrowType]}
+      <span className="hidden md:block relative z-10">
+        {(() => {
+          const ArrowComponent = ArrowComponents[arrowType];
+          return <ArrowComponent />;
+        })()}
       </span>
 
       {/* Circular Blueprint Button */}
@@ -218,12 +129,57 @@ const MenuOverlay = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
 
+  // Leva controls for menu font selection
+  const { menuFont } = useControls('Menu Style', {
+    menuFont: {
+      value: 'Caveat',
+      options: [
+        'Architects Daughter',
+        'Caveat',
+        'Patrick Hand',
+        'Indie Flower',
+        'Permanent Marker',
+        'Shadows Into Light'
+      ]
+    }
+  });
+
+  // Mobile Layout Position Controls
+  const mobilePositions = useControls('Mobile Layout', {
+    // Button positions
+    ethosButtonLeft: { value: 0, min: -100, max: 100, step: 1, label: 'Ethos Btn Left (%)' },
+    ethosButtonBottom: { value: 26, min: 0, max: 100, step: 1, label: 'Ethos Btn Bottom (vh)' },
+    contactButtonLeft: { value: 56, min: 0, max: 100, step: 1, label: 'Contact Btn Left (%)' },
+    contactButtonBottom: { value: -0.8, min: -50, max: 100, step: 0.1, label: 'Contact Btn Bottom (vh)' },
+    galleryButtonRight: { value: 0, min: -100, max: 100, step: 1, label: 'Gallery Btn Right (%)' },
+    galleryButtonBottom: { value: 9, min: 0, max: 100, step: 1, label: 'Gallery Btn Bottom (vh)' },
+    // Label positions
+    ethosLabelLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Label Left (%)' },
+    ethosLabelBottom: { value: 7, min: 0, max: 100, step: 1, label: 'Ethos Label Bottom (vh)' },
+    contactLabelLeft: { value: 45, min: 0, max: 100, step: 1, label: 'Contact Label Left (%)' },
+    contactLabelBottom: { value: 12, min: 0, max: 100, step: 1, label: 'Contact Label Bottom (vh)' },
+    galleryLabelRight: { value: 10, min: 0, max: 100, step: 1, label: 'Gallery Label Right (%)' },
+    galleryLabelBottom: { value: 2, min: 0, max: 100, step: 1, label: 'Gallery Label Bottom (vh)' },
+  });
+
+  // Map font names to CSS font families
+  const fontFamilyMap: Record<string, string> = {
+    'Architects Daughter': '"Architects Daughter", cursive',
+    'Caveat': '"Caveat", cursive',
+    'Patrick Hand': '"Patrick Hand", cursive',
+    'Indie Flower': '"Indie Flower", cursive',
+    'Permanent Marker': '"Permanent Marker", cursive',
+    'Shadows Into Light': '"Shadows Into Light", cursive'
+  };
+
+  const currentFont = fontFamilyMap[menuFont];
+
   useEffect(() => {
     // Animate in after the main content has loaded
     setIsVisible(false);
     const timer = setTimeout(() => {
       setIsVisible(true);
-    }, 14000); // Slightly after the text overlay appears
+    }, ANIMATION_TIMING.MENU_APPEAR);
     return () => clearTimeout(timer);
   }, [animationKey]);
 
@@ -238,126 +194,28 @@ const MenuOverlay = () => {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-30">
-      {/* Mobile: Labels and arrows below title, flowing to buttons */}
-      <div className="md:hidden absolute bottom-8 left-0 right-0 flex justify-center items-start px-4">
-        <svg 
-          viewBox="0 0 360 90" 
-          className="w-full max-w-sm h-auto"
-          style={{
-            opacity: isVisible ? 1 : 0,
-            transition: `opacity 0.8s ease ${150}ms`,
-          }}
-        >
-          {/* Gallery - left side with looping playful arrow */}
-          <text 
-            x="80" 
-            y="15" 
-            className="font-cursive text-[22px]"
-            textAnchor="middle"
-            fill="white"
-            stroke="rgba(0, 0, 0, 0.7)"
-            strokeWidth="1"
-            paintOrder="stroke fill"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))"
-          >
-            Gallery
-          </text>
-          {/* Playful looping arrow from Gallery to left button */}
-          <path
-            d="M 80 20 
-               C 85 28, 95 32, 100 38
-               C 105 44, 98 50, 90 50
-               C 82 50, 78 44, 82 38
-               C 86 32, 98 32, 105 38
-               C 110 44, 108 50, 105 54
-               L 105 68"
-            stroke="white"
-            strokeWidth="1.2"
-            fill="none"
-            strokeDasharray="4 3"
-            opacity="0.95"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-            strokeLinecap="round"
-          />
-          <path d="M 101 62 L 105 68 L 109 62" stroke="white" strokeWidth="1.3" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))" strokeLinecap="round" />
+      {/* ============================================
+          MOBILE NAVIGATION
+          ============================================ */}
+      <MobileNavLayout 
+        positions={mobilePositions}
+        font={currentFont}
+        isVisible={isVisible}
+      />
 
-          {/* Ethos - center with spiral arrow */}
-          <text 
-            x="180" 
-            y="12" 
-            className="font-cursive text-[22px]"
-            textAnchor="middle"
-            fill="white"
-            stroke="rgba(0, 0, 0, 0.7)"
-            strokeWidth="1"
-            paintOrder="stroke fill"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))"
-          >
-            Ethos
-          </text>
-          {/* Spiral arrow from Ethos to center button */}
-          <path
-            d="M 180 17
-               C 188 24, 196 30, 200 38
-               C 204 46, 196 52, 188 52
-               C 180 52, 176 45, 180 38
-               C 184 32, 194 33, 196 40
-               C 197 46, 192 50, 186 52
-               L 180 68"
-            stroke="white"
-            strokeWidth="1.2"
-            fill="none"
-            strokeDasharray="3 4"
-            opacity="0.95"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-            strokeLinecap="round"
-          />
-          <path d="M 176 62 L 180 68 L 184 62" stroke="white" strokeWidth="1.3" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))" strokeLinecap="round" />
-
-          {/* Contact - right side with wavy arrow */}
-          <text 
-            x="280" 
-            y="15" 
-            className="font-cursive text-[22px]"
-            textAnchor="middle"
-            fill="white"
-            stroke="rgba(0, 0, 0, 0.7)"
-            strokeWidth="1"
-            paintOrder="stroke fill"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))"
-          >
-            Contact
-          </text>
-          {/* Wavy arrow from Contact to right button */}
-          <path
-            d="M 280 20
-               C 270 26, 260 32, 255 38
-               C 250 44, 260 50, 268 50
-               C 275 50, 273 44, 268 40
-               C 263 36, 258 38, 258 44
-               C 258 50, 262 54, 260 58
-               L 255 68"
-            stroke="white"
-            strokeWidth="1.2"
-            fill="none"
-            strokeDasharray="5 3"
-            opacity="0.95"
-            filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-            strokeLinecap="round"
-          />
-          <path d="M 251 62 L 255 68 L 259 62" stroke="white" strokeWidth="1.3" fill="none" opacity="0.95" filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))" strokeLinecap="round" />
-        </svg>
-      </div>
-
-      {/* Buttons - horizontal on mobile, vertical on desktop */}
-      <div className="gallery-nav absolute bottom-2 left-1/2 -translate-x-1/2 md:left-auto md:right-4 md:bottom-20 md:translate-x-0 flex flex-row md:flex-col items-center md:items-end gap-8 md:gap-4">
+      {/* ============================================
+          DESKTOP NAVIGATION
+          ============================================ */}
+      {/* Desktop: Buttons with labels and arrows - positioned on right side */}
+      <div className="gallery-nav hidden md:flex absolute md:left-auto md:right-4 md:top-[60%] md:-translate-y-1/2 flex-col items-end gap-4">
         {navItems.map((item) => (
           <BlueprintButton
             key={item.id}
             label={item.label}
             isVisible={isVisible}
             delay={item.delay}
-            arrowType={item.arrowType as keyof typeof ArrowDesigns}
+            arrowType={item.arrowType as keyof typeof ArrowComponents}
+            currentFont={currentFont}
           />
         ))}
       </div>

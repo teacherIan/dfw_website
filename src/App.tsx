@@ -1,6 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useState } from "react";
-import Scene from "./components/Scene";
+import { useControls } from "leva";
+import Scene, { ANIMATION_TIMING } from "./components/Scene";
 import TextOverlay from "./components/TextOverlay";
 import MenuOverlay from "./components/MenuOverlay";
 import "./types/r3f.d";
@@ -9,11 +10,16 @@ function App() {
   const [showText, setShowText] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
 
+  // Leva control to hide overlays for screenshots
+  const { showOverlays } = useControls('UI Controls', {
+    showOverlays: { value: true, label: 'Show Overlays' }
+  });
+
   useEffect(() => {
     // Start showing the text after the splat animation has fully finished
     const timer = setTimeout(() => {
       setShowText(true);
-    }, 13000);
+    }, ANIMATION_TIMING.TEXT_APPEAR);
     return () => clearTimeout(timer);
   }, [animationKey]);
 
@@ -40,8 +46,8 @@ function App() {
       </div>
 
       {/* Overlays */}
-      <MenuOverlay />
-      <TextOverlay key={animationKey} show={showText} />
+      {showOverlays && <MenuOverlay />}
+      {showOverlays && <TextOverlay key={animationKey} show={showText} />}
     </div>
   );
 }
