@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ANIMATION_TIMING } from "./Scene";
 import { useControls } from "leva";
 import MobileNavLayout from "./MobileNavLayout";
+import { LoopArrow, SpiralArrow, WaveArrow } from "./DesktopArrows";
 
 // Navigation items configuration - easily extendable
 const navItems = [
@@ -10,111 +11,11 @@ const navItems = [
   { id: "contact", label: "Contact", delay: 300, arrowType: "wave" },
 ];
 
-// Different arrow designs for each button
-// All arrows have a straight "approach" segment before the arrowhead for cleaner look
-const ArrowDesigns = {
-  // Playful looping arrow for Gallery
-  loop: (
-    <svg
-      className="nav-arrow"
-      viewBox="0 0 80 50"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M2 25
-           C 10 25, 14 15, 20 12
-           C 26 9, 30 18, 27 24
-           C 24 30, 18 27, 21 21
-           C 24 15, 34 12, 44 16
-           C 54 20, 60 25, 66 25"
-        stroke="white"
-        strokeWidth="1.1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeDasharray="3 4"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-      <path
-        d="M66 25 L72 25 L68 21 M72 25 L68 29"
-        stroke="white"
-        strokeWidth="1.1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-    </svg>
-  ),
-  // Spiral arrow for Ethos
-  spiral: (
-    <svg
-      className="nav-arrow"
-      viewBox="0 0 80 50"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M5 25
-           C 12 35, 22 38, 30 32
-           C 38 26, 35 18, 28 18
-           C 21 18, 20 25, 26 28
-           C 32 31, 42 28, 50 25
-           C 58 22, 64 24, 68 25"
-        stroke="white"
-        strokeWidth="0.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeDasharray="4 3"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-      <path
-        d="M68 25 L74 25 L70 21 M74 25 L70 29"
-        stroke="white"
-        strokeWidth="0.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-    </svg>
-  ),
-  // Wavy arrow for Contact
-  wave: (
-    <svg
-      className="nav-arrow"
-      viewBox="0 0 80 50"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M5 25
-           C 15 15, 25 35, 35 25
-           C 45 15, 55 35, 66 25"
-        stroke="white"
-        strokeWidth="1.05"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeDasharray="5 3"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-      <path
-        d="M66 25 L72 25 L68 21 M72 25 L68 29"
-        stroke="white"
-        strokeWidth="1.05"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-      />
-    </svg>
-  ),
+// Arrow component mapping for desktop navigation
+const ArrowComponents = {
+  loop: LoopArrow,
+  spiral: SpiralArrow,
+  wave: WaveArrow,
 };
 
 // Small circular blueprint button component
@@ -128,7 +29,7 @@ const BlueprintButton = ({
   label: string; 
   isVisible: boolean; 
   delay: number;
-  arrowType: keyof typeof ArrowDesigns;
+  arrowType: keyof typeof ArrowComponents;
   currentFont: string;
 }) => {
   return (
@@ -154,8 +55,11 @@ const BlueprintButton = ({
       </span>
       
       {/* Unique arrow for each button - desktop only */}
-      <span className="hidden md:block">
-        {ArrowDesigns[arrowType]}
+      <span className="hidden md:block relative z-10">
+        {(() => {
+          const ArrowComponent = ArrowComponents[arrowType];
+          return <ArrowComponent />;
+        })()}
       </span>
 
       {/* Circular Blueprint Button */}
@@ -243,18 +147,18 @@ const MenuOverlay = () => {
   // Mobile Layout Position Controls
   const mobilePositions = useControls('Mobile Layout', {
     // Button positions
-    ethosButtonLeft: { value: -6, min: -100, max: 100, step: 1, label: 'Ethos Btn Left (%)' },
+    ethosButtonLeft: { value: 0, min: -100, max: 100, step: 1, label: 'Ethos Btn Left (%)' },
     ethosButtonBottom: { value: 26, min: 0, max: 100, step: 1, label: 'Ethos Btn Bottom (vh)' },
-    contactButtonLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Btn Left (%)' },
-    contactButtonBottom: { value: -2, min: -50, max: 100, step: 1, label: 'Contact Btn Bottom (vh)' },
-    galleryButtonRight: { value: -6, min: -100, max: 100, step: 1, label: 'Gallery Btn Right (%)' },
-    galleryButtonBottom: { value: 10, min: 0, max: 100, step: 1, label: 'Gallery Btn Bottom (vh)' },
+    contactButtonLeft: { value: 56, min: 0, max: 100, step: 1, label: 'Contact Btn Left (%)' },
+    contactButtonBottom: { value: -0.8, min: -50, max: 100, step: 0.1, label: 'Contact Btn Bottom (vh)' },
+    galleryButtonRight: { value: 0, min: -100, max: 100, step: 1, label: 'Gallery Btn Right (%)' },
+    galleryButtonBottom: { value: 9, min: 0, max: 100, step: 1, label: 'Gallery Btn Bottom (vh)' },
     // Label positions
-    ethosLabelLeft: { value: 5, min: 0, max: 100, step: 1, label: 'Ethos Label Left (%)' },
-    ethosLabelBottom: { value: 11, min: 0, max: 100, step: 1, label: 'Ethos Label Bottom (vh)' },
+    ethosLabelLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Label Left (%)' },
+    ethosLabelBottom: { value: 7, min: 0, max: 100, step: 1, label: 'Ethos Label Bottom (vh)' },
     contactLabelLeft: { value: 45, min: 0, max: 100, step: 1, label: 'Contact Label Left (%)' },
     contactLabelBottom: { value: 12, min: 0, max: 100, step: 1, label: 'Contact Label Bottom (vh)' },
-    galleryLabelRight: { value: 8, min: 0, max: 100, step: 1, label: 'Gallery Label Right (%)' },
+    galleryLabelRight: { value: 10, min: 0, max: 100, step: 1, label: 'Gallery Label Right (%)' },
     galleryLabelBottom: { value: 2, min: 0, max: 100, step: 1, label: 'Gallery Label Bottom (vh)' },
   });
 
@@ -310,7 +214,7 @@ const MenuOverlay = () => {
             label={item.label}
             isVisible={isVisible}
             delay={item.delay}
-            arrowType={item.arrowType as keyof typeof ArrowDesigns}
+            arrowType={item.arrowType as keyof typeof ArrowComponents}
             currentFont={currentFont}
           />
         ))}

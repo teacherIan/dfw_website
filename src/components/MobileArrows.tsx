@@ -7,41 +7,56 @@ export const EthosArrow = ({ isVisible, delay = 300 }: ArrowProps) => (
   <svg
     className="absolute pointer-events-none"
     style={{
-      left: '3%',
+      left: '0%',
       bottom: '8vh',
       width: '120px',
       height: '160px',
       opacity: isVisible ? 1 : 0,
+      overflow: 'visible',
       transition: `opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
     }}
     viewBox="0 0 120 160"
     fill="none"
   >
-    {/* Gentle upward curve from Ethos label to button */}
+    <defs>
+      <marker
+        id="arrow-ethos"
+        markerWidth="10"
+        markerHeight="10"
+        refX="9" 
+        refY="3"
+        orient="auto"
+        markerUnits="strokeWidth"
+      >
+        <path d="M0,0 L9,3 L0,6" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      </marker>
+      <marker
+        id="dot-ethos"
+        markerWidth="6"
+        markerHeight="6"
+        refX="3"
+        refY="3"
+        orient="auto"
+      >
+        <circle cx="3" cy="3" r="2" fill="white" />
+      </marker>
+    </defs>
+
+    {/* ETHOS: Restored the "Left Bracket" style.
+        Start: Left of 'E'
+        End: On the button
+    */}
     <path
-      d="M15 15
-         Q 25 25, 35 40
-         Q 50 65, 60 95
-         Q 70 125, 75 150"
+      d="M 35 135 Q 0 70, 30 0"
       stroke="white"
-      strokeWidth="1.5"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      strokeDasharray="4 3"
-      opacity="0.95"
+      strokeDasharray="6 4"
       fill="none"
       filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-    />
-    {/* Arrowhead angled upward matching curve */}
-    <path
-      d="M72 145 L75 152 L78 145 M75 152 L70 148"
-      stroke="white"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      fill="none"
-      opacity="0.95"
-      filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+      markerStart="url(#dot-ethos)"
+      markerEnd="url(#arrow-ethos)"
     />
   </svg>
 );
@@ -55,39 +70,52 @@ export const ContactArrow = ({ isVisible, delay = 400 }: ArrowProps) => (
       width: '80px',
       height: '120px',
       opacity: isVisible ? 1 : 0,
+      overflow: 'visible',
       transition: `opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
     }}
     viewBox="0 0 80 120"
     fill="none"
   >
-    {/* Straight down, loop at bottom, straight back up to button */}
+    <defs>
+      <marker
+        id="arrow-contact"
+        markerWidth="10"
+        markerHeight="10"
+        refX="9" 
+        refY="3"
+        orient="auto"
+        markerUnits="strokeWidth"
+      >
+        <path d="M0,0 L9,3 L0,6" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      </marker>
+      <marker
+        id="dot-contact"
+        markerWidth="6"
+        markerHeight="6"
+        refX="3"
+        refY="3"
+        orient="auto"
+      >
+        <circle cx="3" cy="3" r="2" fill="white" />
+      </marker>
+    </defs>
+
+    {/* CONTACT FIX:
+        Start (M 68 55): Moved to the RIGHT (under the second 'c').
+        End (40 115): Remains on the center button.
+        Control (Q 60 90): Angles the line back towards the left.
+    */}
     <path
-      d="M40 10
-         L 40 40
-         Q 40 50, 35 55
-         C 28 62, 22 58, 22 50
-         C 22 42, 28 38, 35 45
-         Q 38 48, 40 55
-         L 40 110"
+      d="M 68 55 Q 60 90, 40 115"
       stroke="white"
-      strokeWidth="1.5"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      strokeDasharray="4 3"
-      opacity="0.95"
+      strokeDasharray="5 5"
       fill="none"
       filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-    />
-    {/* Arrowhead pointing straight up */}
-    <path
-      d="M36 113 L40 118 L44 113 M40 118 L40 112"
-      stroke="white"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      fill="none"
-      opacity="0.95"
-      filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+      markerStart="url(#dot-contact)"
+      markerEnd="url(#arrow-contact)"
     />
   </svg>
 );
@@ -101,40 +129,48 @@ export const GalleryArrow = ({ isVisible, delay = 500 }: ArrowProps) => (
       width: '180px',
       height: '110px',
       opacity: isVisible ? 1 : 0,
+      overflow: 'visible',
       transition: `opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
     }}
     viewBox="0 0 180 110"
     fill="none"
   >
-    {/* Loop around Gallery text, then diagonal path up-right to button */}
+    <defs>
+      <marker
+        id="arrow-gallery"
+        markerWidth="10"
+        markerHeight="10"
+        refX="9" 
+        refY="3"
+        orient="auto"
+        markerUnits="strokeWidth"
+      >
+        <path d="M0,0 L9,3 L0,6" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      </marker>
+      <marker
+        id="dot-gallery"
+        markerWidth="6"
+        markerHeight="6"
+        refX="3"
+        refY="3"
+        orient="auto"
+      >
+        <circle cx="3" cy="3" r="2" fill="white" />
+      </marker>
+    </defs>
+
+    {/* GALLERY: Stays exactly as is */}
     <path
-      d="M10 90
-         Q 20 85, 30 82
-         C 40 79, 45 83, 47 89
-         C 49 95, 45 99, 40 98
-         C 35 97, 33 91, 37 87
-         Q 45 78, 60 65
-         Q 85 45, 115 25
-         Q 140 10, 165 3"
+      d="M 150 95 Q 185 60, 170 5"
       stroke="white"
-      strokeWidth="1.5"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      strokeDasharray="4 3"
-      opacity="0.95"
+      strokeDasharray="7 3"
       fill="none"
       filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-    />
-    {/* Arrowhead angled up-right matching diagonal */}
-    <path 
-      d="M160 6 L167 2 L163 0 M167 2 L162 5" 
-      stroke="white" 
-      strokeWidth="1.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      fill="none" 
-      opacity="0.95" 
-      filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))" 
+      markerStart="url(#dot-gallery)"
+      markerEnd="url(#arrow-gallery)"
     />
   </svg>
 );
