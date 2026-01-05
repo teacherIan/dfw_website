@@ -5,12 +5,10 @@ interface ArrowProps {
 
 export const EthosArrow = ({ isVisible, delay = 300 }: ArrowProps) => (
   <svg
-    className="absolute pointer-events-none"
+    className="absolute pointer-events-none w-[120px] h-[160px] md:w-[165px] md:h-[220px]"
     style={{
       left: '0%',
       bottom: '8vh',
-      width: '120px',
-      height: '160px',
       opacity: isVisible ? 1 : 0,
       overflow: 'visible',
       transition: `opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
@@ -63,12 +61,10 @@ export const EthosArrow = ({ isVisible, delay = 300 }: ArrowProps) => (
 
 export const ContactArrow = ({ isVisible, delay = 400 }: ArrowProps) => (
   <svg
-    className="absolute pointer-events-none"
+    className="absolute pointer-events-none w-[80px] h-[120px] md:w-[110px] md:h-[165px]"
     style={{
       left: '43%',
       bottom: '4vh',
-      width: '80px',
-      height: '120px',
       opacity: isVisible ? 1 : 0,
       overflow: 'visible',
       transition: `opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
@@ -122,12 +118,10 @@ export const ContactArrow = ({ isVisible, delay = 400 }: ArrowProps) => (
 
 export const GalleryArrow = ({ isVisible, delay = 500 }: ArrowProps) => (
   <svg
-    className="absolute pointer-events-none"
+    className="absolute pointer-events-none w-[180px] h-[110px] md:w-[247px] md:h-[151px]"
     style={{
       right: '2%',
       bottom: '0vh',
-      width: '180px',
-      height: '110px',
       opacity: isVisible ? 1 : 0,
       overflow: 'visible',
       transition: `opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,

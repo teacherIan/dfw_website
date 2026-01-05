@@ -43,7 +43,7 @@ const BlueprintButton = ({
     >
       {/* Label - desktop only */}
       <span 
-        className="nav-label hidden md:block text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white/95"
+        className="nav-label desktop-label-only hidden xl:block text-3xl sm:text-4xl xl:text-5xl 2xl:text-6xl text-white/95"
         style={{
           fontFamily: currentFont,
           textShadow: '0 3px 6px rgba(0, 0, 0, 0.5)',
@@ -55,7 +55,7 @@ const BlueprintButton = ({
       </span>
       
       {/* Unique arrow for each button - desktop only */}
-      <span className="hidden md:block relative z-10">
+      <span className="desktop-arrow-only hidden xl:block relative z-10">
         {(() => {
           const ArrowComponent = ArrowComponents[arrowType];
           return <ArrowComponent />;
@@ -207,7 +207,7 @@ const MenuOverlay = () => {
           DESKTOP NAVIGATION
           ============================================ */}
       {/* Desktop: Buttons with labels and arrows - positioned on right side */}
-      <div className="gallery-nav hidden md:flex absolute md:left-auto md:right-4 md:top-[60%] md:-translate-y-1/2 flex-col items-end gap-4">
+      <div className="gallery-nav desktop-nav-only hidden xl:flex absolute xl:left-auto xl:right-4 xl:top-[60%] xl:-translate-y-1/2 flex-col items-end gap-4">
         {navItems.map((item) => (
           <BlueprintButton
             key={item.id}

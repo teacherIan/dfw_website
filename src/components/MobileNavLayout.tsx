@@ -23,7 +23,7 @@ interface MobileNavLayoutProps {
 
 const MobileNavLayout = ({ positions, font, isVisible }: MobileNavLayoutProps) => {
   return (
-    <div className="md:hidden">
+    <div className="mobile-nav-only xl:hidden">
       {/* ============================================
           ETHOS - Bottom Left Corner
           ============================================ */}
@@ -41,7 +41,7 @@ const MobileNavLayout = ({ positions, font, isVisible }: MobileNavLayoutProps) =
       >
         <button
           type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -ml-14"
+          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -ml-14 md:-ml-[55px]"
           aria-label="Open ethos"
         >
           <span className="nav-circle__grid" aria-hidden="true" />
@@ -76,7 +76,7 @@ const MobileNavLayout = ({ positions, font, isVisible }: MobileNavLayoutProps) =
         }}
       >
         <span
-          className="text-4xl text-white/95"
+          className="text-4xl md:text-6xl text-white/95"
           style={{
             fontFamily: font,
             textShadow: '0 3px 10px rgba(0, 0, 0, 0.9), 0 1px 4px rgba(0, 0, 0, 1)',
@@ -108,7 +108,7 @@ const MobileNavLayout = ({ positions, font, isVisible }: MobileNavLayoutProps) =
       >
         <button
           type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mb-14"
+          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mb-14 md:-mb-[55px]"
           aria-label="Open contact"
         >
           <span className="nav-circle__grid" aria-hidden="true" />
@@ -143,7 +143,7 @@ const MobileNavLayout = ({ positions, font, isVisible }: MobileNavLayoutProps) =
         }}
       >
         <span
-          className="text-4xl text-white/95"
+          className="text-4xl md:text-6xl text-white/95"
           style={{
             fontFamily: font,
             textShadow: '0 3px 10px rgba(0, 0, 0, 0.9), 0 1px 4px rgba(0, 0, 0, 1)',
@@ -175,7 +175,7 @@ const MobileNavLayout = ({ positions, font, isVisible }: MobileNavLayoutProps) =
       >
         <button
           type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mr-14"
+          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mr-14 md:-mr-[55px]"
           aria-label="Open gallery"
         >
           <span className="nav-circle__grid" aria-hidden="true" />
@@ -210,7 +210,7 @@ const MobileNavLayout = ({ positions, font, isVisible }: MobileNavLayoutProps) =
         }}
       >
         <span
-          className="text-4xl text-white/95"
+          className="text-4xl md:text-6xl text-white/95"
           style={{
             fontFamily: font,
             textShadow: '0 3px 10px rgba(0, 0, 0, 0.9), 0 1px 4px rgba(0, 0, 0, 1)',

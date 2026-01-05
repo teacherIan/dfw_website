@@ -24,7 +24,7 @@ const DesktopArrowMarker = ({ id }: { id: string }) => (
 export const LoopArrow = ({ className = "nav-arrow" }: ArrowProps) => (
   <svg
     className={className}
-    viewBox="0 0 60 50"
+    viewBox="0 0 70 50"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     style={{ overflow: 'visible' }}
@@ -60,7 +60,7 @@ export const LoopArrow = ({ className = "nav-arrow" }: ArrowProps) => (
 export const SpiralArrow = ({ className = "nav-arrow" }: ArrowProps) => (
   <svg
     className={className}
-    viewBox="0 0 60 50"
+    viewBox="0 0 70 50"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     style={{ overflow: 'visible' }}
@@ -94,7 +94,7 @@ export const SpiralArrow = ({ className = "nav-arrow" }: ArrowProps) => (
 export const WaveArrow = ({ className = "nav-arrow" }: ArrowProps) => (
   <svg
     className={className}
-    viewBox="0 0 60 50"
+    viewBox="0 0 70 50"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     style={{ overflow: 'visible' }}
