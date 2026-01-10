@@ -53,7 +53,7 @@ const Scene = () => {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
+      setIsMobile(window.innerWidth < 1200);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -98,7 +98,7 @@ const Scene = () => {
 
   const { depthOffset, animationSpeed } = useControls({
     '✨ Entrance Animation': folder({
-      depthOffset: { value: 10.5, min: 0, max: 30, step: 0.5, label: 'Depth Offset' },
+      depthOffset: { value: 14, min: 0, max: 30, step: 0.5, label: 'Depth Offset' },
       animationSpeed: { value: 1.5, min: 0.1, max: 3.0, step: 0.1, label: 'Animation Speed' },
       resetAnimation: button(() => {
         baseTimeRef.current = 0;

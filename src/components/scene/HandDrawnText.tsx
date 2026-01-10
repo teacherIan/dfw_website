@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
-import { useControls } from 'leva';
+import { useControls, folder } from 'leva';
 import { LETTER_PATHS, LETTER_COUNT } from '../../constants/letterPaths';
+import { useWindowWidth } from '../../hooks';
 
 interface HandDrawnTextProps {
   show: boolean;
@@ -48,30 +48,36 @@ const FILL_EASE = [0.22, 1, 0.36, 1] as const; // Quick start, gentle finish
  * of watching someone hand-letter the title in real-time.
  */
 const HandDrawnText = ({ show }: HandDrawnTextProps) => {
-  const [windowWidth, setWindowWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 1200
-  );
+  const { isPortrait, isSmallLandscape, isTablet, isIpadPro } = useWindowWidth();
 
-  // Track window width for responsive Leva controls
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const isSmallLandscape = windowWidth < 1000;
-
-  // Desktop title size controls
-  const desktopTitle = useControls('🖥️ Desktop Title Size', {
-    scale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
+  // Title size controls organized in folders
+  const layout = useControls('📐 Layout', {
+    '🖥️ Desktop Title': folder({
+      desktopTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
+    }, { collapsed: true }),
+    '📱 iPad Pro Title (1000-1199px)': folder({
+      ipadProTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
+    }, { collapsed: true }),
+    '📱 Tablet Title (700-999px)': folder({
+      tabletTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
+    }, { collapsed: true }),
+    '📱 Small Landscape Title (400-699px)': folder({
+      smallTitleScale: { value: 1.1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
+    }, { collapsed: true }),
+    '📱 Portrait Title (<400px)': folder({
+      portraitTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
+    }, { collapsed: true }),
   }, { collapsed: true });
 
-  // Small landscape title size controls (<1000px width)
-  const smallLandscapeTitle = useControls('📱 Small Landscape Title (<1000px)', {
-    scale: { value: 1.1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
-  }, { collapsed: true });
-
-  const titleScale = isSmallLandscape ? smallLandscapeTitle.scale : desktopTitle.scale;
+  const titleScale = isPortrait
+    ? layout.portraitTitleScale
+    : isSmallLandscape
+      ? layout.smallTitleScale
+      : isTablet
+        ? layout.tabletTitleScale
+        : isIpadPro
+          ? layout.ipadProTitleScale
+          : layout.desktopTitleScale;
 
   if (!show) return null;
 

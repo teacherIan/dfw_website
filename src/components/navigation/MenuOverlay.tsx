@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useControls } from 'leva';
+import { useControls, folder } from 'leva';
 import clsx from 'clsx';
 import MobileNavLayout from './MobileNavLayout';
 import { LoopArrow, SpiralArrow, WaveArrow } from './DesktopArrows';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
 import { ANIMATION_TIMING, navItems, fontOptions, fontFamilyMap } from '../../constants';
 import type { ArrowType } from '../../constants';
+import { useWindowWidth } from '../../hooks';
 
 // Arrow component mapping for desktop navigation
 const ArrowComponents: Record<ArrowType, typeof LoopArrow> = {
@@ -81,18 +82,7 @@ const BlueprintButton = ({
 const MenuOverlay = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
-  const [windowWidth, setWindowWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 1200
-  );
-
-  // Track window width for responsive Leva controls
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const isSmallLandscape = windowWidth < 1000;
+  const { isSmallLandscape } = useWindowWidth();
 
   const { menuFont } = useControls('🎨 Menu Style', {
     menuFont: {
@@ -104,26 +94,28 @@ const MenuOverlay = () => {
 
   const currentFont = fontFamilyMap[menuFont];
 
-  // Desktop navigation position controls
-  const desktopPos = useControls('🖥️ Desktop Nav Position', {
-    top: { value: 45, min: 0, max: 100, step: 1, label: 'Top (%)' },
-    right: { value: 1.25, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
-    gap: { value: 1.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
-    scale: { value: 1, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
-    fontSize: { value: 3.6, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
-  }, { collapsed: true });
-
-  // Small landscape navigation position controls (<1000px width)
-  const smallLandscapePos = useControls('📱 Small Landscape Nav (<1000px)', {
-    top: { value: 30, min: 0, max: 100, step: 1, label: 'Top (%)' },
-    right: { value: 0.75, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
-    gap: { value: 0.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
-    scale: { value: 0.7, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
-    fontSize: { value: 1.2, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
+  // Responsive navigation controls organized in folders
+  const layout = useControls('📐 Layout', {
+    '🖥️ Desktop Nav': folder({
+      desktopTop: { value: 45, min: 0, max: 100, step: 1, label: 'Top (%)' },
+      desktopRight: { value: 1.25, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
+      desktopGap: { value: 1.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
+      desktopScale: { value: 1, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
+      desktopFontSize: { value: 3.6, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
+    }, { collapsed: true }),
+    '📱 Small Landscape Nav': folder({
+      smallTop: { value: 30, min: 0, max: 100, step: 1, label: 'Top (%)' },
+      smallRight: { value: 0.75, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
+      smallGap: { value: 0.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
+      smallScale: { value: 0.7, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
+      smallFontSize: { value: 1.2, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
+    }, { collapsed: true }),
   }, { collapsed: true });
 
   // Select which position config to use based on screen width
-  const navPos = isSmallLandscape ? smallLandscapePos : desktopPos;
+  const navPos = isSmallLandscape
+    ? { top: layout.smallTop, right: layout.smallRight, gap: layout.smallGap, scale: layout.smallScale, fontSize: layout.smallFontSize }
+    : { top: layout.desktopTop, right: layout.desktopRight, gap: layout.desktopGap, scale: layout.desktopScale, fontSize: layout.desktopFontSize };
 
   useEffect(() => {
     // Animate in after the main content has loaded
