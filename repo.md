@@ -2,9 +2,9 @@
 
 ## Overview
 
-An interactive 3D furniture website showcasing DFW Furniture's products using cutting-edge 3D Gaussian Splatting technology. The site features cinematic entrance animations, smooth camera movements, and a modern blueprint-inspired UI design.
+An interactive 3D furniture website showcasing Doug's Found Wood (DFW) furniture using cutting-edge 3D Gaussian Splatting technology. The site features cinematic entrance animations, smooth camera movements, responsive design for mobile and desktop, and a modern blueprint-inspired UI.
 
-**Live Demo**: Built with React, Three.js, and SparkJS for real-time 3D rendering in the browser.
+**Live Experience**: Built with React, Three.js, and SparkJS for real-time 3D rendering in the browser.
 
 ## Tech Stack
 
@@ -35,9 +35,10 @@ dfw_website/
 │       ├── dfw_logo_2_fixed_together.spz (25.76 MB)
 │       ├── dfw_logo_3d.png (299.45 KB)
 │       ├── dfw_logo_new.spz (3.89 MB)
-│       ├── full_scene_remove_blue_two_splat.spz (24.53 MB) # Current scene
+│       ├── full_scene_remove_blue_two_splat.spz (24.53 MB)
 │       ├── full_scene.spz (23.91 MB)
-│       └── trial_build.spz (26.58 MB)
+│       ├── trial_build.spz (26.58 MB)
+│       └── v_one_final.spz           # Current active scene
 ├── src/
 │   ├── components/
 │   │   ├── spark/
@@ -45,8 +46,11 @@ dfw_website/
 │   │   │   ├── SplatMesh.tsx        # Extended SparkJS splat mesh
 │   │   │   └── index.ts             # Barrel exports
 │   │   ├── Scene.tsx                # Main 3D scene with animations
-│   │   ├── MenuOverlay.tsx          # Blueprint-style navigation UI
-│   │   └── TextOverlay.tsx          # Animated text overlay
+│   │   ├── MenuOverlay.tsx          # Responsive navigation UI orchestrator
+│   │   ├── TextOverlay.tsx          # Animated title overlay
+│   │   ├── DesktopArrows.tsx        # Desktop navigation arrows (Loop, Spiral, Wave)
+│   │   ├── MobileNavLayout.tsx      # Mobile navigation layout
+│   │   └── MobileArrows.tsx         # Mobile navigation arrows (Ethos, Contact, Gallery)
 │   ├── types/
 │   │   └── r3f.d.ts                 # R3F type extensions
 │   ├── App.tsx                      # Root component & layout
@@ -66,84 +70,183 @@ dfw_website/
 ## Key Components
 
 ### App.tsx
-- Root application component
-- Manages animation state and timing
-- Coordinates overlays with 3D scene
-- Handles animation reset events
+Root application component that orchestrates the entire experience.
+
+**Responsibilities:**
 - Canvas setup with camera configuration
+- Animation state management
+- Overlay timing coordination
+- Animation reset event handling
+- UI control for hiding overlays (screenshots mode)
 
 **Key Features:**
 - 13-second delay before showing text overlay
+- 14-second delay before showing menu overlay
 - Event-driven animation reset system
 - Layered z-index management for overlays
+- Leva control to hide overlays for clean screenshots
+
+**UI Controls:**
+- `showOverlays` - Toggle to hide/show text and menu overlays (useful for screenshots)
 
 ### Scene.tsx (Main 3D Scene)
 The heart of the 3D experience. Handles all 3D rendering, animations, and visual effects.
 
+**Current Asset:** `/assets/v_one_final.spz`
+
 **Responsibilities:**
 - 3D Gaussian Splat rendering via SparkJS
-- Cinematic entrance animation
+- Cinematic entrance animation with particle assembly
 - Camera movement and controls
 - Visual effect modifiers (color, opacity, positioning)
-- Leva debug controls for fine-tuning
+- Extensive Leva debug controls for fine-tuning
+- Responsive camera positioning (mobile vs desktop)
 
 **Camera System:**
-- Initial position: [startX, startY, startZ] (configurable: 2, 4, 8)
-- Target position: [cameraX, cameraY, cameraZ] (configurable: 0, 1.6, 3.1)
-- 8-second smooth camera animation with ease-out cubic easing
+- **Desktop Defaults:** [0, 1.6, 3.1]
+- **Mobile Defaults:** [0, 2.5, 4.0]
+- Initial position: [startX, startY, startZ] (configurable: -1.0, 15.0, 20.0)
+- Animation: 20-second smooth camera animation with ease-out cubic easing
 - Optional: Disable animation for instant positioning
 - Real-time position monitoring via Leva controls
 
 **Entrance Animation:**
-- Particles "assemble" from scattered positions
-- Depth-based staggering: far particles appear first
-- Size-based timing: smaller particles before larger ones
-- Swirl effect with varying intensity
-- Duration: ~13 seconds total
-- Configurable depth offset (default: 15.0)
+- **Duration:** ~13 seconds
+- **Particle Behavior:**
+  - Assemble from scattered positions with swirl effect
+  - Depth-based staggering: far particles appear first
+  - Size-based timing: smaller particles before larger ones
+  - Color-based timing: dark/grayscale objects first, then colorful
+  - Vertical staging: smaller particles rise from below, larger descend from above
+- **Configurable via Leva:**
+  - Depth offset (default: 10.5)
+  - Animation speed multiplier (default: 1.5)
+  - Reset button to restart animation
 
 **Visual Effects (Shader Modifiers):**
 1. **Graceful Assembly** - Particles swirl into place from scattered positions
-2. **Grass Darkening** - Improves text legibility over green areas (0.5 factor)
-3. **Foreground Darkening** - Darkens area under text for better contrast
-4. **Synthetic Region Blending** - Adjusts brightness/saturation/opacity for specific spatial regions
+2. **Grass Darkening** - Darkens grass areas for better text legibility (default: 2.35)
+3. **Bottom Left/Right Scaling** - Adjusts particle scale in specific regions (0.55)
+4. **Hole Filling** - Option to fill gaps in the splat (default: 0.0)
+5. **Synthetic Region Blending** - Adjusts brightness/saturation/opacity for spatial regions
+   - Brightness: 1.0
+   - Saturation: 0.55
+   - Opacity: 1.0
    - Z range: -5.0 to 2.0
    - Y range: -10.0 to 5.0
 
 **Splat Mesh Configuration:**
-- Asset: `/assets/full_scene_remove_blue_two_splat.spz`
 - Streaming enabled for progressive loading
 - Rotation: [-1.6, 0, 0] (tilted view)
 
 ### MenuOverlay.tsx
-Blueprint-inspired navigation with three circular buttons.
+Responsive navigation orchestrator that manages desktop and mobile layouts.
+
+**Architecture:**
+- Renders `MobileNavLayout` for mobile devices (< 768px)
+- Renders desktop navigation for larger screens
+- Shares animation timing and font controls
 
 **Navigation Items:**
 - **Gallery** - Loop arrow design (delay: 0ms)
 - **Ethos** - Spiral arrow design (delay: 150ms)
 - **Contact** - Wave arrow design (delay: 300ms)
 
-**Button Design:**
-- Circular blueprint aesthetic
-- Blueprint grid pattern background
-- Concentric rings with dashed strokes
-- Center crosshair
-- Compass arc marks
-- Custom animated arrows for each button
+**Desktop Layout:**
+- Right-side vertical stack
+- Buttons with labels and decorative arrows
+- Blueprint circular buttons with grid pattern
+
+**Mobile Layout:**
+- Corner positioning strategy:
+  - **Ethos:** Bottom-left corner (half-off left edge)
+  - **Contact:** Bottom-center (half-off bottom edge)
+  - **Gallery:** Bottom-right corner (half-off right edge)
+- Labels positioned above/near each button
+- Arrows connect labels to buttons
+
+**Font Selection:**
+- Configurable via Leva (`menuFont`)
+- Options: Caveat (default), Architects Daughter, Patrick Hand, Indie Flower, Permanent Marker, Shadows Into Light
+- Applies to both desktop and mobile
+
+**Mobile Position Controls (Leva):**
+All positions configurable for fine-tuning:
+- Button positions (Left %, Right %, Bottom vh)
+- Label positions (Left %, Right %, Bottom vh)
+- Default values optimized for most screen sizes
 
 **Animation:**
 - Fades in at 14 seconds (after text overlay)
-- Staggered entrance with 150ms delays
+- Staggered entrance (Gallery→Ethos→Contact: 0ms, 100ms, 200-300ms)
 - Smooth cubic-bezier easing: (0.34, 1.56, 0.64, 1)
-- Combines opacity and translateX transforms
+- Combines opacity and translate transforms
+- Resets on `resetAnimation` event
 
-**Positioning:**
-- Right edge of viewport
-- Bottom-aligned
-- Responsive spacing (mobile: 3, desktop: 4)
+### DesktopArrows.tsx
+Three unique SVG arrow designs for desktop navigation buttons.
+
+**Arrow Types:**
+1. **LoopArrow** - Curved path with loop (Gallery)
+2. **SpiralArrow** - Inward spiral design (Ethos)
+3. **WaveArrow** - Gentle wave pattern (Contact)
+
+**Features:**
+- Dashed stroke pattern (strokeDasharray)
+- White color with drop shadow
+- Arrow markers at endpoint
+- Responsive to hover states
+- All paths end horizontally aligned
+
+### MobileNavLayout.tsx
+Complete mobile navigation layout with buttons, labels, and positioning.
+
+**Button Design:**
+- Large blueprint circular buttons
+- Half-off viewport edges for dramatic effect
+- Blueprint grid pattern background
+- Concentric rings with dashed strokes
+- Center crosshair design
+- Compass arc marks
+
+**Layout Strategy:**
+- Three-corner approach maximizes space
+- Labels positioned for readability
+- Arrows guide eye from label to button
+- All positions configurable via props (Leva controls)
+
+### MobileArrows.tsx
+Three custom SVG arrows for mobile navigation.
+
+**Arrow Types:**
+1. **EthosArrow** - Left bracket style curve
+2. **ContactArrow** - Downward curve from label to button
+3. **GalleryArrow** - Right bracket style curve
+
+**Features:**
+- Start markers: white dots
+- End markers: white arrows
+- Dashed stroke patterns
+- Drop shadows for depth
+- Positioned absolutely via inline styles
+- Configurable animation delays
 
 ### TextOverlay.tsx
-Simple text overlay component that displays after the entrance animation completes.
+Animated title display for "Doug's Found Wood".
+
+**Features:**
+- Centered at bottom of screen
+- Writing animation effect (CSS)
+- Cursive font (Caveat)
+- Responsive sizing: `text-[12vw]` on mobile, up to `text-8xl` on desktop
+- Heavy text shadow for legibility over 3D scene
+- Black text stroke for definition
+- Whitespace nowrap to prevent wrapping
+
+**Responsive Positioning:**
+- Mobile: 19vh from bottom (above mobile nav)
+- Desktop: 10vh from bottom
+- Configurable via Leva controls
 
 **Timing:**
 - Appears at 13 seconds (after splat animation)
@@ -189,49 +292,71 @@ SparkJS's Dyno system enables real-time shader modifications without recompilati
 ## Animation Timeline
 
 ```
-0s    - Scene loads, camera at starting position
-0-8s  - Camera smoothly moves to target position (ease-out cubic)
-0-13s - Splat particles assemble with swirling entrance effect
-13s   - Text overlay fades in
-14s   - Menu overlay animates in (staggered)
+0s      - Scene loads, camera at starting position [startX, startY, startZ]
+0-20s   - Camera smoothly moves to target position (ease-out cubic)
+0-13s   - Splat particles assemble with swirling entrance effect
+13s     - Text overlay fades in ("Doug's Found Wood")
+14s     - Menu overlay animates in (staggered: Gallery→Ethos→Contact)
 ```
 
 **Reset Functionality:**
-- Reset button in Leva controls
+- Reset button in Leva controls (Entrance Animation panel)
 - Resets camera, animation time, and all overlays
 - Dispatches `resetAnimation` custom event
 - Triggers mesh update for immediate visual refresh
+- All components listen for reset event
 
-## Configuration & Controls
+## Leva Controls Reference
 
-### Leva Debug Panel
-Live parameter tuning during development:
+### UI Controls
+- **Show Overlays** - Hide text and menu for clean screenshots
 
-**Camera Controls:**
-- Target position (X, Y, Z)
-- Current position monitoring (read-only)
+### Camera
+- **cameraX, cameraY, cameraZ** - Target camera position
+- Automatically adjusts defaults for mobile vs desktop
 
-**Camera Animation:**
-- Enable/disable animation
-- Animation duration (1-20s, default 8s)
-- Starting position (X, Y, Z)
+### Camera Animation
+- **Animate on Start** - Enable/disable entrance camera movement
+- **Duration (s)** - Animation duration (1-30s, default: 20s)
+- **Start X/Y/Z** - Initial camera position (-1.0, 15.0, 20.0)
 
-**Entrance Animation:**
-- Depth offset (0-30, default 15.0)
-- Reset button
+### Entrance Animation
+- **Depth Offset** - Controls particle appearance staggering (0-30, default: 10.5)
+- **Animation Speed** - Speed multiplier (0.1-3.0, default: 1.5)
+- **Reset Animation** - Button to restart entire animation
 
-**Visual Adjustments:**
-- Grass darken amount (0-2, default 0.5)
+### Visual Adjustments
+- **Grass Darken** - Darkening amount for grass areas (0-5, default: 2.35)
+- **Bottom Left Scale** - Scale multiplier for bottom-left region (0-2.0, default: 0.55)
+- **Bottom Right Scale** - Scale multiplier for bottom-right region (0-2.0, default: 0.55)
+- **Hole Fill Scale** - Option to fill gaps in splat (0-3.0, default: 0.0)
+- **Hole X/Y/Z Min/Max** - Bounding box for hole fill effect
 
-**Splat Rotation:**
-- X, Y, Z rotation controls
+### Splat Rotation
+- **rotationX, rotationY, rotationZ** - Mesh rotation angles
 
-**Splat Blending:**
-- Synthetic region brightness (0.1-2.0)
-- Saturation (0.0-1.5)
-- Opacity (0.1-1.0)
-- Z range (min/max)
-- Y range (min/max)
+### Splat Blending
+- **Brightness** - Synthetic region brightness (0.1-2.0, default: 1.0)
+- **Saturation** - Color saturation adjustment (0.0-1.5, default: 0.55)
+- **Opacity** - Region opacity (0.1-1.0, default: 1.0)
+- **Z Min/Max** - Z-axis bounds for blending (-20 to 20)
+- **Y Min/Max** - Y-axis bounds for blending (-20 to 20)
+
+### Current Camera Position
+- **x, y, z** - Read-only monitors showing real-time camera position
+
+### Menu Style
+- **menuFont** - Font selection for navigation labels
+  - Options: Caveat, Architects Daughter, Patrick Hand, Indie Flower, Permanent Marker, Shadows Into Light
+
+### Mobile Layout
+12 controls for precise positioning:
+- **Ethos/Contact/Gallery Button positions** (Left %, Right %, Bottom vh)
+- **Ethos/Contact/Gallery Label positions** (Left %, Right %, Bottom vh)
+
+### Title Position
+- **Mobile Bottom (vh)** - Title bottom position on mobile (default: 19vh)
+- **Desktop Bottom (vh)** - Title bottom position on desktop (default: 10vh)
 
 ## Styling & CSS
 
@@ -239,10 +364,11 @@ Live parameter tuning during development:
 Contains global styles, custom animations, and Tailwind utilities.
 
 **Key Features:**
-- Custom cursive font import
+- Custom font imports (Caveat and 5 other cursive fonts)
 - Navigation button styles with hover effects
 - Blueprint grid patterns
 - Arrow animation keyframes
+- Writing animation for title text
 - Responsive media queries
 - Color scheme (whites, blues, grays)
 
@@ -250,6 +376,56 @@ Contains global styles, custom animations, and Tailwind utilities.
 - Grid sizing and opacity
 - Ring rotation speeds
 - Transition durations
+
+**Navigation Button Classes:**
+- `.nav-button-circle` - Desktop blueprint buttons
+- `.nav-button-circle--mobile-large` - Larger mobile buttons
+- `.nav-circle__grid` - Blueprint grid background
+- `.nav-circle__ring` - Rotating concentric rings
+- `.nav-circle__crosshair` - Center crosshair
+- `.nav-circle__arcs` - Compass arc decorations
+
+**Animation Classes:**
+- `.writing-animation` - Typewriter-style text reveal
+
+## Responsive Design
+
+### Breakpoints
+- **Phone:** < 768px
+- **Tablet:** 768px - 1023px (md breakpoint)
+- **Desktop:** ≥ 1024px (lg breakpoint)
+
+**Three-Tier Strategy:**
+1. **Phones (< 768px):** Base mobile layout with 80px buttons, text-4xl labels
+2. **Tablets (768px-1023px):** Scaled-up mobile layout:
+   - Buttons: 110px (1.375x larger)
+   - Labels: text-6xl
+   - Arrows: 1.375x larger
+   - Title: text-7xl
+   - Same corner positioning, better proportions for iPad Mini, etc.
+3. **Desktop (≥ 1024px):** Right-side vertical navigation layout
+
+**Rationale:** iPad Mini portrait (768px) and other tablets need larger touch targets and text than phones, but the right-side desktop layout is too cramped until 1024px+ screens.
+
+### Phone & Tablet Features (< 1024px)
+- Different camera positioning (higher and farther back)
+- Corner-based navigation layout:
+  - Ethos: Bottom-left (half-off left edge)
+  - Contact: Bottom-center (half-off bottom edge)
+  - Gallery: Bottom-right (half-off right edge)
+- Touch-friendly blueprint circular buttons
+- Labels positioned above/near buttons
+- Custom curved arrows connecting labels to buttons
+- Higher title position (19vh from bottom)
+- Tablet tier scales everything 1.375x larger than phone
+
+### Desktop Features (≥ 1024px)
+- Right-side vertical navigation stack
+- Labels inline with buttons (left of button)
+- Horizontal decorative arrows between labels and buttons
+- Tighter spacing for cleaner look
+- Lower title position (10vh from bottom)
+- Standard camera positioning (closer to scene)
 
 ## Build & Development
 
@@ -268,6 +444,7 @@ Contains global styles, custom animations, and Tailwind utilities.
 3. Open http://localhost:5173
 4. Leva controls appear in top-right for live tuning
 5. Edit files - Vite hot-reloads instantly
+6. Use "Show Overlays" toggle to hide UI for screenshots
 
 ### Production Build
 1. Run `npm run build`
@@ -281,12 +458,14 @@ Contains global styles, custom animations, and Tailwind utilities.
 - Large file sizes (20-26 MB)
 - Streaming enabled for progressive loading
 - Consider CDN hosting for production
+- Current file: `v_one_final.spz`
 
 ### Rendering
 - WebGL-based (requires GPU)
 - Anti-aliasing disabled for performance
 - Shader calculations per-particle
 - Optimized with Three.js frustum culling
+- PresentationControls for smooth interactions
 
 ### Bundle Size
 - React Three Fiber adds ~400KB
@@ -308,12 +487,13 @@ Contains global styles, custom animations, and Tailwind utilities.
 ## Future Ideas
 
 From `ideas.txt`:
-- White cursive writing in bottom left of "DFW" for enhanced branding
+- White cursive writing in the bottom left of "DFW" for enhanced branding
 
 ## Assets
 
 ### 3D Splat Files (.spz)
-- **full_scene_remove_blue_two_splat.spz** - Currently active scene (24.53 MB)
+- **v_one_final.spz** - Currently active scene
+- **full_scene_remove_blue_two_splat.spz** - Previous main scene (24.53 MB)
 - **full_scene.spz** - Original full scene (23.91 MB)
 - **dfw_logo_2_fixed_together.spz** - Logo splat variant (25.76 MB)
 - **dfw_logo_new.spz** - Logo splat (3.89 MB)
@@ -340,10 +520,17 @@ From `ideas.txt`:
 - Shader modifications require manual refresh
 
 ### Debugging
-- Leva panel for live parameter tuning
+- Extensive Leva panels for live parameter tuning
 - React DevTools compatible
 - Three.js devtools extension supported
 - Console logging for animation timing
+- "Show Overlays" toggle for clean screenshots
+
+### Code Organization
+- Component separation by concern (Desktop vs Mobile)
+- Shared timing constants exported from Scene
+- Responsive detection via window resize listeners
+- Event-driven architecture for reset functionality
 
 ## License
 
@@ -351,5 +538,5 @@ MIT
 
 ---
 
-**Built for DFW Furniture**  
-Interactive 3D experience showcasing furniture through Gaussian Splatting technology.
+**Built for Doug's Found Wood (DFW) Furniture**  
+Interactive 3D experience showcasing handcrafted furniture through Gaussian Splatting technology.

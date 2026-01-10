@@ -1,0 +1,22 @@
+export const ANIMATION_TIMING = {
+  ENTRANCE_DURATION: 13000,
+  TEXT_APPEAR: 13000,
+  MENU_APPEAR: 14000,
+  CAMERA_DURATION: 20,
+  WRITING_DURATION: 5000,
+} as const;
+
+/**
+ * Mobile navigation animation delays (in milliseconds)
+ */
+export const MOBILE_NAV_DELAYS = {
+  ETHOS_BUTTON: 100,
+  ETHOS_LABEL: 100,
+  ETHOS_ARROW: 300,
+  CONTACT_BUTTON: 200,
+  CONTACT_LABEL: 200,
+  CONTACT_ARROW: 400,
+  GALLERY_BUTTON: 300,
+  GALLERY_LABEL: 300,
+  GALLERY_ARROW: 500,
+} as const;

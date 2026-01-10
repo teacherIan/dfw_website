@@ -1,5 +1,5 @@
-import { extend } from "@react-three/fiber";
-import { SplatMesh as SparkSplatMesh } from "@sparkjsdev/spark";
+import { extend } from '@react-three/fiber';
+import { SplatMesh as SparkSplatMesh } from '@sparkjsdev/spark';
 
 // Register SplatMesh with R3F
 extend({ SplatMesh: SparkSplatMesh });
