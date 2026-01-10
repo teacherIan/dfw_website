@@ -21,12 +21,14 @@ const BlueprintButton = ({
   delay,
   arrowType,
   currentFont,
+  fontSize = 1,
 }: {
   label: string;
   isVisible: boolean;
   delay: number;
   arrowType: keyof typeof ArrowComponents;
   currentFont: string;
+  fontSize?: number;
 }) => {
   const ArrowComponent = ArrowComponents[arrowType];
   
@@ -52,6 +54,7 @@ const BlueprintButton = ({
           textShadow: '0 3px 6px rgba(0, 0, 0, 0.5)',
           WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.7)',
           paintOrder: 'stroke fill',
+          fontSize: `${fontSize}em`,
         }}
       >
         {label}
@@ -78,6 +81,18 @@ const BlueprintButton = ({
 const MenuOverlay = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  );
+
+  // Track window width for responsive Leva controls
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isSmallLandscape = windowWidth < 1000;
 
   const { menuFont } = useControls('🎨 Menu Style', {
     menuFont: {
@@ -88,6 +103,27 @@ const MenuOverlay = () => {
   }, { collapsed: true });
 
   const currentFont = fontFamilyMap[menuFont];
+
+  // Desktop navigation position controls
+  const desktopPos = useControls('🖥️ Desktop Nav Position', {
+    top: { value: 45, min: 0, max: 100, step: 1, label: 'Top (%)' },
+    right: { value: 1.25, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
+    gap: { value: 1.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
+    scale: { value: 1, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
+    fontSize: { value: 3.6, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
+  }, { collapsed: true });
+
+  // Small landscape navigation position controls (<1000px width)
+  const smallLandscapePos = useControls('📱 Small Landscape Nav (<1000px)', {
+    top: { value: 30, min: 0, max: 100, step: 1, label: 'Top (%)' },
+    right: { value: 0.75, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
+    gap: { value: 0.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
+    scale: { value: 0.7, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
+    fontSize: { value: 1.2, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
+  }, { collapsed: true });
+
+  // Select which position config to use based on screen width
+  const navPos = isSmallLandscape ? smallLandscapePos : desktopPos;
 
   useEffect(() => {
     // Animate in after the main content has loaded
@@ -117,7 +153,16 @@ const MenuOverlay = () => {
       {/* ============================================
           DESKTOP NAVIGATION
           ============================================ */}
-      <div className="desktop-nav-only">
+      <div
+        className="desktop-nav-only"
+        style={{
+          top: `${navPos.top}%`,
+          right: `${navPos.right}rem`,
+          gap: `${navPos.gap}rem`,
+          transform: `scale(${navPos.scale})`,
+          transformOrigin: 'top right',
+        }}
+      >
         {navItems.map((item) => (
           <BlueprintButton
             key={item.id}
@@ -126,6 +171,7 @@ const MenuOverlay = () => {
             delay={item.delay}
             arrowType={item.arrowType as keyof typeof ArrowComponents}
             currentFont={currentFont}
+            fontSize={navPos.fontSize}
           />
         ))}
       </div>
