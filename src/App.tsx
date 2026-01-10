@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { useEffect, useState } from 'react';
-import { useControls } from 'leva';
+import { useControls, Leva } from 'leva';
 import Scene from './components/scene/Scene';
 import TextOverlay from './components/scene/TextOverlay';
 import MenuOverlay from './components/navigation/MenuOverlay';
@@ -35,6 +35,8 @@ function App() {
 
   return (
     <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
+      <Leva hidden />
+
       {/* Main 3D Canvas */}
       <div className="relative z-0 h-full w-full" style={{ touchAction: 'none' }}>
         <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
