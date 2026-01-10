@@ -1,4 +1,6 @@
 import clsx from 'clsx';
+import { motion } from 'framer-motion';
+import { LOGO_PATH } from '../../constants/logoPath';
 
 interface TextOverlayProps {
   show: boolean;
@@ -6,14 +8,25 @@ interface TextOverlayProps {
 
 /**
  * TextOverlay component for displaying the "Doug's Found Wood" title
- * Centered at the bottom of the screen with a writing animation
+ * Centered at the bottom of the screen with a hand-drawn animation using SVG path
  * Responsive design for mobile devices
- *
- * Mobile: Full width, text can wrap if needed, positioned above nav
- * Desktop: Single line, centered at bottom
  */
 const TextOverlay = ({ show }: TextOverlayProps) => {
   if (!show) return null;
+
+  const pathVariants = {
+    hidden: { pathLength: 0, opacity: 0, fillOpacity: 0 },
+    visible: {
+      pathLength: 1,
+      opacity: 1,
+      fillOpacity: 1,
+      transition: {
+        pathLength: { duration: 2.5, ease: "easeInOut" },
+        opacity: { duration: 0.2 },
+        fillOpacity: { delay: 2, duration: 0.8, ease: "easeOut" }
+      }
+    }
+  };
 
   return (
     <div
@@ -25,29 +38,28 @@ const TextOverlay = ({ show }: TextOverlayProps) => {
         'z-40'
       )}
     >
-      {/* Extra wrapper for text stroke/shadow rendering space */}
-      <div>
-        <h1
+      <div className="px-4 pb-4 lg:pb-8 pt-2">
+        <svg
+          viewBox="0 0 646.076 89.889"
           className={clsx(
-            'text-[12vw] sm:text-6xl md:text-7xl lg:text-7xl xl:text-8xl',
-            'text-white',
-            'writing-animation',
-            'px-4',
-            'pb-4 lg:pb-8',
-            'pt-2',
-            'leading-none md:leading-tight lg:leading-relaxed',
-            'text-center',
-            'whitespace-nowrap'
+            'w-[85vw] sm:w-[500px] md:w-[600px] lg:w-[650px] xl:w-[700px]',
+            'h-auto',
+            'drop-shadow-lg'
           )}
           style={{
-            fontFamily: '"Caveat", cursive',
-            textShadow: '0 4px 12px rgba(0, 0, 0, 0.7), 0 2px 4px rgba(0, 0, 0, 0.5)',
-            WebkitTextStroke: '1px rgba(0, 0, 0, 0.8)',
-            paintOrder: 'stroke fill',
+            filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5))'
           }}
         >
-          Doug&apos;s Found Wood
-        </h1>
+          <motion.path
+            d={LOGO_PATH}
+            fill="white"
+            stroke="white"
+            strokeWidth="2"
+            variants={pathVariants}
+            initial="hidden"
+            animate="visible"
+          />
+        </svg>
       </div>
     </div>
   );

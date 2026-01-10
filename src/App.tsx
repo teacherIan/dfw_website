@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useControls, Leva } from 'leva';
 import Scene from './components/scene/Scene';
 import TextOverlay from './components/scene/TextOverlay';
+import HandDrawnText from './components/scene/HandDrawnText';
 import MenuOverlay from './components/navigation/MenuOverlay';
 import { ANIMATION_TIMING } from './constants';
 import './types/r3f.d';
@@ -12,8 +13,9 @@ function App() {
   const [animationKey, setAnimationKey] = useState(0);
 
   // Leva control to hide overlays for screenshots
-  const { showOverlays } = useControls('UI Controls', {
+  const { showOverlays, useHandDrawn } = useControls('UI Controls', {
     showOverlays: { value: true, label: 'Show Overlays' },
+    useHandDrawn: { value: true, label: 'Use Hand-Drawn Text' },
   }, { collapsed: true });
 
   useEffect(() => {
@@ -35,7 +37,7 @@ function App() {
 
   return (
     <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
-      <Leva hidden />
+      <Leva />
 
       {/* Main 3D Canvas */}
       <div className="relative z-0 h-full w-full" style={{ touchAction: 'none' }}>
@@ -46,7 +48,8 @@ function App() {
 
       {/* Overlays */}
       {showOverlays && <MenuOverlay />}
-      {showOverlays && <TextOverlay key={animationKey} show={showText} />}
+      {showOverlays && !useHandDrawn && <TextOverlay key={animationKey} show={showText} />}
+      {showOverlays && useHandDrawn && <HandDrawnText key={animationKey} show={showText} />}
     </div>
   );
 }
