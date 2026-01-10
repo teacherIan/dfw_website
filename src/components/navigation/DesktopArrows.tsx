@@ -15,13 +15,13 @@ const DesktopArrowMarker = ({ id }: { id: string }) => (
       orient="auto"
       markerUnits="strokeWidth"
     >
-      <path d="M0,0 L9,3 L0,6" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M0,0 L9,3 L0,6" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
     </marker>
   </defs>
 );
 
 // 1. LOOP ARROW (Top)
-export const LoopArrow = ({ className = "nav-arrow" }: ArrowProps) => (
+export const LoopArrow = ({ className = 'nav-arrow' }: ArrowProps) => (
   <svg
     className={className}
     viewBox="0 0 70 50"
@@ -30,7 +30,7 @@ export const LoopArrow = ({ className = "nav-arrow" }: ArrowProps) => (
     style={{ overflow: 'visible' }}
   >
     <DesktopArrowMarker id="desktop-arrow-loop" />
-    
+
     <path
       /* FIX: The last 'C' command now ends with "65 25, 76 25".
          Since both Y values are 25, the line is perfectly flat at the end.
@@ -41,9 +41,8 @@ export const LoopArrow = ({ className = "nav-arrow" }: ArrowProps) => (
          C 24 30, 18 27, 21 21
          C 24 15, 34 12, 44 16
          C 50 18, 55 25, 76 25"
-         
       stroke="white"
-      strokeWidth="1" 
+      strokeWidth="1"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeDasharray="6 4"
@@ -51,13 +50,12 @@ export const LoopArrow = ({ className = "nav-arrow" }: ArrowProps) => (
       opacity="0.95"
       filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
       markerEnd="url(#desktop-arrow-loop)"
-      
     />
   </svg>
 );
 
 // 2. SPIRAL ARROW (Middle)
-export const SpiralArrow = ({ className = "nav-arrow" }: ArrowProps) => (
+export const SpiralArrow = ({ className = 'nav-arrow' }: ArrowProps) => (
   <svg
     className={className}
     viewBox="0 0 70 50"
@@ -91,7 +89,7 @@ export const SpiralArrow = ({ className = "nav-arrow" }: ArrowProps) => (
 );
 
 // 3. WAVE ARROW (Bottom)
-export const WaveArrow = ({ className = "nav-arrow" }: ArrowProps) => (
+export const WaveArrow = ({ className = 'nav-arrow' }: ArrowProps) => (
   <svg
     className={className}
     viewBox="0 0 70 50"

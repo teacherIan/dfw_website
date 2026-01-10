@@ -1,29 +1,12 @@
-import { useFrame, useThree } from "@react-three/fiber";
-import { PresentationControls } from "@react-three/drei";
-import { useMemo, useRef, useEffect, useCallback, useState } from "react";
-import { useControls, monitor, button } from "leva";
-import type { SplatMesh as SparkSplatMesh } from "@sparkjsdev/spark";
-import { dyno } from "@sparkjsdev/spark";
-import "./spark";
-
-// Centralized animation timing constants (in milliseconds)
-export const ANIMATION_TIMING = {
-  ENTRANCE_DURATION: 13000,    // When splat assembly completes
-  TEXT_APPEAR: 13000,          // When title starts appearing
-  MENU_APPEAR: 14000,          // When menu buttons start appearing
-  CAMERA_DURATION: 20,         // Camera animation duration in seconds
-  WRITING_DURATION: 5000,      // Text writing animation duration
-} as const;
-
-// Easing function for smooth camera animation (ease-out cubic)
-const easeOutCubic = (t: number): number => {
-  return 1 - Math.pow(1 - t, 3);
-};
-
-// Linear interpolation helper
-const lerp = (start: number, end: number, t: number): number => {
-  return start + (end - start) * t;
-};
+import { useFrame, useThree } from '@react-three/fiber';
+import { PresentationControls } from '@react-three/drei';
+import { useMemo, useRef, useEffect, useCallback, useState } from 'react';
+import { useControls, monitor, button, folder } from 'leva';
+import type { SplatMesh as SparkSplatMesh } from '@sparkjsdev/spark';
+import { dyno } from '@sparkjsdev/spark';
+import { ANIMATION_TIMING } from '../../constants';
+import { easeOutCubic, lerp } from '../../utils';
+import '../spark';
 
 /**
  * Scene component for the 3D splat visualization
@@ -64,10 +47,10 @@ const Scene = () => {
   const baseTimeRef = useRef(0);
   const effectSetupRef = useRef(false);
   const cameraAnimationComplete = useRef(false);
-  
+
   // Detect mobile viewport
   const [isMobile, setIsMobile] = useState(false);
-  
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024);
@@ -76,7 +59,7 @@ const Scene = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
+
   // Refs for monitoring current camera position
   const currentCameraX = useRef(0);
   const currentCameraY = useRef(0);
@@ -87,85 +70,136 @@ const Scene = () => {
   const desktopCameraDefaults = { x: 0, y: 1.6, z: 3.1 };
   const cameraDefaults = isMobile ? mobileCameraDefaults : desktopCameraDefaults;
 
-  // Leva controls for camera position (target position)
-  const { cameraX, cameraY, cameraZ } = useControls('Camera', {
-    cameraX: { value: cameraDefaults.x, min: -10, max: 10, step: 0.1 },
-    cameraY: { value: cameraDefaults.y, min: -5, max: 10, step: 0.1 },
-    cameraZ: { value: cameraDefaults.z, min: 0.5, max: 10, step: 0.1 },
+  const {
+    cameraX,
+    cameraY,
+    cameraZ,
+    animateCamera,
+    animationDuration,
+    startX,
+    startY,
+    startZ,
+  } = useControls({
+    '🎥 Camera': folder({
+      position: folder({
+        cameraX: { value: cameraDefaults.x, min: -10, max: 10, step: 0.1, label: 'X' },
+        cameraY: { value: cameraDefaults.y, min: -5, max: 10, step: 0.1, label: 'Y' },
+        cameraZ: { value: cameraDefaults.z, min: 0.5, max: 10, step: 0.1, label: 'Z' },
+      }, { collapsed: true }),
+      animation: folder({
+        animateCamera: { value: true, label: 'Animate on Start' },
+        animationDuration: { value: 20, min: 1, max: 30, step: 0.5, label: 'Duration (s)' },
+        startX: { value: -1.0, min: -10, max: 10, step: 0.1, label: 'Start X' },
+        startY: { value: 15.0, min: -5, max: 25, step: 0.1, label: 'Start Y' },
+        startZ: { value: 20.0, min: 0.5, max: 30, step: 0.1, label: 'Start Z' },
+      }, { collapsed: true }),
+    }, { collapsed: true }),
   });
 
-  // Leva controls for camera animation
-  const { animateCamera, animationDuration, startX, startY, startZ } = useControls('Camera Animation', {
-    animateCamera: { value: true, label: 'Animate on Start' },
-    animationDuration: { value: 20, min: 1, max: 30, step: 0.5, label: 'Duration (s)' },
-    startX: { value: -1.0, min: -10, max: 10, step: 0.1, label: 'Start X' },
-    startY: { value: 15.0, min: -5, max: 25, step: 0.1, label: 'Start Y' },
-    startZ: { value: 20.0, min: 0.5, max: 30, step: 0.1, label: 'Start Z' },
+  const { depthOffset, animationSpeed } = useControls({
+    '✨ Entrance Animation': folder({
+      depthOffset: { value: 10.5, min: 0, max: 30, step: 0.5, label: 'Depth Offset' },
+      animationSpeed: { value: 1.5, min: 0.1, max: 3.0, step: 0.1, label: 'Animation Speed' },
+      resetAnimation: button(() => {
+        baseTimeRef.current = 0;
+        animateT.current.value = 0;
+        cameraAnimationComplete.current = false;
+        if (animateCamera) {
+          camera.position.set(startX, startY, startZ);
+        }
+        if (meshRef.current) {
+          meshRef.current.updateVersion();
+        }
+        window.dispatchEvent(new Event('resetAnimation'));
+      }),
+    }, { collapsed: true }),
   });
 
-  // Leva controls for entrance animation
-  const { depthOffset, animationSpeed } = useControls('Entrance Animation', {
-    depthOffset: { value: 10.5, min: 0, max: 30, step: 0.5, label: 'Depth Offset' },
-    animationSpeed: { value: 1.5, min: 0.1, max: 3.0, step: 0.1, label: 'Animation Speed' },
-    resetAnimation: button(() => {
-      baseTimeRef.current = 0;
-      animateT.current.value = 0;
-      cameraAnimationComplete.current = false;
-      if (animateCamera) {
-        camera.position.set(startX, startY, startZ);
-      }
-      if (meshRef.current) {
-        meshRef.current.updateVersion();
-      }
-      window.dispatchEvent(new Event('resetAnimation'));
-    }),
+  const {
+    grassDarkenAmount,
+    bottomLeftMultiplier,
+    bottomRightMultiplier,
+    holeFillMultiplier,
+    holeXMin,
+    holeXMax,
+    holeYMin,
+    holeYMax,
+    holeZMin,
+    holeZMax,
+  } = useControls({
+    '🎨 Visual Adjustments': folder({
+      darkening: folder({
+        grassDarkenAmount: { value: 2.35, min: 0, max: 5, step: 0.05, label: 'Grass Darken' },
+        bottomLeftMultiplier: {
+          value: 0.55,
+          min: 0,
+          max: 2.0,
+          step: 0.05,
+          label: 'Bottom Left Scale',
+        },
+        bottomRightMultiplier: {
+          value: 0.55,
+          min: 0,
+          max: 2.0,
+          step: 0.05,
+          label: 'Bottom Right Scale',
+        },
+      }, { collapsed: true }),
+      holeFilling: folder(
+        {
+          holeFillMultiplier: { value: 0.0, min: 0, max: 3.0, step: 0.05, label: 'Fill Scale' },
+          holeXMin: { value: -2.0, min: -10, max: 10, step: 0.5, label: 'X Min' },
+          holeXMax: { value: 2.0, min: -10, max: 10, step: 0.5, label: 'X Max' },
+          holeYMin: { value: 3.0, min: -10, max: 10, step: 0.5, label: 'Y Min' },
+          holeYMax: { value: 7.0, min: -10, max: 10, step: 0.5, label: 'Y Max' },
+          holeZMin: { value: -2.0, min: -10, max: 10, step: 0.5, label: 'Z Min' },
+          holeZMax: { value: 3.0, min: -10, max: 10, step: 0.5, label: 'Z Max' },
+        },
+        { collapsed: true }
+      ),
+    }, { collapsed: true }),
   });
 
-  // Leva controls for visual adjustments
-  const { grassDarkenAmount, bottomLeftMultiplier, bottomRightMultiplier, holeFillMultiplier, holeXMin, holeXMax, holeYMin, holeYMax, holeZMin, holeZMax } = useControls('Visual Adjustments', {
-    grassDarkenAmount: { value: 2.35, min: 0, max: 5, step: 0.05, label: 'Grass Darken' },
-    bottomLeftMultiplier: { value: 0.55, min: 0, max: 2.0, step: 0.05, label: 'Bottom Left Scale' },
-    bottomRightMultiplier: { value: 0.55, min: 0, max: 2.0, step: 0.05, label: 'Bottom Right Scale' },
-    holeFillMultiplier: { value: 0.0, min: 0, max: 3.0, step: 0.05, label: 'Hole Fill Scale' },
-    holeXMin: { value: -2.0, min: -10, max: 10, step: 0.5, label: 'Hole X Min' },
-    holeXMax: { value: 2.0, min: -10, max: 10, step: 0.5, label: 'Hole X Max' },
-    holeYMin: { value: 3.0, min: -10, max: 10, step: 0.5, label: 'Hole Y Min' },
-    holeYMax: { value: 7.0, min: -10, max: 10, step: 0.5, label: 'Hole Y Max' },
-    holeZMin: { value: -2.0, min: -10, max: 10, step: 0.5, label: 'Hole Z Min' },
-    holeZMax: { value: 3.0, min: -10, max: 10, step: 0.5, label: 'Hole Z Max' },
+  const { rotationX, rotationY, rotationZ } = useControls({
+    '🔄 Splat Transform': folder({
+      rotationX: { value: -1.6, min: -Math.PI, max: Math.PI, step: 0.01, label: 'Rotation X' },
+      rotationY: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01, label: 'Rotation Y' },
+      rotationZ: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01, label: 'Rotation Z' },
+    }, { collapsed: true }),
   });
 
-  // Leva controls for splat rotation
-  const { rotationX, rotationY, rotationZ } = useControls('Splat Rotation', {
-    rotationX: { value: -1.6, min: -Math.PI, max: Math.PI, step: 0.01 },
-    rotationY: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
-    rotationZ: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
-  });
-
-  // Leva controls for splat blending (synthetic vs camera-captured)
-  const { 
-    syntheticBrightness, 
-    syntheticSaturation, 
+  const {
+    syntheticBrightness,
+    syntheticSaturation,
     syntheticOpacity,
     syntheticZMin,
     syntheticZMax,
     syntheticYMin,
     syntheticYMax,
-  } = useControls('Splat Blending', {
-    syntheticBrightness: { value: 1.0, min: 0.1, max: 2.0, step: 0.05, label: 'Brightness' },
-    syntheticSaturation: { value: 0.55, min: 0.0, max: 1.5, step: 0.05, label: 'Saturation' },
-    syntheticOpacity: { value: 1.0, min: 0.1, max: 1.0, step: 0.05, label: 'Opacity' },
-    syntheticZMin: { value: -5.0, min: -20, max: 20, step: 0.5, label: 'Z Min' },
-    syntheticZMax: { value: 2.0, min: -20, max: 20, step: 0.5, label: 'Z Max' },
-    syntheticYMin: { value: -10.0, min: -20, max: 20, step: 0.5, label: 'Y Min' },
-    syntheticYMax: { value: 5.0, min: -20, max: 20, step: 0.5, label: 'Y Max' },
+  } = useControls({
+    '🌈 Splat Blending': folder(
+      {
+        syntheticBrightness: { value: 1.0, min: 0.1, max: 2.0, step: 0.05, label: 'Brightness' },
+        syntheticSaturation: { value: 0.55, min: 0.0, max: 1.5, step: 0.05, label: 'Saturation' },
+        syntheticOpacity: { value: 1.0, min: 0.1, max: 1.0, step: 0.05, label: 'Opacity' },
+        syntheticZMin: { value: -5.0, min: -20, max: 20, step: 0.5, label: 'Z Min' },
+        syntheticZMax: { value: 2.0, min: -20, max: 20, step: 0.5, label: 'Z Max' },
+        syntheticYMin: { value: -10.0, min: -20, max: 20, step: 0.5, label: 'Y Min' },
+        syntheticYMax: { value: 5.0, min: -20, max: 20, step: 0.5, label: 'Y Max' },
+      },
+      { collapsed: true }
+    ),
   });
 
-  // Leva monitor for current camera position (read-only, updates in real-time)
-  useControls('Current Camera Position', {
-    x: monitor(() => currentCameraX.current, { graph: false }),
-    y: monitor(() => currentCameraY.current, { graph: false }),
-    z: monitor(() => currentCameraZ.current, { graph: false }),
+  useControls({
+    '📊 Monitor': folder(
+      {
+        cameraX: monitor(() => currentCameraX.current, { graph: false, label: 'Camera X' }),
+        cameraY: monitor(() => currentCameraY.current, { graph: false, label: 'Camera Y' }),
+        cameraZ: monitor(() => currentCameraZ.current, { graph: false, label: 'Camera Z' }),
+      },
+      { collapsed: true }
+    ),
   });
 
   // Initialize camera to starting position if animation is enabled
@@ -193,10 +227,10 @@ const Scene = () => {
   const splatMeshArgs = useMemo(
     () =>
       ({
-        url: "/assets/v_one_final.spz",
+        url: '/assets/v_one_final.spz',
         stream: true,
       }) as const,
-    [],
+    []
   );
 
   // Setup entrance effect modifier AFTER mesh loads
@@ -210,28 +244,28 @@ const Scene = () => {
         { gsplat: dyno.Gsplat },
         ({ gsplat }) => {
           const d = new dyno.Dyno({
-            inTypes: { 
-              gsplat: dyno.Gsplat, 
-              t: "float", 
-              depthOffset: "float", 
-              animationSpeed: "float",
-              grassDarken: "float",
-              bottomLeftMultiplier: "float",
-              bottomRightMultiplier: "float",
-              holeFillMultiplier: "float",
-              holeXMin: "float",
-              holeXMax: "float",
-              holeYMin: "float",
-              holeYMax: "float",
-              holeZMin: "float",
-              holeZMax: "float",
-              syntheticBrightness: "float",
-              syntheticSaturation: "float",
-              syntheticOpacity: "float",
-              syntheticZMin: "float",
-              syntheticZMax: "float",
-              syntheticYMin: "float",
-              syntheticYMax: "float",
+            inTypes: {
+              gsplat: dyno.Gsplat,
+              t: 'float',
+              depthOffset: 'float',
+              animationSpeed: 'float',
+              grassDarken: 'float',
+              bottomLeftMultiplier: 'float',
+              bottomRightMultiplier: 'float',
+              holeFillMultiplier: 'float',
+              holeXMin: 'float',
+              holeXMax: 'float',
+              holeYMin: 'float',
+              holeYMax: 'float',
+              holeZMin: 'float',
+              holeZMax: 'float',
+              syntheticBrightness: 'float',
+              syntheticSaturation: 'float',
+              syntheticOpacity: 'float',
+              syntheticZMin: 'float',
+              syntheticZMax: 'float',
+              syntheticYMin: 'float',
+              syntheticYMax: 'float',
             },
             outTypes: { gsplat: dyno.Gsplat },
             globals: () => [
@@ -314,9 +348,10 @@ const Scene = () => {
                   
                   return vec4(scattered, s);
                 }
-              `)
+              `),
             ],
-            statements: ({ inputs, outputs }) => dyno.unindentLines(`
+            statements: ({ inputs, outputs }) =>
+              dyno.unindentLines(`
               ${outputs.gsplat} = ${inputs.gsplat};
               vec3 scales = ${inputs.gsplat}.scales;
               vec3 localPos = ${inputs.gsplat}.center;
@@ -446,7 +481,7 @@ const Scene = () => {
           return { gsplat };
         }
       );
-      
+
       // Trigger update after setting up the modifier
       meshReady.updateGenerator();
     }
@@ -475,30 +510,30 @@ const Scene = () => {
     syntheticZMaxRef.current.value = syntheticZMax;
     syntheticYMinRef.current.value = syntheticYMin;
     syntheticYMaxRef.current.value = syntheticYMax;
-    
+
     // Animate camera position during startup
     if (animateCamera && !cameraAnimationComplete.current) {
       const progress = Math.min(baseTimeRef.current / animationDuration, 1);
       const easedProgress = easeOutCubic(progress);
-      
+
       // Interpolate camera position from start to target
       const newX = lerp(startX, cameraX, easedProgress);
       const newY = lerp(startY, cameraY, easedProgress);
       const newZ = lerp(startZ, cameraZ, easedProgress);
-      
+
       camera.position.set(newX, newY, newZ);
-      
+
       // Mark animation as complete when finished
       if (progress >= 1) {
         cameraAnimationComplete.current = true;
       }
     }
-    
+
     // Update current camera position refs for Leva monitoring
     currentCameraX.current = Math.round(camera.position.x * 100) / 100;
     currentCameraY.current = Math.round(camera.position.y * 100) / 100;
     currentCameraZ.current = Math.round(camera.position.z * 100) / 100;
-    
+
     if (meshRef.current) {
       meshRef.current.updateVersion();
     }
