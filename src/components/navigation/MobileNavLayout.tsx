@@ -3,7 +3,7 @@ import { useControls } from 'leva';
 import { EthosArrow, ContactArrow, GalleryArrow } from './MobileArrows';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
 import NavLabel from './NavLabel';
-import { createFadeSlideStyle, createFadeSlideXYStyle } from '../../utils/styles';
+import { createFadeSlideStyle, createPopInStyle, createPopInCenteredStyle } from '../../utils/styles';
 import { MOBILE_NAV_DELAYS } from '../../constants/animation';
 
 interface MobileNavLayoutProps {
@@ -12,8 +12,8 @@ interface MobileNavLayoutProps {
 }
 
 const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
-  // Button positions for each breakpoint
-  const btnPositionsSmall = useControls('📱 Mobile Button Positions Small (<400px)', {
+  // Button positions for each breakpoint (nested under Mobile Buttons)
+  const btnPositionsSmall = useControls('📱 Mobile Buttons.Small (<400px)', {
     ethosLeft: { value: 14, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
     ethosBottom: { value: 26, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
     contactLeft: { value: 45, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
@@ -22,7 +22,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
     galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
   }, { collapsed: true });
 
-  const btnPositionsMid = useControls('📱 Mobile Button Positions Mid (400-699px)', {
+  const btnPositionsMid = useControls('📱 Mobile Buttons.Mid (400-699px)', {
     ethosLeft: { value: 14, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
     ethosBottom: { value: 26, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
     contactLeft: { value: 45, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
@@ -31,7 +31,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
     galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
   }, { collapsed: true });
 
-  const btnPositionsTablet = useControls('📱 Mobile Button Positions Tablet (700-999px)', {
+  const btnPositionsTablet = useControls('📱 Mobile Buttons.Tablet (700-999px)', {
     ethosLeft: { value: 11, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
     ethosBottom: { value: 29, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
     contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
@@ -40,7 +40,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
     galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
   }, { collapsed: true });
 
-  const btnPositionsIpadPro = useControls('📱 Mobile Button Positions iPad Pro (1000-1199px)', {
+  const btnPositionsIpadPro = useControls('📱 Mobile Buttons.iPad Pro (1000-1199px)', {
     ethosLeft: { value: 11, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
     ethosBottom: { value: 29, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
     contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
@@ -49,8 +49,8 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
     galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
   }, { collapsed: true });
 
-  // Label positions for each breakpoint
-  const labelPositionsSmall = useControls('📱 Mobile Label Positions Small (<400px)', {
+  // Label positions for each breakpoint (nested under Mobile Labels)
+  const labelPositionsSmall = useControls('📱 Mobile Labels.Small (<400px)', {
     ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
     ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
     contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
@@ -59,7 +59,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
     galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
   }, { collapsed: true });
 
-  const labelPositionsMid = useControls('📱 Mobile Label Positions Mid (400-699px)', {
+  const labelPositionsMid = useControls('📱 Mobile Labels.Mid (400-699px)', {
     ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
     ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
     contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
@@ -68,7 +68,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
     galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
   }, { collapsed: true });
 
-  const labelPositionsTablet = useControls('📱 Mobile Label Positions Tablet (700-999px)', {
+  const labelPositionsTablet = useControls('📱 Mobile Labels.Tablet (700-999px)', {
     ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
     ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
     contactLeft: { value: 51, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
@@ -77,7 +77,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
     galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
   }, { collapsed: true });
 
-  const labelPositionsIpadPro = useControls('📱 Mobile Label Positions iPad Pro (1000-1199px)', {
+  const labelPositionsIpadPro = useControls('📱 Mobile Labels.iPad Pro (1000-1199px)', {
     ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
     ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
     contactLeft: { value: 51, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
@@ -96,7 +96,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-ethos-btn hidden max-[399px]:block"
         style={{
-          ...createFadeSlideStyle(isVisible, 'x', '-30px', MOBILE_NAV_DELAYS.ETHOS_BUTTON),
+          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsSmall.ethosLeft}%`,
           bottom: `${btnPositionsSmall.ethosBottom}vh`,
         }}
@@ -115,7 +115,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-ethos-btn hidden min-[400px]:max-[699px]:block"
         style={{
-          ...createFadeSlideStyle(isVisible, 'x', '-30px', MOBILE_NAV_DELAYS.ETHOS_BUTTON),
+          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsMid.ethosLeft}%`,
           bottom: `${btnPositionsMid.ethosBottom}vh`,
         }}
@@ -134,7 +134,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-ethos-btn hidden min-[700px]:max-[999px]:block"
         style={{
-          ...createFadeSlideStyle(isVisible, 'x', '-30px', MOBILE_NAV_DELAYS.ETHOS_BUTTON),
+          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsTablet.ethosLeft}%`,
           bottom: `${btnPositionsTablet.ethosBottom}vh`,
         }}
@@ -153,7 +153,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-ethos-btn hidden min-[1000px]:max-[1199px]:block"
         style={{
-          ...createFadeSlideStyle(isVisible, 'x', '-30px', MOBILE_NAV_DELAYS.ETHOS_BUTTON),
+          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsIpadPro.ethosLeft}%`,
           bottom: `${btnPositionsIpadPro.ethosBottom}vh`,
         }}
@@ -227,7 +227,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-contact-btn hidden max-[399px]:block"
         style={{
-          ...createFadeSlideXYStyle(isVisible, '-50%', '20px', MOBILE_NAV_DELAYS.CONTACT_BUTTON),
+          ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsSmall.contactLeft}%`,
           bottom: `${btnPositionsSmall.contactBottom}vh`,
         }}
@@ -246,7 +246,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-contact-btn hidden min-[400px]:max-[699px]:block"
         style={{
-          ...createFadeSlideXYStyle(isVisible, '-50%', '20px', MOBILE_NAV_DELAYS.CONTACT_BUTTON),
+          ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsMid.contactLeft}%`,
           bottom: `${btnPositionsMid.contactBottom}vh`,
         }}
@@ -265,7 +265,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-contact-btn hidden min-[700px]:max-[999px]:block"
         style={{
-          ...createFadeSlideXYStyle(isVisible, '-50%', '20px', MOBILE_NAV_DELAYS.CONTACT_BUTTON),
+          ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsTablet.contactLeft}%`,
           bottom: `${btnPositionsTablet.contactBottom}vh`,
         }}
@@ -284,7 +284,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-contact-btn hidden min-[1000px]:max-[1199px]:block"
         style={{
-          ...createFadeSlideXYStyle(isVisible, '-50%', '20px', MOBILE_NAV_DELAYS.CONTACT_BUTTON),
+          ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsIpadPro.contactLeft}%`,
           bottom: `${btnPositionsIpadPro.contactBottom}vh`,
         }}
@@ -358,7 +358,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-gallery-btn hidden max-[399px]:block"
         style={{
-          ...createFadeSlideStyle(isVisible, 'x', '30px', MOBILE_NAV_DELAYS.GALLERY_BUTTON),
+          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           right: `${btnPositionsSmall.galleryRight}%`,
           bottom: `${btnPositionsSmall.galleryBottom}vh`,
         }}
@@ -377,7 +377,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-gallery-btn hidden min-[400px]:max-[699px]:block"
         style={{
-          ...createFadeSlideStyle(isVisible, 'x', '30px', MOBILE_NAV_DELAYS.GALLERY_BUTTON),
+          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           right: `${btnPositionsMid.galleryRight}%`,
           bottom: `${btnPositionsMid.galleryBottom}vh`,
         }}
@@ -396,7 +396,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-gallery-btn hidden min-[700px]:max-[999px]:block"
         style={{
-          ...createFadeSlideStyle(isVisible, 'x', '30px', MOBILE_NAV_DELAYS.GALLERY_BUTTON),
+          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           right: `${btnPositionsTablet.galleryRight}%`,
           bottom: `${btnPositionsTablet.galleryBottom}vh`,
         }}
@@ -415,7 +415,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
       <div
         className="nav-mobile-gallery-btn hidden min-[1000px]:max-[1199px]:block"
         style={{
-          ...createFadeSlideStyle(isVisible, 'x', '30px', MOBILE_NAV_DELAYS.GALLERY_BUTTON),
+          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           right: `${btnPositionsIpadPro.galleryRight}%`,
           bottom: `${btnPositionsIpadPro.galleryBottom}vh`,
         }}

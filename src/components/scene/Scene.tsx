@@ -4,7 +4,6 @@ import { useMemo, useRef, useEffect, useCallback, useState } from 'react';
 import { useControls, monitor, button, folder } from 'leva';
 import type { SplatMesh as SparkSplatMesh } from '@sparkjsdev/spark';
 import { dyno } from '@sparkjsdev/spark';
-import { ANIMATION_TIMING } from '../../constants';
 import { easeOutCubic, lerp } from '../../utils';
 import '../spark';
 
@@ -44,6 +43,11 @@ const Scene = () => {
   const syntheticZMaxRef = useRef(dyno.dynoFloat(2.0));
   const syntheticYMinRef = useRef(dyno.dynoFloat(-10.0));
   const syntheticYMaxRef = useRef(dyno.dynoFloat(5.0));
+  // Mobile simplification refs - reduce small particle chaos
+  const smallParticleThresholdRef = useRef(dyno.dynoFloat(0.0));
+  const smallMotionReductionRef = useRef(dyno.dynoFloat(0.0));
+  const skipSmallAnimationRef = useRef(dyno.dynoFloat(0.0));
+  const smallSpeedMultiplierRef = useRef(dyno.dynoFloat(1.0));
   const baseTimeRef = useRef(0);
   const effectSetupRef = useRef(false);
   const cameraAnimationComplete = useRef(false);
@@ -79,6 +83,8 @@ const Scene = () => {
     startX,
     startY,
     startZ,
+    ambientSway,
+    swayIntensity,
   } = useControls({
     '🎥 Camera': folder({
       position: folder({
@@ -93,13 +99,30 @@ const Scene = () => {
         startY: { value: 15.0, min: -5, max: 25, step: 0.1, label: 'Start Y' },
         startZ: { value: 20.0, min: 0.5, max: 30, step: 0.1, label: 'Start Z' },
       }, { collapsed: true }),
+      ambientSway: folder({
+        ambientSway: { value: true, label: 'Enable Sway' },
+        swayIntensity: { value: 5, min: 0, max: 20, step: 0.5, label: 'Intensity' },
+      }, { collapsed: true }),
     }, { collapsed: true }),
   });
 
-  const { depthOffset, animationSpeed } = useControls({
+  const {
+    depthOffset,
+    animationSpeed,
+    smallParticleThreshold,
+    smallMotionReduction,
+    skipSmallAnimation,
+    smallSpeedMultiplier,
+  } = useControls({
     '✨ Entrance Animation': folder({
       depthOffset: { value: 14, min: 0, max: 30, step: 0.5, label: 'Depth Offset' },
       animationSpeed: { value: 1.5, min: 0.1, max: 3.0, step: 0.1, label: 'Animation Speed' },
+      'Mobile Simplify': folder({
+        smallParticleThreshold: { value: 0, min: 0, max: 0.5, step: 0.05, label: 'Hide Tiny (threshold)' },
+        smallMotionReduction: { value: 0.2, min: 0, max: 1, step: 0.1, label: 'Calm Motion (0-1)' },
+        skipSmallAnimation: { value: false, label: 'Skip Small Anim' },
+        smallSpeedMultiplier: { value: 1, min: 1, max: 4, step: 0.25, label: 'Small Speed (1-4x)' },
+      }, { collapsed: true }),
       resetAnimation: button(() => {
         baseTimeRef.current = 0;
         animateT.current.value = 0;
@@ -180,7 +203,7 @@ const Scene = () => {
     '🌈 Splat Blending': folder(
       {
         syntheticBrightness: { value: 1.0, min: 0.1, max: 2.0, step: 0.05, label: 'Brightness' },
-        syntheticSaturation: { value: 0.55, min: 0.0, max: 1.5, step: 0.05, label: 'Saturation' },
+        syntheticSaturation: { value: 0.65, min: 0.0, max: 1.5, step: 0.05, label: 'Saturation' },
         syntheticOpacity: { value: 1.0, min: 0.1, max: 1.0, step: 0.05, label: 'Opacity' },
         syntheticZMin: { value: -5.0, min: -20, max: 20, step: 0.5, label: 'Z Min' },
         syntheticZMax: { value: 2.0, min: -20, max: 20, step: 0.5, label: 'Z Max' },
@@ -202,13 +225,14 @@ const Scene = () => {
     ),
   });
 
-  // Initialize camera to starting position if animation is enabled
+  // Initialize camera to starting position if animation is enabled (runs once on mount)
   useEffect(() => {
     if (animateCamera && !cameraAnimationComplete.current) {
       camera.position.set(startX, startY, startZ);
     } else {
       camera.position.set(cameraX, cameraY, cameraZ);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update camera position from Leva controls when animation is complete or disabled
@@ -266,6 +290,11 @@ const Scene = () => {
               syntheticZMax: 'float',
               syntheticYMin: 'float',
               syntheticYMax: 'float',
+              // Mobile simplification inputs
+              smallThreshold: 'float',
+              motionReduction: 'float',
+              skipSmall: 'float',
+              smallSpeed: 'float',
             },
             outTypes: { gsplat: dyno.Gsplat },
             globals: () => [
@@ -281,58 +310,61 @@ const Scene = () => {
                 // Far particles appear first, building the scene towards the camera
                 // Smaller particles appear before larger ones
                 // Dark/grayscale objects appear first (sketch-like), then colorful elements
-                vec4 assemble(vec3 pos, vec3 scale, vec3 color, float t, float depthOffset, float speed) {
-                  // Apply speed multiplier to time for faster/slower animation
-                  t = t * speed;
+                // Mobile options: hide tiny, calm motion, skip animation, speed up small particles
+                vec4 assemble(vec3 pos, vec3 scale, vec3 color, float t, float depthOffset, float speed,
+                              float smallThreshold, float motionReduction, float skipSmall, float smallSpeed) {
                   vec3 h = hash(pos);
-                  
+
                   // Calculate particle size magnitude (average of scale components)
                   float scaleMag = (scale.x + scale.y + scale.z) / 3.0;
-                  
+
                   // Normalize scale to a reasonable range (0-1) for timing
-                  // Smaller particles (low scaleMag) get earlier start times
-                  // Using log scale for more pleasing distribution since scales vary widely
                   float normalizedScale = clamp(log(scaleMag + 1.0) * 0.5, 0.0, 1.0);
-                  
-                  // Depth factor: particles further back (higher y due to rotation) appear first
-                  // Negative multiplier means higher y = earlier appearance
-                  // Add offset to ensure all start times are positive
+
+                  // Option 1: Hide tiny particles (return early with -1 marker)
+                  if (normalizedScale < smallThreshold) {
+                    return vec4(pos, -1.0);
+                  }
+
+                  // Option 4: Speed up small particles (smaller = faster)
+                  float effectiveSpeed = speed;
+                  if (normalizedScale < 0.5 && smallSpeed > 1.0) {
+                    effectiveSpeed = speed * mix(smallSpeed, 1.0, normalizedScale * 2.0);
+                  }
+                  t = t * effectiveSpeed;
+
+                  // Option 3: Skip animation for small particles (just fade in)
+                  if (skipSmall > 0.5 && normalizedScale < 0.4) {
+                    float fadeIn = smoothstep(0.0, 3.0, t);
+                    return vec4(pos, fadeIn);
+                  }
+
+                  // Calculate start time based on depth, size, color
                   float depthFactor = -pos.y * 2.5 + depthOffset;
-                  
-                  // Radial distance adds spatial variation
                   float dist = length(pos.xz);
-                  
-                  // Color-based timing: dark/grayscale objects appear first
                   float brightness = (color.r + color.g + color.b) / 3.0;
                   float saturation = max(color.r, max(color.g, color.b)) - min(color.r, min(color.g, color.b));
-                  
-                  // Bright and saturated colors are delayed
-                  // This makes dark wireframe/mesh appear first, then colorful furniture/grass
                   float colorDelay = brightness * 4.0 + saturation * 6.0;
-                  
-                  // Stagger formula: far particles and smaller particles appear first
-                  // - depthFactor: higher y (farther back) = lower start time (primary factor)
-                  // - normalizedScale * 8.0: larger particles delayed more (secondary factor)
-                  // - colorDelay: dark/gray objects first, then colorful (NEW!)
-                  // - dist * 0.2: subtle radial wave effect
-                  // - h.x * 1.5: randomness for organic feel
                   float start = depthFactor + normalizedScale * 8.0 + colorDelay + dist * 0.2 + h.x * 1.5;
-                  
-                  // Longer transition window for smoother, slower appearance
+
                   float s = smoothstep(start, start + 5.0, t);
-                  
-                  // Initial state: scattered based on particle size
-                  // Smaller particles start closer, larger ones from further away
-                  float scatterAmount = 20.0 + normalizedScale * 15.0;
+
+                  // Option 2: Reduce motion for small particles
+                  float motionScale = 1.0;
+                  if (normalizedScale < 0.5 && motionReduction > 0.0) {
+                    motionScale = mix(1.0 - motionReduction, 1.0, normalizedScale * 2.0);
+                  }
+
+                  // Apply scatter with motion reduction
+                  float scatterAmount = (20.0 + normalizedScale * 15.0) * motionScale;
                   vec3 scattered = pos + (h - 0.5) * scatterAmount * (1.0 - s);
-                  
-                  // Vertical offset: smaller particles rise from below first
-                  // Larger particles descend from above for dramatic contrast
-                  float verticalOffset = mix(-12.0, 8.0, normalizedScale);
+
+                  // Apply vertical offset with motion reduction
+                  float verticalOffset = mix(-12.0, 8.0, normalizedScale) * motionScale;
                   scattered.y += verticalOffset * (1.0 - s);
-                  
-                  // Swirl intensity varies with size - smaller particles swirl more
-                  float swirlIntensity = mix(5.0, 2.0, normalizedScale);
+
+                  // Apply swirl with motion reduction
+                  float swirlIntensity = mix(5.0, 2.0, normalizedScale) * motionScale;
                   float angle = (1.0 - s) * swirlIntensity;
                   float cosA = cos(angle);
                   float sinA = sin(angle);
@@ -340,12 +372,12 @@ const Scene = () => {
                   float z = scattered.x * sinA + scattered.z * cosA;
                   scattered.x = x;
                   scattered.z = z;
-                  
-                  // Add a gentle floating motion during entrance for smaller particles
+
+                  // Apply floating motion with motion reduction
                   float floatPhase = h.y * 6.28318 + t * 1.0;
-                  float floatAmount = (1.0 - normalizedScale) * (1.0 - s) * 0.5;
+                  float floatAmount = (1.0 - normalizedScale) * (1.0 - s) * 0.5 * motionScale;
                   scattered.y += sin(floatPhase) * floatAmount;
-                  
+
                   return vec4(scattered, s);
                 }
               `),
@@ -376,18 +408,28 @@ const Scene = () => {
               float syntheticZMax = ${inputs.syntheticZMax};
               float syntheticYMin = ${inputs.syntheticYMin};
               float syntheticYMax = ${inputs.syntheticYMax};
-              
-              // Apply graceful entrance effect with color-based timing and adjustable speed
-              vec4 effectResult = assemble(localPos, scales, particleColor, t, depthOffset, animationSpeed);
-              ${outputs.gsplat}.center = effectResult.xyz;
-              
-              // Smoother scaling with eased-in appearance
-              // Smaller particles pop in quickly, larger ones grow more gradually
-              float scaleProgress = effectResult.w * effectResult.w; // Ease-in curve
-              ${outputs.gsplat}.scales = scales * scaleProgress;
-              
-              // Fade in opacity for smoother entrance
-              ${outputs.gsplat}.rgba.a *= effectResult.w;
+              float smallThreshold = ${inputs.smallThreshold};
+              float motionReduction = ${inputs.motionReduction};
+              float skipSmall = ${inputs.skipSmall};
+              float smallSpeed = ${inputs.smallSpeed};
+
+              // Apply graceful entrance effect with mobile simplification options
+              vec4 effectResult = assemble(localPos, scales, particleColor, t, depthOffset, animationSpeed,
+                                           smallThreshold, motionReduction, skipSmall, smallSpeed);
+
+              // Handle hidden particles (threshold culling returns -1)
+              if (effectResult.w < 0.0) {
+                ${outputs.gsplat}.rgba.a = 0.0;
+              } else {
+                ${outputs.gsplat}.center = effectResult.xyz;
+
+                // Smoother scaling with eased-in appearance
+                float scaleProgress = effectResult.w * effectResult.w;
+                ${outputs.gsplat}.scales = scales * scaleProgress;
+
+                // Fade in opacity for smoother entrance
+                ${outputs.gsplat}.rgba.a *= effectResult.w;
+              }
 
               // Darken the area under the text for better legibility
               // We target points that are in the foreground-left area (Negative X, Negative Y in local space)
@@ -476,6 +518,10 @@ const Scene = () => {
             syntheticZMax: syntheticZMaxRef.current,
             syntheticYMin: syntheticYMinRef.current,
             syntheticYMax: syntheticYMaxRef.current,
+            smallThreshold: smallParticleThresholdRef.current,
+            motionReduction: smallMotionReductionRef.current,
+            skipSmall: skipSmallAnimationRef.current,
+            smallSpeed: smallSpeedMultiplierRef.current,
           }).gsplat;
 
           return { gsplat };
@@ -510,15 +556,33 @@ const Scene = () => {
     syntheticZMaxRef.current.value = syntheticZMax;
     syntheticYMinRef.current.value = syntheticYMin;
     syntheticYMaxRef.current.value = syntheticYMax;
+    // Mobile simplification - reduce small particle chaos
+    smallParticleThresholdRef.current.value = smallParticleThreshold;
+    smallMotionReductionRef.current.value = smallMotionReduction;
+    skipSmallAnimationRef.current.value = skipSmallAnimation ? 1.0 : 0.0;
+    smallSpeedMultiplierRef.current.value = smallSpeedMultiplier;
+
+    // Calculate ambient sway offset (runs from start for seamless feel)
+    let swayX = 0;
+    let swayY = 0;
+    if (ambientSway) {
+      const t = baseTimeRef.current;
+      const intensity = swayIntensity * 0.01; // Scale down for subtle effect
+
+      // Layered sine waves for organic, non-repeating movement
+      // Different frequencies create natural-feeling motion
+      swayX = (Math.sin(t * 0.3) * 0.5 + Math.sin(t * 0.7) * 0.3 + Math.sin(t * 0.13) * 0.2) * intensity;
+      swayY = (Math.sin(t * 0.2) * 0.4 + Math.cos(t * 0.5) * 0.3 + Math.sin(t * 0.11) * 0.3) * intensity;
+    }
 
     // Animate camera position during startup
     if (animateCamera && !cameraAnimationComplete.current) {
       const progress = Math.min(baseTimeRef.current / animationDuration, 1);
       const easedProgress = easeOutCubic(progress);
 
-      // Interpolate camera position from start to target
-      const newX = lerp(startX, cameraX, easedProgress);
-      const newY = lerp(startY, cameraY, easedProgress);
+      // Interpolate camera position from start to target, plus sway
+      const newX = lerp(startX, cameraX, easedProgress) + swayX;
+      const newY = lerp(startY, cameraY, easedProgress) + swayY;
       const newZ = lerp(startZ, cameraZ, easedProgress);
 
       camera.position.set(newX, newY, newZ);
@@ -527,6 +591,13 @@ const Scene = () => {
       if (progress >= 1) {
         cameraAnimationComplete.current = true;
       }
+    } else if (ambientSway) {
+      // After entrance animation, apply sway to final position
+      camera.position.set(
+        cameraX + swayX,
+        cameraY + swayY,
+        cameraZ
+      );
     }
 
     // Update current camera position refs for Leva monitoring

@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
-import { useControls, folder } from 'leva';
+import { useControls } from 'leva';
 import { LETTER_PATHS, LETTER_COUNT } from '../../constants/letterPaths';
 import { useWindowWidth } from '../../hooks';
 
@@ -50,34 +50,36 @@ const FILL_EASE = [0.22, 1, 0.36, 1] as const; // Quick start, gentle finish
 const HandDrawnText = ({ show }: HandDrawnTextProps) => {
   const { isPortrait, isSmallLandscape, isTablet, isIpadPro } = useWindowWidth();
 
-  // Title size controls organized in folders
-  const layout = useControls('📐 Layout', {
-    '🖥️ Desktop Title': folder({
-      desktopTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
-    }, { collapsed: true }),
-    '📱 iPad Pro Title (1000-1199px)': folder({
-      ipadProTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
-    }, { collapsed: true }),
-    '📱 Tablet Title (700-999px)': folder({
-      tabletTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
-    }, { collapsed: true }),
-    '📱 Small Landscape Title (400-699px)': folder({
-      smallTitleScale: { value: 1.1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
-    }, { collapsed: true }),
-    '📱 Portrait Title (<400px)': folder({
-      portraitTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
-    }, { collapsed: true }),
+  // Title size controls organized by breakpoint
+  const titleDesktop = useControls('✏️ Title.Desktop (1200px+)', {
+    desktopTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
+  }, { collapsed: true });
+
+  const titleIpadPro = useControls('✏️ Title.iPad Pro (1000-1199px)', {
+    ipadProTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
+  }, { collapsed: true });
+
+  const titleTablet = useControls('✏️ Title.Tablet (700-999px)', {
+    tabletTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
+  }, { collapsed: true });
+
+  const titleSmall = useControls('✏️ Title.Small Landscape (400-699px)', {
+    smallTitleScale: { value: 1.1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
+  }, { collapsed: true });
+
+  const titlePortrait = useControls('✏️ Title.Portrait (<400px)', {
+    portraitTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
   }, { collapsed: true });
 
   const titleScale = isPortrait
-    ? layout.portraitTitleScale
+    ? titlePortrait.portraitTitleScale
     : isSmallLandscape
-      ? layout.smallTitleScale
+      ? titleSmall.smallTitleScale
       : isTablet
-        ? layout.tabletTitleScale
+        ? titleTablet.tabletTitleScale
         : isIpadPro
-          ? layout.ipadProTitleScale
-          : layout.desktopTitleScale;
+          ? titleIpadPro.ipadProTitleScale
+          : titleDesktop.desktopTitleScale;
 
   if (!show) return null;
 
