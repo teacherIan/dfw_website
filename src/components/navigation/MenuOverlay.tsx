@@ -32,17 +32,15 @@ const BlueprintButton = ({
   fontSize?: number;
 }) => {
   const ArrowComponent = ArrowComponents[arrowType];
-  
+
+  // Stagger delays for mixed animation style
+  const labelDelay = delay;
+  const arrowDelay = delay + 150;
+  const buttonDelay = delay;
+
   return (
-    <div
-      className="nav-item flex items-center gap-3"
-      style={{
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateX(0)' : 'translateX(20px)',
-        transition: `all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
-      }}
-    >
-      {/* Label - desktop only */}
+    <div className="nav-item flex items-center gap-3">
+      {/* Label - desktop only - fade + slide animation */}
       <span
         className={clsx(
           'nav-label desktop-label-only',
@@ -56,21 +54,29 @@ const BlueprintButton = ({
           WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.7)',
           paintOrder: 'stroke fill',
           fontSize: `${fontSize}em`,
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'translateX(0)' : 'translateX(20px)',
+          transition: `opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${labelDelay}ms, transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${labelDelay}ms`,
         }}
       >
         {label}
       </span>
 
-      {/* Unique arrow for each button - desktop only */}
+      {/* Unique arrow for each button - desktop only - draw-in animation */}
       <span className={clsx('desktop-arrow-only', 'hidden xl:block', 'relative z-10')}>
-        <ArrowComponent />
+        <ArrowComponent isVisible={isVisible} delay={arrowDelay} />
       </span>
 
-      {/* Circular Blueprint Button */}
+      {/* Circular Blueprint Button - pop-in animation */}
       <button
         type="button"
         className="nav-button-circle pointer-events-auto"
         aria-label={`Open ${label.toLowerCase()}`}
+        style={{
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'scale(1)' : 'scale(0)',
+          transition: `opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${buttonDelay}ms, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${buttonDelay}ms`,
+        }}
       >
         <BlueprintButtonSVG />
         <span className="sr-only">View {label.toLowerCase()}</span>
@@ -95,15 +101,15 @@ const MenuOverlay = () => {
   const currentFont = fontFamilyMap[menuFont];
 
   // Responsive navigation controls organized in folders
-  const layout = useControls('📐 Layout', {
-    '🖥️ Desktop Nav': folder({
+  const layout = useControls('🖥️ Desktop/Landscape Nav', {
+    'Desktop (1200px+)': folder({
       desktopTop: { value: 45, min: 0, max: 100, step: 1, label: 'Top (%)' },
       desktopRight: { value: 1.25, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
       desktopGap: { value: 1.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
       desktopScale: { value: 1, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
       desktopFontSize: { value: 3.6, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
     }, { collapsed: true }),
-    '📱 Small Landscape Nav': folder({
+    'Small Landscape': folder({
       smallTop: { value: 30, min: 0, max: 100, step: 1, label: 'Top (%)' },
       smallRight: { value: 0.75, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
       smallGap: { value: 0.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },

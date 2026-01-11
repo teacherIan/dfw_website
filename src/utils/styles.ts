@@ -46,6 +46,36 @@ export const createFadeSlideXYStyle = (
 });
 
 /**
+ * Creates a pop-in animation with scale overshoot (0 → 1.1 → 1.0)
+ * Great for buttons and circular elements
+ * @param isVisible - Whether element is visible
+ * @param delay - Animation delay in milliseconds
+ */
+export const createPopInStyle = (
+  isVisible: boolean,
+  delay: number = 0
+): CSSProperties => ({
+  opacity: isVisible ? 1 : 0,
+  transform: isVisible ? 'scale(1)' : 'scale(0)',
+  transition: `opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
+});
+
+/**
+ * Creates a pop-in animation with horizontal centering (translateX(-50%))
+ * Used for centered elements like the Contact button
+ * @param isVisible - Whether element is visible
+ * @param delay - Animation delay in milliseconds
+ */
+export const createPopInCenteredStyle = (
+  isVisible: boolean,
+  delay: number = 0
+): CSSProperties => ({
+  opacity: isVisible ? 1 : 0,
+  transform: isVisible ? 'translateX(-50%) scale(1)' : 'translateX(-50%) scale(0)',
+  transition: `opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
+});
+
+/**
  * Text styling for navigation labels
  */
 export const NAV_LABEL_TEXT_STYLE: CSSProperties = {
