@@ -51,23 +51,23 @@ const HandDrawnText = ({ show }: HandDrawnTextProps) => {
   const { isPortrait, isSmallLandscape, isTablet, isIpadPro } = useWindowWidth();
 
   // Title size controls organized by breakpoint
-  const titleDesktop = useControls('✏️ Title.Desktop (1200px+)', {
+  const titleDesktop = useControls('🏠 Base.✏️ Title.Desktop (1200px+)', {
     desktopTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
   }, { collapsed: true });
 
-  const titleIpadPro = useControls('✏️ Title.iPad Pro (1000-1199px)', {
+  const titleIpadPro = useControls('🏠 Base.✏️ Title.iPad Pro (1000-1199px)', {
     ipadProTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
   }, { collapsed: true });
 
-  const titleTablet = useControls('✏️ Title.Tablet (700-999px)', {
+  const titleTablet = useControls('🏠 Base.✏️ Title.Tablet (700-999px)', {
     tabletTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
   }, { collapsed: true });
 
-  const titleSmall = useControls('✏️ Title.Small Landscape (400-699px)', {
+  const titleSmall = useControls('🏠 Base.✏️ Title.Small Landscape (400-699px)', {
     smallTitleScale: { value: 1.1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
   }, { collapsed: true });
 
-  const titlePortrait = useControls('✏️ Title.Portrait (<400px)', {
+  const titlePortrait = useControls('🏠 Base.✏️ Title.Portrait (<400px)', {
     portraitTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
   }, { collapsed: true });
 

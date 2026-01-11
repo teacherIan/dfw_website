@@ -5,8 +5,13 @@ import MobileNavLayout from './MobileNavLayout';
 import { LoopArrow, SpiralArrow, WaveArrow } from './DesktopArrows';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
 import { ANIMATION_TIMING, navItems, fontOptions, fontFamilyMap } from '../../constants';
-import type { ArrowType } from '../../constants';
+import type { ArrowType, SceneId } from '../../constants';
 import { useWindowWidth } from '../../hooks';
+
+interface MenuOverlayProps {
+  onNavigate: (scene: SceneId) => void;
+  skipDelay?: boolean;
+}
 
 // Arrow component mapping for desktop navigation
 const ArrowComponents: Record<ArrowType, typeof LoopArrow> = {
@@ -18,18 +23,22 @@ const ArrowComponents: Record<ArrowType, typeof LoopArrow> = {
 // Small circular blueprint button component
 const BlueprintButton = ({
   label,
+  sceneId,
   isVisible,
   delay,
   arrowType,
   currentFont,
   fontSize = 1,
+  onNavigate,
 }: {
   label: string;
+  sceneId: SceneId;
   isVisible: boolean;
   delay: number;
   arrowType: keyof typeof ArrowComponents;
   currentFont: string;
   fontSize?: number;
+  onNavigate: (scene: SceneId) => void;
 }) => {
   const ArrowComponent = ArrowComponents[arrowType];
 
@@ -72,6 +81,7 @@ const BlueprintButton = ({
         type="button"
         className="nav-button-circle pointer-events-auto"
         aria-label={`Open ${label.toLowerCase()}`}
+        onClick={() => onNavigate(sceneId)}
         style={{
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? 'scale(1)' : 'scale(0)',
@@ -85,12 +95,12 @@ const BlueprintButton = ({
   );
 };
 
-const MenuOverlay = () => {
-  const [isVisible, setIsVisible] = useState(false);
+const MenuOverlay = ({ onNavigate, skipDelay = false }: MenuOverlayProps) => {
+  const [isVisible, setIsVisible] = useState(skipDelay);
   const [animationKey, setAnimationKey] = useState(0);
   const { isSmallLandscape } = useWindowWidth();
 
-  const { menuFont } = useControls('🎨 Menu Style', {
+  const { menuFont } = useControls('🏠 Base.🎨 Menu Style', {
     menuFont: {
       value: 'Caveat',
       options: [...fontOptions],
@@ -101,7 +111,7 @@ const MenuOverlay = () => {
   const currentFont = fontFamilyMap[menuFont];
 
   // Responsive navigation controls organized in folders
-  const layout = useControls('🖥️ Desktop/Landscape Nav', {
+  const layout = useControls('🏠 Base.🖥️ Desktop/Landscape Nav', {
     'Desktop (1200px+)': folder({
       desktopTop: { value: 45, min: 0, max: 100, step: 1, label: 'Top (%)' },
       desktopRight: { value: 1.25, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
@@ -124,13 +134,17 @@ const MenuOverlay = () => {
     : { top: layout.desktopTop, right: layout.desktopRight, gap: layout.desktopGap, scale: layout.desktopScale, fontSize: layout.desktopFontSize };
 
   useEffect(() => {
-    // Animate in after the main content has loaded
+    // Animate in after the main content has loaded (skip delay when returning home)
+    if (skipDelay) {
+      setIsVisible(true);
+      return;
+    }
     setIsVisible(false);
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, ANIMATION_TIMING.MENU_APPEAR);
     return () => clearTimeout(timer);
-  }, [animationKey]);
+  }, [animationKey, skipDelay]);
 
   useEffect(() => {
     const handleReset = () => {
@@ -146,7 +160,7 @@ const MenuOverlay = () => {
       {/* ============================================
           MOBILE NAVIGATION
           ============================================ */}
-      <MobileNavLayout font={currentFont} isVisible={isVisible} />
+      <MobileNavLayout font={currentFont} isVisible={isVisible} onNavigate={onNavigate} />
 
       {/* ============================================
           DESKTOP NAVIGATION
@@ -165,11 +179,13 @@ const MenuOverlay = () => {
           <BlueprintButton
             key={item.id}
             label={item.label}
+            sceneId={item.id as SceneId}
             isVisible={isVisible}
             delay={item.delay}
             arrowType={item.arrowType as keyof typeof ArrowComponents}
             currentFont={currentFont}
             fontSize={navPos.fontSize}
+            onNavigate={onNavigate}
           />
         ))}
       </div>

@@ -1,17 +1,25 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { PresentationControls } from '@react-three/drei';
 import { useMemo, useRef, useEffect, useCallback, useState } from 'react';
-import { useControls, monitor, button, folder } from 'leva';
 import type { SplatMesh as SparkSplatMesh } from '@sparkjsdev/spark';
 import { dyno } from '@sparkjsdev/spark';
 import { easeOutCubic, lerp } from '../../utils';
+import { useSceneControls } from '../../hooks';
+import { EXIT_ANIMATION_TYPE, EXIT_ANIMATION_DURATION, ENTRANCE_ANIMATION_DURATION } from '../../constants';
+import type { SceneId, AnimationPhase } from '../../constants';
 import '../spark';
+
+interface SceneProps {
+  activeScene: SceneId;
+  targetScene: SceneId;
+  animationPhase: AnimationPhase;
+}
 
 /**
  * Scene component for the 3D splat visualization
- * Handles camera controls, splat mesh rendering, and entrance animation
+ * Handles camera controls, splat mesh rendering, entrance and exit animations
  */
-const Scene = () => {
+const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
   const renderer = useThree((state) => state.gl);
   const camera = useThree((state) => state.camera);
   // Use state + callback ref pattern so we can properly react to mesh being ready
@@ -48,6 +56,10 @@ const Scene = () => {
   const smallMotionReductionRef = useRef(dyno.dynoFloat(0.0));
   const skipSmallAnimationRef = useRef(dyno.dynoFloat(0.0));
   const smallSpeedMultiplierRef = useRef(dyno.dynoFloat(1.0));
+  // Exit animation refs
+  const exitTypeRef = useRef(dyno.dynoFloat(0.0));
+  const exitProgressRef = useRef(dyno.dynoFloat(0.0));
+  const exitStartTimeRef = useRef<number | null>(null);
   const baseTimeRef = useRef(0);
   const effectSetupRef = useRef(false);
   const cameraAnimationComplete = useRef(false);
@@ -64,16 +76,18 @@ const Scene = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Refs for monitoring current camera position
-  const currentCameraX = useRef(0);
-  const currentCameraY = useRef(0);
-  const currentCameraZ = useRef(0);
+  // Reset animation handler - passed to useSceneControls
+  const handleResetAnimation = useCallback(() => {
+    baseTimeRef.current = 0;
+    animateT.current.value = 0;
+    cameraAnimationComplete.current = false;
+    if (meshRef.current) {
+      meshRef.current.updateVersion();
+    }
+    window.dispatchEvent(new Event('resetAnimation'));
+  }, []);
 
-  // Mobile vs desktop camera positions
-  const mobileCameraDefaults = { x: 0, y: 2.5, z: 4.0 };
-  const desktopCameraDefaults = { x: 0, y: 1.6, z: 3.1 };
-  const cameraDefaults = isMobile ? mobileCameraDefaults : desktopCameraDefaults;
-
+  // All Leva controls extracted to custom hook
   const {
     cameraX,
     cameraY,
@@ -85,60 +99,12 @@ const Scene = () => {
     startZ,
     ambientSway,
     swayIntensity,
-  } = useControls({
-    '🎥 Camera': folder({
-      position: folder({
-        cameraX: { value: cameraDefaults.x, min: -10, max: 10, step: 0.1, label: 'X' },
-        cameraY: { value: cameraDefaults.y, min: -5, max: 10, step: 0.1, label: 'Y' },
-        cameraZ: { value: cameraDefaults.z, min: 0.5, max: 10, step: 0.1, label: 'Z' },
-      }, { collapsed: true }),
-      animation: folder({
-        animateCamera: { value: true, label: 'Animate on Start' },
-        animationDuration: { value: 20, min: 1, max: 30, step: 0.5, label: 'Duration (s)' },
-        startX: { value: -1.0, min: -10, max: 10, step: 0.1, label: 'Start X' },
-        startY: { value: 15.0, min: -5, max: 25, step: 0.1, label: 'Start Y' },
-        startZ: { value: 20.0, min: 0.5, max: 30, step: 0.1, label: 'Start Z' },
-      }, { collapsed: true }),
-      ambientSway: folder({
-        ambientSway: { value: true, label: 'Enable Sway' },
-        swayIntensity: { value: 5, min: 0, max: 20, step: 0.5, label: 'Intensity' },
-      }, { collapsed: true }),
-    }, { collapsed: true }),
-  });
-
-  const {
     depthOffset,
     animationSpeed,
     smallParticleThreshold,
     smallMotionReduction,
     skipSmallAnimation,
     smallSpeedMultiplier,
-  } = useControls({
-    '✨ Entrance Animation': folder({
-      depthOffset: { value: 14, min: 0, max: 30, step: 0.5, label: 'Depth Offset' },
-      animationSpeed: { value: 1.5, min: 0.1, max: 3.0, step: 0.1, label: 'Animation Speed' },
-      'Mobile Simplify': folder({
-        smallParticleThreshold: { value: 0, min: 0, max: 0.5, step: 0.05, label: 'Hide Tiny (threshold)' },
-        smallMotionReduction: { value: 0.2, min: 0, max: 1, step: 0.1, label: 'Calm Motion (0-1)' },
-        skipSmallAnimation: { value: false, label: 'Skip Small Anim' },
-        smallSpeedMultiplier: { value: 1, min: 1, max: 4, step: 0.25, label: 'Small Speed (1-4x)' },
-      }, { collapsed: true }),
-      resetAnimation: button(() => {
-        baseTimeRef.current = 0;
-        animateT.current.value = 0;
-        cameraAnimationComplete.current = false;
-        if (animateCamera) {
-          camera.position.set(startX, startY, startZ);
-        }
-        if (meshRef.current) {
-          meshRef.current.updateVersion();
-        }
-        window.dispatchEvent(new Event('resetAnimation'));
-      }),
-    }, { collapsed: true }),
-  });
-
-  const {
     grassDarkenAmount,
     bottomLeftMultiplier,
     bottomRightMultiplier,
@@ -149,49 +115,9 @@ const Scene = () => {
     holeYMax,
     holeZMin,
     holeZMax,
-  } = useControls({
-    '🎨 Visual Adjustments': folder({
-      darkening: folder({
-        grassDarkenAmount: { value: 2.35, min: 0, max: 5, step: 0.05, label: 'Grass Darken' },
-        bottomLeftMultiplier: {
-          value: 0.55,
-          min: 0,
-          max: 2.0,
-          step: 0.05,
-          label: 'Bottom Left Scale',
-        },
-        bottomRightMultiplier: {
-          value: 0.55,
-          min: 0,
-          max: 2.0,
-          step: 0.05,
-          label: 'Bottom Right Scale',
-        },
-      }, { collapsed: true }),
-      holeFilling: folder(
-        {
-          holeFillMultiplier: { value: 0.0, min: 0, max: 3.0, step: 0.05, label: 'Fill Scale' },
-          holeXMin: { value: -2.0, min: -10, max: 10, step: 0.5, label: 'X Min' },
-          holeXMax: { value: 2.0, min: -10, max: 10, step: 0.5, label: 'X Max' },
-          holeYMin: { value: 3.0, min: -10, max: 10, step: 0.5, label: 'Y Min' },
-          holeYMax: { value: 7.0, min: -10, max: 10, step: 0.5, label: 'Y Max' },
-          holeZMin: { value: -2.0, min: -10, max: 10, step: 0.5, label: 'Z Min' },
-          holeZMax: { value: 3.0, min: -10, max: 10, step: 0.5, label: 'Z Max' },
-        },
-        { collapsed: true }
-      ),
-    }, { collapsed: true }),
-  });
-
-  const { rotationX, rotationY, rotationZ } = useControls({
-    '🔄 Splat Transform': folder({
-      rotationX: { value: -1.6, min: -Math.PI, max: Math.PI, step: 0.01, label: 'Rotation X' },
-      rotationY: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01, label: 'Rotation Y' },
-      rotationZ: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01, label: 'Rotation Z' },
-    }, { collapsed: true }),
-  });
-
-  const {
+    rotationX,
+    rotationY,
+    rotationZ,
     syntheticBrightness,
     syntheticSaturation,
     syntheticOpacity,
@@ -199,30 +125,12 @@ const Scene = () => {
     syntheticZMax,
     syntheticYMin,
     syntheticYMax,
-  } = useControls({
-    '🌈 Splat Blending': folder(
-      {
-        syntheticBrightness: { value: 1.0, min: 0.1, max: 2.0, step: 0.05, label: 'Brightness' },
-        syntheticSaturation: { value: 0.65, min: 0.0, max: 1.5, step: 0.05, label: 'Saturation' },
-        syntheticOpacity: { value: 1.0, min: 0.1, max: 1.0, step: 0.05, label: 'Opacity' },
-        syntheticZMin: { value: -5.0, min: -20, max: 20, step: 0.5, label: 'Z Min' },
-        syntheticZMax: { value: 2.0, min: -20, max: 20, step: 0.5, label: 'Z Max' },
-        syntheticYMin: { value: -10.0, min: -20, max: 20, step: 0.5, label: 'Y Min' },
-        syntheticYMax: { value: 5.0, min: -20, max: 20, step: 0.5, label: 'Y Max' },
-      },
-      { collapsed: true }
-    ),
-  });
-
-  useControls({
-    '📊 Monitor': folder(
-      {
-        cameraX: monitor(() => currentCameraX.current, { graph: false, label: 'Camera X' }),
-        cameraY: monitor(() => currentCameraY.current, { graph: false, label: 'Camera Y' }),
-        cameraZ: monitor(() => currentCameraZ.current, { graph: false, label: 'Camera Z' }),
-      },
-      { collapsed: true }
-    ),
+    currentCameraX,
+    currentCameraY,
+    currentCameraZ,
+  } = useSceneControls({
+    isMobile,
+    onResetAnimation: handleResetAnimation,
   });
 
   // Initialize camera to starting position if animation is enabled (runs once on mount)
@@ -295,6 +203,9 @@ const Scene = () => {
               motionReduction: 'float',
               skipSmall: 'float',
               smallSpeed: 'float',
+              // Exit animation inputs
+              exitType: 'float',
+              exitProgress: 'float',
             },
             outTypes: { gsplat: dyno.Gsplat },
             globals: () => [
@@ -380,6 +291,139 @@ const Scene = () => {
 
                   return vec4(scattered, s);
                 }
+
+                // ============================================================
+                // EXIT ANIMATIONS - Simplified for immediate response
+                // Progress is already eased in JavaScript, so we keep GLSL simple
+                // ============================================================
+
+                // Spiral Vortex exit animation for Gallery
+                // Particles spiral inward to a center point
+                vec4 spiralVortex(vec3 pos, vec3 scale, float progress, vec3 h) {
+                  vec3 vortexCenter = vec3(0.0, 2.0, 0.0);
+
+                  // Light stagger based on distance for visual interest
+                  float dist = length(pos - vortexCenter);
+                  float distFactor = clamp(dist / 12.0, 0.0, 1.0);
+                  float p = clamp((progress - distFactor * 0.15) / (1.0 - distFactor * 0.15), 0.0, 1.0);
+
+                  // Spiral rotation - varies by particle
+                  float spiralSpeed = 3.0 + h.x * 1.5;
+                  float angle = p * spiralSpeed;
+
+                  // Pull toward center
+                  vec3 newPos = mix(pos, vortexCenter, p * p);
+
+                  // Apply spiral rotation around Y axis
+                  vec3 offset = newPos - vortexCenter;
+                  float cosA = cos(angle);
+                  float sinA = sin(angle);
+                  newPos.x = vortexCenter.x + offset.x * cosA - offset.z * sinA;
+                  newPos.z = vortexCenter.z + offset.x * sinA + offset.z * cosA;
+
+                  // Scale and fade
+                  float scaleMultiplier = 1.0 - p * 0.8;
+                  float opacity = 1.0 - p;
+
+                  // Pack: scale in integer part (x1000), opacity in fractional (capped at 0.999)
+                  return vec4(newPos, scaleMultiplier * 1000.0 + min(opacity, 0.999));
+                }
+
+                // Page Turn exit animation for Ethos
+                // Particles sweep from left to right like turning a book page
+                vec4 pageTurn(vec3 pos, vec3 scale, float progress, vec3 h) {
+                  // Page turn sweeps from left (-X) to right (+X)
+                  // Ethos button is on the left side
+
+                  // Normalize X position for stagger (left starts first)
+                  float xNorm = clamp((pos.x + 8.0) / 16.0, 0.0, 1.0);
+                  float p = clamp((progress - xNorm * 0.3) / (1.0 - xNorm * 0.3), 0.0, 1.0);
+
+                  vec3 newPos = pos;
+
+                  // Sweep to the right
+                  newPos.x += p * 15.0;
+
+                  // Curl effect - particles lift up in the middle of their journey
+                  float curlPhase = p * 3.14159;
+                  float curlHeight = sin(curlPhase) * 3.0;
+                  newPos.y += curlHeight;
+
+                  // Slight rotation/tumble as they move
+                  float tumble = p * (h.y - 0.5) * 2.0;
+                  newPos.z += sin(tumble) * p * 2.0;
+
+                  // Scale - grow slightly during curl, then shrink
+                  float scaleMultiplier = 1.0 + sin(curlPhase) * 0.2 - p * 0.3;
+
+                  // Fade out as they exit right
+                  float opacity = 1.0 - p;
+
+                  // Pack: scale in integer part (x1000), opacity in fractional (capped at 0.999)
+                  return vec4(newPos, scaleMultiplier * 1000.0 + min(opacity, 0.999));
+                }
+
+                // Ripple Wave exit animation for Contact
+                // Concentric waves emanate from button position (bottom center)
+                vec4 rippleWave(vec3 pos, vec3 scale, float progress, vec3 h) {
+                  // Origin at Contact button location (bottom center, near camera)
+                  vec3 waveOrigin = vec3(0.0, -1.5, 3.0);
+
+                  // Calculate distance from wave origin
+                  vec3 fromOrigin = pos - waveOrigin;
+                  float dist = length(fromOrigin);
+                  vec3 direction = normalize(fromOrigin + vec3(0.001));
+
+                  // Wave front expands outward over time
+                  float maxRadius = 20.0;
+                  float waveRadius = progress * maxRadius;
+                  float waveWidth = 4.0;
+
+                  // How close is this particle to the current wave front?
+                  float distToWave = abs(dist - waveRadius);
+                  float waveInfluence = 1.0 - smoothstep(0.0, waveWidth, distToWave);
+
+                  // Particles behind the wave get pushed and fade
+                  float behindWave = smoothstep(waveRadius - waveWidth, waveRadius, dist);
+                  float aheadOfWave = 1.0 - smoothstep(waveRadius, waveRadius + waveWidth * 2.0, dist);
+
+                  // Combined effect - particles affected by passing wave
+                  float waveEffect = behindWave * (1.0 - progress * 0.3);
+
+                  vec3 newPos = pos;
+
+                  // Push outward as wave passes
+                  float pushAmount = waveInfluence * 3.0 + waveEffect * progress * 8.0;
+                  newPos += direction * pushAmount;
+
+                  // Slight upward drift for passed particles
+                  newPos.y += waveEffect * progress * 4.0;
+
+                  // Scale - particles grow slightly as wave hits, then shrink
+                  float scaleMultiplier = 1.0 + waveInfluence * 0.3 - waveEffect * progress * 0.5;
+
+                  // Opacity - fade out after wave passes
+                  float opacity = 1.0 - waveEffect * progress;
+
+                  // Pack: scale in integer part (x1000), opacity in fractional (capped at 0.999)
+                  return vec4(newPos, scaleMultiplier * 1000.0 + min(opacity, 0.999));
+                }
+
+                // Apply exit animation based on type
+                // exitType: 0=none, 1=ethos(pageTurn), 2=contact(ripple), 3=gallery(spiral)
+                vec4 applyExitAnimation(vec3 pos, vec3 scale, float exitType, float exitProgress, vec3 h) {
+                  if (exitProgress <= 0.001 || exitType < 0.5) {
+                    return vec4(pos, 1000.0 + 0.999); // No animation, full scale and opacity
+                  }
+
+                  if (exitType < 1.5) {
+                    return pageTurn(pos, scale, exitProgress, h);
+                  } else if (exitType < 2.5) {
+                    return rippleWave(pos, scale, exitProgress, h);
+                  } else {
+                    return spiralVortex(pos, scale, exitProgress, h);
+                  }
+                }
               `),
             ],
             statements: ({ inputs, outputs }) =>
@@ -412,6 +456,11 @@ const Scene = () => {
               float motionReduction = ${inputs.motionReduction};
               float skipSmall = ${inputs.skipSmall};
               float smallSpeed = ${inputs.smallSpeed};
+              float exitType = ${inputs.exitType};
+              float exitProgress = ${inputs.exitProgress};
+
+              // Get random hash for this particle (used by both entrance and exit animations)
+              vec3 h = hash(localPos);
 
               // Apply graceful entrance effect with mobile simplification options
               vec4 effectResult = assemble(localPos, scales, particleColor, t, depthOffset, animationSpeed,
@@ -429,6 +478,22 @@ const Scene = () => {
 
                 // Fade in opacity for smoother entrance
                 ${outputs.gsplat}.rgba.a *= effectResult.w;
+
+                // Apply exit animation if active
+                if (exitProgress > 0.0 && exitType > 0.5) {
+                  vec4 exitResult = applyExitAnimation(${outputs.gsplat}.center, ${outputs.gsplat}.scales, exitType, exitProgress, h);
+                  ${outputs.gsplat}.center = exitResult.xyz;
+
+                  // Unpack scale multiplier and opacity from w component
+                  // Packing: floor(scale * 1000) + opacity, so w = SSSS.OOO
+                  float scaleRaw = floor(exitResult.w);
+                  float exitScaleMultiplier = scaleRaw / 1000.0;
+                  float exitOpacity = exitResult.w - scaleRaw;
+                  exitOpacity = clamp(exitOpacity, 0.0, 1.0);
+
+                  ${outputs.gsplat}.scales *= exitScaleMultiplier;
+                  ${outputs.gsplat}.rgba.a *= exitOpacity;
+                }
               }
 
               // Darken the area under the text for better legibility
@@ -522,6 +587,8 @@ const Scene = () => {
             motionReduction: smallMotionReductionRef.current,
             skipSmall: skipSmallAnimationRef.current,
             smallSpeed: smallSpeedMultiplierRef.current,
+            exitType: exitTypeRef.current,
+            exitProgress: exitProgressRef.current,
           }).gsplat;
 
           return { gsplat };
@@ -533,12 +600,54 @@ const Scene = () => {
     }
   }, [meshReady]);
 
+  // Update exit animation when phase changes
+  useEffect(() => {
+    if (animationPhase === 'exiting') {
+      // Set the exit animation type based on target scene
+      exitTypeRef.current.value = EXIT_ANIMATION_TYPE[targetScene] || 0;
+      exitStartTimeRef.current = performance.now();
+      exitProgressRef.current.value = 0;
+    } else if (animationPhase === 'idle' && activeScene === 'home') {
+      // Only reset exit animation when back on home
+      exitTypeRef.current.value = 0;
+      exitProgressRef.current.value = 0;
+      exitStartTimeRef.current = null;
+    } else if (animationPhase === 'idle' && activeScene !== 'home') {
+      // Keep splat hidden when on other scenes
+      exitProgressRef.current.value = 1;
+    } else if (animationPhase === 'entering') {
+      // Start entrance animation (reverse of exit)
+      // Keep exitType the same so we animate back using the same effect
+      exitStartTimeRef.current = performance.now();
+      // Explicitly set progress to 1 - will animate to 0 in useFrame
+      exitProgressRef.current.value = 1;
+    }
+  }, [animationPhase, targetScene, activeScene]);
+
   // Animate the entrance effect and camera
   useFrame((_, delta) => {
     baseTimeRef.current += delta;
     animateT.current.value = baseTimeRef.current;
     depthOffsetRef.current.value = depthOffset;
     animationSpeedRef.current.value = animationSpeed;
+
+    // Update exit animation progress with easing
+    if (animationPhase === 'exiting' && exitStartTimeRef.current !== null) {
+      const elapsed = (performance.now() - exitStartTimeRef.current) / 1000;
+      const linearProgress = Math.min(elapsed / EXIT_ANIMATION_DURATION, 1);
+      // Use easeOutCubic for smooth deceleration at the end
+      const easedProgress = easeOutCubic(linearProgress);
+      exitProgressRef.current.value = easedProgress;
+    }
+
+    // Update entrance animation progress (reverse - from 1 to 0) with easing
+    if (animationPhase === 'entering' && exitStartTimeRef.current !== null) {
+      const elapsed = (performance.now() - exitStartTimeRef.current) / 1000;
+      const linearProgress = Math.min(elapsed / ENTRANCE_ANIMATION_DURATION, 1);
+      // Use easeOutCubic for smooth arrival
+      const easedProgress = 1 - easeOutCubic(linearProgress);
+      exitProgressRef.current.value = easedProgress;
+    }
     grassDarkenRef.current.value = grassDarkenAmount;
     bottomLeftMultiplierRef.current.value = bottomLeftMultiplier;
     bottomRightMultiplierRef.current.value = bottomRightMultiplier;
