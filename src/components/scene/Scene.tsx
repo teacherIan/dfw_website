@@ -13,13 +13,14 @@ interface SceneProps {
   activeScene: SceneId;
   targetScene: SceneId;
   animationPhase: AnimationPhase;
+  overrideExitType?: number | null;
 }
 
 /**
  * Scene component for the 3D splat visualization
  * Handles camera controls, splat mesh rendering, entrance and exit animations
  */
-const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
+const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: SceneProps) => {
   const renderer = useThree((state) => state.gl);
   const camera = useThree((state) => state.camera);
   // Use state + callback ref pattern so we can properly react to mesh being ready
@@ -51,6 +52,25 @@ const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
   const syntheticZMaxRef = useRef(dyno.dynoFloat(2.0));
   const syntheticYMinRef = useRef(dyno.dynoFloat(-10.0));
   const syntheticYMaxRef = useRef(dyno.dynoFloat(5.0));
+  
+  // Exit animation controls
+  const explodedExpansionStrengthRef = useRef(dyno.dynoFloat(6.0));
+  const explodedRotationSpeedRef = useRef(dyno.dynoFloat(0.5));
+  const explodedFadeStartRef = useRef(dyno.dynoFloat(0.5));
+  const explodedFadeEndRef = useRef(dyno.dynoFloat(0.95));
+  
+  // Pond ripple controls
+  const pondWaveSpeedRef = useRef(dyno.dynoFloat(8.0));
+  const pondWaveFrequencyRef = useRef(dyno.dynoFloat(3.0));
+  const pondWaveAmplitudeRef = useRef(dyno.dynoFloat(0.5));
+  const pondWaveCountRef = useRef(dyno.dynoFloat(20.0));
+
+  // Physics explosion controls
+  const physicsStrengthRef = useRef(dyno.dynoFloat(15.0));
+  const physicsGravityRef = useRef(dyno.dynoFloat(25.0));
+  const physicsFrictionRef = useRef(dyno.dynoFloat(0.90));
+  const physicsTumbleSpeedRef = useRef(dyno.dynoFloat(5.0));
+  
   // Mobile simplification refs - reduce small particle chaos
   const smallParticleThresholdRef = useRef(dyno.dynoFloat(0.0));
   const smallMotionReductionRef = useRef(dyno.dynoFloat(0.0));
@@ -125,6 +145,27 @@ const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
     syntheticZMax,
     syntheticYMin,
     syntheticYMax,
+    
+    // Exit Animation - Exploded View
+    explodedExpansionStrength,
+    explodedRotationSpeed,
+    explodedFadeStart,
+    explodedFadeEnd,
+    
+    // Exit Animation - Pond Ripple
+    pondWaveSpeed,
+    pondWaveFrequency,
+    pondWaveAmplitude,
+    pondWaveCount,
+    
+    // Exit Animation - Physics Explosion
+    physicsStrength,
+    physicsGravity,
+    physicsFriction,
+    physicsTumbleSpeed,
+    
+    exitAnimationDuration,
+    
     currentCameraX,
     currentCameraY,
     currentCameraZ,
@@ -198,6 +239,21 @@ const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
               syntheticZMax: 'float',
               syntheticYMin: 'float',
               syntheticYMax: 'float',
+              // Exit animation controls
+              explodedExpansionStrength: 'float',
+              explodedRotationSpeed: 'float',
+              explodedFadeStart: 'float',
+              explodedFadeEnd: 'float',
+              // Pond ripple controls
+              pondWaveSpeed: 'float',
+              pondWaveFrequency: 'float',
+              pondWaveAmplitude: 'float',
+              pondWaveCount: 'float',
+              // Physics explosion controls
+              physicsStrength: 'float',
+              physicsGravity: 'float',
+              physicsFriction: 'float',
+              physicsTumbleSpeed: 'float',
               // Mobile simplification inputs
               smallThreshold: 'float',
               motionReduction: 'float',
@@ -297,132 +353,308 @@ const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
                 // Progress is already eased in JavaScript, so we keep GLSL simple
                 // ============================================================
 
-                // Spiral Vortex exit animation for Gallery
-                // Particles spiral inward to a center point
-                vec4 spiralVortex(vec3 pos, vec3 scale, float progress, vec3 h) {
-                  vec3 vortexCenter = vec3(0.0, 2.0, 0.0);
+                // ============================================================
+                // EXIT ANIMATION FUNCTIONS
+                // ============================================================
 
-                  // Light stagger based on distance for visual interest
-                  float dist = length(pos - vortexCenter);
-                  float distFactor = clamp(dist / 12.0, 0.0, 1.0);
-                  float p = clamp((progress - distFactor * 0.15) / (1.0 - distFactor * 0.15), 0.0, 1.0);
-
-                  // Spiral rotation - varies by particle
-                  float spiralSpeed = 3.0 + h.x * 1.5;
-                  float angle = p * spiralSpeed;
-
-                  // Pull toward center
-                  vec3 newPos = mix(pos, vortexCenter, p * p);
-
-                  // Apply spiral rotation around Y axis
-                  vec3 offset = newPos - vortexCenter;
-                  float cosA = cos(angle);
-                  float sinA = sin(angle);
-                  newPos.x = vortexCenter.x + offset.x * cosA - offset.z * sinA;
-                  newPos.z = vortexCenter.z + offset.x * sinA + offset.z * cosA;
-
-                  // Scale and fade
-                  float scaleMultiplier = 1.0 - p * 0.8;
-                  float opacity = 1.0 - p;
-
-                  // Pack: scale in integer part (x1000), opacity in fractional (capped at 0.999)
-                  return vec4(newPos, scaleMultiplier * 1000.0 + min(opacity, 0.999));
+                // 1. Gust of Wind (Ethos) - Toned down
+                vec4 exitGust(vec3 pos, vec3 scale, float progress, vec3 h) {
+                  vec3 windDir = normalize(vec3(1.0, 0.4, -0.2));
+                  float weight = mix(0.7, 1.3, h.x);
+                  float xDelay = (pos.x + 8.0) / 16.0;
+                  float effectiveProgress = smoothstep(xDelay * 0.3, 1.0, progress);
+                  float movement = pow(effectiveProgress, 2.0) * 15.0 / weight;
+                  vec3 newPos = pos + windDir * movement;
+                  float turbulence = sin(effectiveProgress * 10.0 + h.y * 6.28) * effectiveProgress * 0.8;
+                  newPos.y += turbulence;
+                  newPos.z += cos(effectiveProgress * 8.0 + h.z * 6.28) * effectiveProgress * 0.6;
+                  float scaleMult = 1.0 - effectiveProgress * 0.7;
+                  float opacity = 1.0 - effectiveProgress;
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
                 }
 
-                // Page Turn exit animation for Ethos
-                // Particles sweep from left to right like turning a book page
-                vec4 pageTurn(vec3 pos, vec3 scale, float progress, vec3 h) {
-                  // Page turn sweeps from left (-X) to right (+X)
-                  // Ethos button is on the left side
-
-                  // Normalize X position for stagger (left starts first)
-                  float xNorm = clamp((pos.x + 8.0) / 16.0, 0.0, 1.0);
-                  float p = clamp((progress - xNorm * 0.3) / (1.0 - xNorm * 0.3), 0.0, 1.0);
-
+                // 2. Sonic Boom (Contact) - Toned down
+                vec4 exitSonic(vec3 pos, vec3 scale, float progress, vec3 h) {
+                  vec3 origin = vec3(0.0, -1.5, 3.0);
+                  vec3 diff = pos - origin;
+                  float dist = length(diff);
+                  vec3 dir = normalize(diff + vec3(0.001));
+                  float radius = progress * 35.0;
+                  float width = 3.0;
+                  float shock = smoothstep(width, 0.0, abs(dist - radius));
                   vec3 newPos = pos;
-
-                  // Sweep to the right
-                  newPos.x += p * 15.0;
-
-                  // Curl effect - particles lift up in the middle of their journey
-                  float curlPhase = p * 3.14159;
-                  float curlHeight = sin(curlPhase) * 3.0;
-                  newPos.y += curlHeight;
-
-                  // Slight rotation/tumble as they move
-                  float tumble = p * (h.y - 0.5) * 2.0;
-                  newPos.z += sin(tumble) * p * 2.0;
-
-                  // Scale - grow slightly during curl, then shrink
-                  float scaleMultiplier = 1.0 + sin(curlPhase) * 0.2 - p * 0.3;
-
-                  // Fade out as they exit right
-                  float opacity = 1.0 - p;
-
-                  // Pack: scale in integer part (x1000), opacity in fractional (capped at 0.999)
-                  return vec4(newPos, scaleMultiplier * 1000.0 + min(opacity, 0.999));
+                  newPos += dir * shock * 1.5;
+                  if (dist < radius) {
+                     float jitter = (1.0 - progress) * 0.5;
+                     newPos += (h - 0.5) * jitter * 1.0;
+                     newPos += dir * progress * 4.0;
+                  }
+                  float scaleMult = 1.0;
+                  if (dist < radius) {
+                     scaleMult = 1.0 - (progress * 0.9); 
+                     scaleMult *= (0.8 + 0.4 * sin(progress * 15.0 + h.x * 10.0));
+                  } else {
+                     scaleMult = 1.0 + shock * 0.3;
+                  }
+                  float opacity = 1.0;
+                  if (dist < radius) opacity = 1.0 - progress;
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
                 }
 
-                // Ripple Wave exit animation for Contact
-                // Concentric waves emanate from button position (bottom center)
-                vec4 rippleWave(vec3 pos, vec3 scale, float progress, vec3 h) {
-                  // Origin at Contact button location (bottom center, near camera)
-                  vec3 waveOrigin = vec3(0.0, -1.5, 3.0);
+                // 3. Cosmic Vortex (Gallery) - Toned down
+                vec4 exitCosmic(vec3 pos, vec3 scale, float progress, vec3 h) {
+                  vec3 center = vec3(0.0, 2.0, 0.0);
+                  vec3 offset = pos - center;
+                  float dist = length(offset);
+                  float suction = progress * progress * 12.0;
+                  float newDist = max(0.0, dist - suction);
+                  float suckedFactor = 1.0 - (newDist / (dist + 0.001));
+                  float rotation = progress * 2.0 + suckedFactor * 4.0;
+                  float cosA = cos(rotation);
+                  float sinA = sin(rotation);
+                  float rotX = offset.x * cosA - offset.z * sinA;
+                  float rotZ = offset.x * sinA + offset.z * cosA;
+                  vec3 newPos = center + vec3(rotX, offset.y, rotZ) * (newDist / (dist + 0.001));
+                  newPos.y += suckedFactor * 4.0 * (h.y + 0.2);
+                  float scaleMult = 1.0 - suckedFactor;
+                  float opacity = 1.0 - suckedFactor;
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
 
-                  // Calculate distance from wave origin
-                  vec3 fromOrigin = pos - waveOrigin;
-                  float dist = length(fromOrigin);
-                  vec3 direction = normalize(fromOrigin + vec3(0.001));
-
-                  // Wave front expands outward over time
-                  float maxRadius = 20.0;
-                  float waveRadius = progress * maxRadius;
-                  float waveWidth = 4.0;
-
-                  // How close is this particle to the current wave front?
-                  float distToWave = abs(dist - waveRadius);
-                  float waveInfluence = 1.0 - smoothstep(0.0, waveWidth, distToWave);
-
-                  // Particles behind the wave get pushed and fade
-                  float behindWave = smoothstep(waveRadius - waveWidth, waveRadius, dist);
-                  float aheadOfWave = 1.0 - smoothstep(waveRadius, waveRadius + waveWidth * 2.0, dist);
-
-                  // Combined effect - particles affected by passing wave
-                  float waveEffect = behindWave * (1.0 - progress * 0.3);
-
+                // 4. Pond Ripple (Gentle)
+                vec4 exitPond(vec3 pos, vec3 scale, float progress, vec3 h, float speed, float freq, float amp, float waveCount) {
+                  vec3 origin = vec3(0.0, 0.0, 0.0);
+                  float dist = length(pos.xz - origin.xz);
+                  
+                  // Wave parameters from uniforms
+                  float wavefront = progress * speed * 2.5; // Multiplier to match scale
+                  float phase = dist * freq - progress * speed;
+                  
+                  float distFromFront = wavefront - dist;
+                  
+                  // Before wave hits: normal position
+                  if (distFromFront < 0.0) return vec4(pos, 1000.0 + 0.999);
+                  
+                  // Calculate ripple envelope
+                  // Only show ripple for a certain distance behind wavefront
+                  float rippleWidth = waveCount / freq;
+                  float envelope = smoothstep(rippleWidth, 0.0, distFromFront) * smoothstep(0.0, 1.0, distFromFront);
+                  
+                  // Calculate wave displacement
+                  float rippleY = sin(phase) * amp * envelope;
+                  
+                  // Apply position changes
                   vec3 newPos = pos;
+                  newPos.y += rippleY;
+                  
+                  vec2 dir = normalize(pos.xz - origin.xz + vec2(0.001));
+                  float rippleH = cos(phase) * amp * 0.3 * envelope;
+                  newPos.x += dir.x * rippleH;
+                  newPos.z += dir.y * rippleH;
+                  
+                  // Fading logic:
+                  // Particles fade out AFTER the wave passes them
+                  // Calculate how "passed" the wave is
+                  float passedDistance = distFromFront;
+                  float fadeStart = rippleWidth * 0.2; // Start fading just after peak
+                  float fadeEnd = rippleWidth * 0.8;   // Fully faded by end of tail
+                  
+                  float fadeProgress = smoothstep(fadeStart, fadeEnd, passedDistance);
+                  float opacity = 1.0 - fadeProgress;
+                  
+                  // Scale effect: bulge up on wave, then shrink on fade
+                  float scaleMult = 1.0 + rippleY * 0.5 - fadeProgress * 0.5;
+                  
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
 
-                  // Push outward as wave passes
-                  float pushAmount = waveInfluence * 3.0 + waveEffect * progress * 8.0;
-                  newPos += direction * pushAmount;
+                // 5. Exploded View (Gentle)
+                vec4 exitExploded(vec3 pos, vec3 scale, float progress, vec3 h, float expansionStrength, float rotationSpeed, float fadeStart, float fadeEnd) {
+                  vec3 center = vec3(0.0, 2.0, 0.0);
+                  vec3 offset = pos - center;
+                  
+                  // Use uniform for expansion strength
+                  float expansion = 1.0 + smoothstep(0.0, 1.0, progress) * expansionStrength;
+                  vec3 newPos = center + offset * expansion;
+                  
+                  // Use uniform for rotation speed
+                  float rotAngle = progress * rotationSpeed * (h.y + 0.5);
+                  float cosA = cos(rotAngle);
+                  float sinA = sin(rotAngle);
+                  vec3 relPos = newPos - center;
+                  float rotX = relPos.x * cosA - relPos.z * sinA;
+                  float rotZ = relPos.x * sinA + relPos.z * cosA;
+                  newPos = center + vec3(rotX, relPos.y, rotZ);
+                  
+                  // Use uniforms for fade timing
+                  float opacity = 1.0 - smoothstep(fadeStart, fadeEnd, progress);
+                  
+                  // Scale down completely to 0 to ensure tiny particles disappear (sync with opacity fade)
+                  // Use a slightly more aggressive scale down to prevent single-pixel flickering
+                  // The smoothstep end point should be slightly BEFORE the fade end to ensure
+                  // they are scaled to 0 before they are fully transparent but still technically rendering
+                  float scaleMult = 1.0 - smoothstep(fadeStart, fadeEnd * 0.95, progress);
+                  
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
 
-                  // Slight upward drift for passed particles
-                  newPos.y += waveEffect * progress * 4.0;
+                // 6. Sawdust Drift (Gentle)
+                vec4 exitSawdust(vec3 pos, vec3 scale, float progress, vec3 h) {
+                  // Coordinate Space Correction:
+                  // Mesh has -90 deg X rotation.
+                  // Local +Z is World Up (approx)
+                  // Local -Y is World Back (Away from Camera)
+                  
+                  // Drift direction: 
+                  // We want them to fall DOWN (Local +Z) and drift BACK (Local -Y)
+                  // drift x, y, z
+                  vec3 drift = vec3(0.2, -1.0, 1.0); // -Y is back, +Z is down? No.
+                  
+                  // Let's re-verify:
+                  // Rotation X = -1.6 (-90 deg)
+                  // Local Z -> World Y (Up)  [Rotated -90 deg around X means Z goes to Y]
+                  // Local Y -> World -Z (Away) [Rotated -90 deg around X means Y goes to -Z]
+                  
+                  // So "Falling" means decreasing World Y, which means decreasing Local Z.
+                  // "Drifting Away" means decreasing World Z, which means increasing Local Y? No, Y goes to -Z.
+                  // Wait. 
+                  // (0,1,0) * RotX(-90) = (0, 0, -1) -> Y became -Z.
+                  // (0,0,1) * RotX(-90) = (0, 1, 0) -> Z became Y.
+                  
+                  // So to fall (World -Y), we need Local -Z.
+                  // To drift away (World -Z), we need Local +Y.
+                  
+                  vec3 gravityDir = vec3(0.0, 0.0, -1.0); // Local -Z is World -Y (Down)
+                  vec3 windDir = vec3(0.2, 1.0, 0.0);    // Local +Y is World -Z (Away)
+                  
+                  float normY = (pos.z + 5.0) / 10.0; // Use Z for vertical gradient (since Z is Up/Down)
+                  
+                  float dissolveThreshold = 1.0 - (progress * 1.5);
+                  // Dissolve from top to bottom (World Y) -> Local Z
+                  float isDissolving = smoothstep(dissolveThreshold + 0.2, dissolveThreshold - 0.2, normY + (h.x * 0.4 - 0.2));
+                  
+                  if (isDissolving < 0.01) return vec4(pos, 1000.0 + 0.999);
+                  
+                  float particleTime = progress; 
+                  vec3 newPos = pos;
+                  
+                  float fallSpeed = 3.0 + h.y * 2.0;
+                  
+                  // Apply movement
+                  vec3 movement = (gravityDir * fallSpeed) + (windDir * fallSpeed * 0.5);
+                  newPos += movement * particleTime * isDissolving;
+                  
+                  float t = particleTime * 2.0;
+                  // Add noise
+                  newPos.x += sin(t * 3.0 + h.z * 10.0) * 0.5 * isDissolving;
+                  
+                  // Oscillate other axes
+                  newPos.y += cos(t * 2.5 + h.x * 10.0) * 0.2 * isDissolving; // Forward/Back oscillation
+                  newPos.z += sin(t * 2.0 + h.y * 10.0) * 0.2 * isDissolving; // Up/Down oscillation
+                  
+                  float scaleMult = 1.0 - isDissolving * 0.8;
+                  float opacity = 1.0 - isDissolving;
+                  
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
 
-                  // Scale - particles grow slightly as wave hits, then shrink
-                  float scaleMultiplier = 1.0 + waveInfluence * 0.3 - waveEffect * progress * 0.5;
+                // 7. Physics Explosion (Radial)
+                vec4 exitExplosion(vec3 pos, vec3 scale, float progress, vec3 h, float strength, float gravity, float friction, float tumbleSpeed) {
+                  float t = progress * 1.5; // Duration in seconds (approx)
+                  if (t <= 0.0) return vec4(pos, 1000.0 + 0.999);
+                  
+                  // Center of explosion (approximate center of mesh)
+                  // Place center slightly in FRONT of the object to push everything backwards away from camera
+                  vec3 center = vec3(0.0, 1.0, 2.0);
+                  
+                  // Radial direction from center
+                  vec3 dir = pos - center;
+                  
+                  // No need for manual bias if we move the center forward, 
+                  // but let's clamp Z to be safe if desired, or just let physics do it.
+                  // Since center.z is 2.0 and object is around 0.0, dir.z will be negative (approx -2.0).
+                  // This ensures strong backward momentum.
+                  
+                  float dist = length(dir);
+                  vec3 normDir = normalize(dir + vec3(0.001));
+                  
+                  // Calculate initial velocity
+                  // Mix of radial (explosive) and random (chaos)
+                  
+                  // Radial component
+                  vec3 radialVel = normDir * strength;
+                  
+                  // Coordinate Space Correction:
+                  // The mesh is rotated by -1.6 radians on X (approx -90 deg).
+                  // Local Y aligns with World Z.
+                  // BUT, if we are modifying position in local space, and the mesh is rotated...
+                  // Let's try forcing Z heavily negative in local space, and if that fails, Y.
+                  // If rotation is -90 deg X:
+                  // Local (0, 0, -1) -> World (0, 1, 0) [Up]
+                  // Local (0, 1, 0) -> World (0, 0, 1) [Towards Camera]
+                  // Local (0, -1, 0) -> World (0, 0, -1) [Away from Camera]
+                  
+                  // So we want NEGATIVE Y in local space to go AWAY from camera (World -Z).
+                  
+                  if (radialVel.y > 0.0) {
+                     radialVel.y = -radialVel.y * 0.5; // Flip to negative Y
+                  } else {
+                     radialVel.y *= 2.0; // Boost negative Y
+                  }
+                  
+                  // Random component
+                  vec3 randomDir = h - 0.5;
+                  if (randomDir.y > 0.0) randomDir.y *= -1.0; // Force negative Y
+                  vec3 randomVel = randomDir * strength * 0.5;
+                  
+                  // Combine
+                  vec3 velocity = radialVel + randomVel;
+                  
+                  // Final safety check: subtract constant from Y to guarantee backward drift in World Space
+                  // (Negative Y local = Negative Z world)
+                  velocity.y -= 5.0; 
+                  
+                  // Apply friction (damping)
+                  float frictionFactor = pow(friction, t * 60.0);
+                  
+                  // Update position
+                  vec3 newPos = pos;
+                  newPos += velocity * t * frictionFactor;
+                  newPos.y -= 0.5 * gravity * t * t;
+                  
+                  // Add subtle turbulence/tumble to position (fake tumbling)
+                  // Using tumbleSpeed to drive high frequency noise
+                  vec3 tumble = vec3(
+                    sin(t * tumbleSpeed * 5.0 + h.x * 10.0),
+                    cos(t * tumbleSpeed * 4.0 + h.y * 10.0),
+                    sin(t * tumbleSpeed * 6.0 + h.z * 10.0)
+                  ) * 0.1 * t;
+                  newPos += tumble;
 
-                  // Opacity - fade out after wave passes
-                  float opacity = 1.0 - waveEffect * progress;
-
-                  // Pack: scale in integer part (x1000), opacity in fractional (capped at 0.999)
-                  return vec4(newPos, scaleMultiplier * 1000.0 + min(opacity, 0.999));
+                  // Scale down over time
+                  float scaleMult = 1.0 - smoothstep(0.5, 1.5, t);
+                  float opacity = 1.0 - smoothstep(1.0, 1.5, t);
+                  
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
                 }
 
                 // Apply exit animation based on type
-                // exitType: 0=none, 1=ethos(pageTurn), 2=contact(ripple), 3=gallery(spiral)
-                vec4 applyExitAnimation(vec3 pos, vec3 scale, float exitType, float exitProgress, vec3 h) {
+                // 1=Gust, 2=Sonic, 3=Cosmic, 4=Pond, 5=Exploded, 6=Sawdust, 7=Explosion
+                vec4 applyExitAnimation(vec3 pos, vec3 scale, float exitType, float exitProgress, vec3 h, 
+                                       float expStrength, float expRotSpeed, float expFadeStart, float expFadeEnd,
+                                       float pondSpeed, float pondFreq, float pondAmp, float pondCount,
+                                       float physStrength, float physGravity, float physFriction, float physTumble) {
                   if (exitProgress <= 0.001 || exitType < 0.5) {
-                    return vec4(pos, 1000.0 + 0.999); // No animation, full scale and opacity
+                    return vec4(pos, 1000.0 + 0.999);
                   }
 
-                  if (exitType < 1.5) {
-                    return pageTurn(pos, scale, exitProgress, h);
-                  } else if (exitType < 2.5) {
-                    return rippleWave(pos, scale, exitProgress, h);
-                  } else {
-                    return spiralVortex(pos, scale, exitProgress, h);
-                  }
+                  if (exitType < 1.5) return exitGust(pos, scale, exitProgress, h);
+                  if (exitType < 2.5) return exitSonic(pos, scale, exitProgress, h);
+                  if (exitType < 3.5) return exitCosmic(pos, scale, exitProgress, h);
+                  if (exitType < 4.5) return exitPond(pos, scale, exitProgress, h, pondSpeed, pondFreq, pondAmp, pondCount);
+                  if (exitType < 5.5) return exitExploded(pos, scale, exitProgress, h, expStrength, expRotSpeed, expFadeStart, expFadeEnd);
+                  if (exitType < 6.5) return exitSawdust(pos, scale, exitProgress, h);
+                  return exitExplosion(pos, scale, exitProgress, h, physStrength, physGravity, physFriction, physTumble);
                 }
               `),
             ],
@@ -458,6 +690,24 @@ const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
               float smallSpeed = ${inputs.smallSpeed};
               float exitType = ${inputs.exitType};
               float exitProgress = ${inputs.exitProgress};
+              
+              // Exploded view controls
+              float expStrength = ${inputs.explodedExpansionStrength};
+              float expRotSpeed = ${inputs.explodedRotationSpeed};
+              float expFadeStart = ${inputs.explodedFadeStart};
+              float expFadeEnd = ${inputs.explodedFadeEnd};
+              
+              // Pond ripple controls
+              float pondSpeed = ${inputs.pondWaveSpeed};
+              float pondFreq = ${inputs.pondWaveFrequency};
+              float pondAmp = ${inputs.pondWaveAmplitude};
+              float pondCount = ${inputs.pondWaveCount};
+
+              // Physics explosion controls
+              float physStrength = ${inputs.physicsStrength};
+              float physGravity = ${inputs.physicsGravity};
+              float physFriction = ${inputs.physicsFriction};
+              float physTumble = ${inputs.physicsTumbleSpeed};
 
               // Get random hash for this particle (used by both entrance and exit animations)
               vec3 h = hash(localPos);
@@ -481,7 +731,10 @@ const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
 
                 // Apply exit animation if active
                 if (exitProgress > 0.0 && exitType > 0.5) {
-                  vec4 exitResult = applyExitAnimation(${outputs.gsplat}.center, ${outputs.gsplat}.scales, exitType, exitProgress, h);
+                  vec4 exitResult = applyExitAnimation(${outputs.gsplat}.center, ${outputs.gsplat}.scales, exitType, exitProgress, h, 
+                                                      expStrength, expRotSpeed, expFadeStart, expFadeEnd,
+                                                      pondSpeed, pondFreq, pondAmp, pondCount,
+                                                      physStrength, physGravity, physFriction, physTumble);
                   ${outputs.gsplat}.center = exitResult.xyz;
 
                   // Unpack scale multiplier and opacity from w component
@@ -583,6 +836,18 @@ const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
             syntheticZMax: syntheticZMaxRef.current,
             syntheticYMin: syntheticYMinRef.current,
             syntheticYMax: syntheticYMaxRef.current,
+            explodedExpansionStrength: explodedExpansionStrengthRef.current,
+            explodedRotationSpeed: explodedRotationSpeedRef.current,
+            explodedFadeStart: explodedFadeStartRef.current,
+            explodedFadeEnd: explodedFadeEndRef.current,
+            pondWaveSpeed: pondWaveSpeedRef.current,
+            pondWaveFrequency: pondWaveFrequencyRef.current,
+            pondWaveAmplitude: pondWaveAmplitudeRef.current,
+            pondWaveCount: pondWaveCountRef.current,
+            physicsStrength: physicsStrengthRef.current,
+            physicsGravity: physicsGravityRef.current,
+            physicsFriction: physicsFrictionRef.current,
+            physicsTumbleSpeed: physicsTumbleSpeedRef.current,
             smallThreshold: smallParticleThresholdRef.current,
             motionReduction: smallMotionReductionRef.current,
             skipSmall: skipSmallAnimationRef.current,
@@ -603,8 +868,13 @@ const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
   // Update exit animation when phase changes
   useEffect(() => {
     if (animationPhase === 'exiting') {
-      // Set the exit animation type based on target scene
-      exitTypeRef.current.value = EXIT_ANIMATION_TYPE[targetScene] || 0;
+      // Set the exit animation type based on target scene or override
+      // Use override if present, otherwise fallback to scene default
+      const type = overrideExitType !== null && overrideExitType !== undefined 
+        ? overrideExitType 
+        : (EXIT_ANIMATION_TYPE[targetScene] || 0);
+        
+      exitTypeRef.current.value = type;
       exitStartTimeRef.current = performance.now();
       exitProgressRef.current.value = 0;
     } else if (animationPhase === 'idle' && activeScene === 'home') {
@@ -622,7 +892,7 @@ const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
       // Explicitly set progress to 1 - will animate to 0 in useFrame
       exitProgressRef.current.value = 1;
     }
-  }, [animationPhase, targetScene, activeScene]);
+  }, [animationPhase, targetScene, activeScene, overrideExitType]);
 
   // Animate the entrance effect and camera
   useFrame((_, delta) => {
@@ -634,7 +904,8 @@ const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
     // Update exit animation progress with easing
     if (animationPhase === 'exiting' && exitStartTimeRef.current !== null) {
       const elapsed = (performance.now() - exitStartTimeRef.current) / 1000;
-      const linearProgress = Math.min(elapsed / EXIT_ANIMATION_DURATION, 1);
+      // Use dynamic animation duration from controls
+      const linearProgress = Math.min(elapsed / exitAnimationDuration, 1);
       // Use easeOutCubic for smooth deceleration at the end
       const easedProgress = easeOutCubic(linearProgress);
       exitProgressRef.current.value = easedProgress;
@@ -665,6 +936,24 @@ const Scene = ({ activeScene, targetScene, animationPhase }: SceneProps) => {
     syntheticZMaxRef.current.value = syntheticZMax;
     syntheticYMinRef.current.value = syntheticYMin;
     syntheticYMaxRef.current.value = syntheticYMax;
+    // Exit animation parameters
+    explodedExpansionStrengthRef.current.value = explodedExpansionStrength;
+    explodedRotationSpeedRef.current.value = explodedRotationSpeed;
+    explodedFadeStartRef.current.value = explodedFadeStart;
+    explodedFadeEndRef.current.value = explodedFadeEnd;
+
+    // Pond ripple parameters
+    pondWaveSpeedRef.current.value = pondWaveSpeed;
+    pondWaveFrequencyRef.current.value = pondWaveFrequency;
+    pondWaveAmplitudeRef.current.value = pondWaveAmplitude;
+    pondWaveCountRef.current.value = pondWaveCount;
+
+    // Physics explosion parameters
+    physicsStrengthRef.current.value = physicsStrength;
+    physicsGravityRef.current.value = physicsGravity;
+    physicsFrictionRef.current.value = physicsFriction;
+    physicsTumbleSpeedRef.current.value = physicsTumbleSpeed;
+
     // Mobile simplification - reduce small particle chaos
     smallParticleThresholdRef.current.value = smallParticleThreshold;
     smallMotionReductionRef.current.value = smallMotionReduction;

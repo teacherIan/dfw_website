@@ -18,13 +18,13 @@ export const EXIT_ANIMATION_TYPE: Record<SceneId, number> = {
   home: 0,
   ethos: 1,
   contact: 2,
-  gallery: 3,
+  gallery: 5,
 } as const;
 
 /**
  * Duration of exit animations in seconds
  */
-export const EXIT_ANIMATION_DURATION = 1.5;
+export const EXIT_ANIMATION_DURATION = 5.9;
 
 /**
  * Duration of entrance animation (returning home) in seconds

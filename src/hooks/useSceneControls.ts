@@ -51,6 +51,27 @@ export interface SceneControls {
   syntheticYMin: number;
   syntheticYMax: number;
 
+  // Exit Animation - Exploded View
+  explodedExpansionStrength: number;
+  explodedRotationSpeed: number;
+  explodedFadeStart: number;
+  explodedFadeEnd: number;
+
+  // Exit Animation - Pond Ripple
+  pondWaveSpeed: number;
+  pondWaveFrequency: number;
+  pondWaveAmplitude: number;
+  pondWaveCount: number;
+
+  // Exit Animation - Physics Explosion
+  physicsStrength: number;
+  physicsGravity: number;
+  physicsFriction: number;
+  physicsTumbleSpeed: number;
+  
+  // Global Exit Settings
+  exitAnimationDuration: number;
+
   // Monitor refs
   currentCameraX: React.MutableRefObject<number>;
   currentCameraY: React.MutableRefObject<number>;
@@ -209,6 +230,49 @@ export const useSceneControls = ({
     ),
   });
 
+  const {
+    explodedExpansionStrength,
+    explodedRotationSpeed,
+    explodedFadeStart,
+    explodedFadeEnd,
+    
+    // Exit Animation - Pond Ripple
+    pondWaveSpeed,
+    pondWaveFrequency,
+    pondWaveAmplitude,
+    pondWaveCount,
+    
+    // Exit Animation - Physics Explosion
+    physicsStrength,
+    physicsGravity,
+    physicsFriction,
+    physicsTumbleSpeed,
+    
+    exitAnimationDuration,
+  } = useControls({
+    '💥 Exit Animations': folder({
+      exitAnimationDuration: { value: 5.9, min: 0.1, max: 10.0, step: 0.1, label: 'Duration (sec)' },
+      'Physics Explosion': folder({
+        physicsStrength: { value: 15.0, min: 0.0, max: 50.0, step: 0.5, label: 'Strength' },
+        physicsGravity: { value: 25.0, min: 0.0, max: 100.0, step: 1.0, label: 'Gravity' },
+        physicsFriction: { value: 0.90, min: 0.0, max: 1.0, step: 0.01, label: 'Friction' },
+        physicsTumbleSpeed: { value: 5.0, min: 0.0, max: 20.0, step: 0.5, label: 'Tumble Speed' },
+      }, { collapsed: false }),
+      'Pond Ripple': folder({
+        pondWaveSpeed: { value: 8.0, min: 1.0, max: 20.0, step: 0.5, label: 'Wave Speed' },
+        pondWaveFrequency: { value: 3.0, min: 0.5, max: 10.0, step: 0.5, label: 'Wave Frequency' },
+        pondWaveAmplitude: { value: 0.5, min: 0.1, max: 5.0, step: 0.1, label: 'Wave Amplitude' },
+        pondWaveCount: { value: 20.0, min: 5.0, max: 50.0, step: 1.0, label: 'Wave Count' },
+      }, { collapsed: false }),
+      'Exploded View': folder({
+        explodedExpansionStrength: { value: 18.5, min: 0.0, max: 50.0, step: 0.5, label: 'Expansion Strength' },
+        explodedRotationSpeed: { value: 0.5, min: 0.0, max: 20.0, step: 0.1, label: 'Rotation Speed' },
+        explodedFadeStart: { value: 0.17, min: 0.0, max: 1.0, step: 0.01, label: 'Fade Start (0-1)' },
+        explodedFadeEnd: { value: 1.00, min: 0.0, max: 1.0, step: 0.01, label: 'Fade End (0-1)' },
+      }, { collapsed: false }),
+    }, { collapsed: false }),
+  });
+
   useControls({
     '🏠 Base.📊 Monitor': folder(
       {
@@ -266,6 +330,26 @@ export const useSceneControls = ({
     syntheticZMax,
     syntheticYMin,
     syntheticYMax,
+
+    // Exit Animation - Exploded View
+    explodedExpansionStrength,
+    explodedRotationSpeed,
+    explodedFadeStart,
+    explodedFadeEnd,
+
+    // Exit Animation - Pond Ripple
+    pondWaveSpeed,
+    pondWaveFrequency,
+    pondWaveAmplitude,
+    pondWaveCount,
+
+    // Exit Animation - Physics Explosion
+    physicsStrength,
+    physicsGravity,
+    physicsFriction,
+    physicsTumbleSpeed,
+
+    exitAnimationDuration,
 
     // Monitor refs
     currentCameraX,

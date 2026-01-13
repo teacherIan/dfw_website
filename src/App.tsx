@@ -6,6 +6,7 @@ import TextOverlay from './components/scene/TextOverlay';
 import HandDrawnText from './components/scene/HandDrawnText';
 import MenuOverlay from './components/navigation/MenuOverlay';
 import BackButton from './components/navigation/BackButton';
+import AnimationDebug from './components/debug/AnimationDebug';
 import {
   ANIMATION_TIMING,
   EXIT_ANIMATION_DURATION,
@@ -17,6 +18,9 @@ import './types/r3f.d';
 function App() {
   const [showText, setShowText] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
+
+  // Debug state for exit animation override
+  const [overrideExitType, setOverrideExitType] = useState<number | null>(null);
 
   // Scene navigation state
   const [activeScene, setActiveScene] = useState<SceneId>('home');
@@ -96,9 +100,15 @@ function App() {
             activeScene={activeScene}
             targetScene={targetScene}
             animationPhase={animationPhase}
+            overrideExitType={overrideExitType}
           />
         </Canvas>
       </div>
+
+      {/* Debug Controls - Visible on Home Screen */}
+      {activeScene === 'home' && (
+        <AnimationDebug selectedType={overrideExitType} onSelect={setOverrideExitType} />
+      )}
 
       {/* Overlays - only show on home scene */}
       {showOverlays && activeScene === 'home' && animationPhase === 'idle' && (
