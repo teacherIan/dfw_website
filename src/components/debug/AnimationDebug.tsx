@@ -13,6 +13,14 @@ const animations = [
   { id: 5, label: 'Exploded View' },
   { id: 6, label: 'Sawdust Drift' },
   { id: 7, label: 'Physics Explosion' },
+  { id: 8, label: 'Disintegration/Ash' },
+  { id: 9, label: 'Shatter/Glass' },
+  { id: 10, label: 'Pixelate/Glitch' },
+  { id: 11, label: 'Black Hole' },
+  { id: 12, label: 'Bloom/Pollen' },
+  { id: 13, label: 'Freeze/Shatter' },
+  { id: 14, label: 'Sand/Hourglass' },
+  { id: 15, label: 'Teleport/Beam' },
 ];
 
 const AnimationDebug = ({ selectedType, onSelect }: AnimationDebugProps) => {

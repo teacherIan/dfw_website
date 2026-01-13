@@ -68,7 +68,61 @@ export interface SceneControls {
   physicsGravity: number;
   physicsFriction: number;
   physicsTumbleSpeed: number;
-  
+
+  // Exit Animation - Sawdust Drift
+  sawdustFallSpeed: number;
+  sawdustWindStrength: number;
+  sawdustTurbulence: number;
+  sawdustDissolveSpeed: number;
+
+  // Exit Animation - Disintegration/Ash
+  ashRiseSpeed: number;
+  ashSpreadRadius: number;
+  ashEmberGlow: number;
+  ashBurnSpeed: number;
+
+  // Exit Animation - Shatter/Glass
+  shatterForce: number;
+  shatterGravity: number;
+  shatterSpread: number;
+  shatterRotation: number;
+
+  // Exit Animation - Pixelate/Glitch
+  glitchIntensity: number;
+  glitchBlockSize: number;
+  glitchSpeed: number;
+  glitchChroma: number;
+
+  // Exit Animation - Black Hole
+  blackHoleStrength: number;
+  blackHoleSpinSpeed: number;
+  blackHoleRadius: number;
+  blackHoleStretch: number;
+
+  // Exit Animation - Bloom/Pollen
+  pollenDriftSpeed: number;
+  pollenSpread: number;
+  pollenWaveStrength: number;
+  pollenRiseSpeed: number;
+
+  // Exit Animation - Freeze/Shatter
+  freezeSpeed: number;
+  freezeCrackDensity: number;
+  freezeShatterDelay: number;
+  freezeShardSpeed: number;
+
+  // Exit Animation - Sand/Hourglass
+  sandFallSpeed: number;
+  sandFunnelWidth: number;
+  sandSpread: number;
+  sandGrainSize: number;
+
+  // Exit Animation - Teleport/Beam
+  teleportSpeed: number;
+  teleportSparkle: number;
+  teleportBandWidth: number;
+  teleportDirection: number;
+
   // Global Exit Settings
   exitAnimationDuration: number;
 
@@ -235,19 +289,73 @@ export const useSceneControls = ({
     explodedRotationSpeed,
     explodedFadeStart,
     explodedFadeEnd,
-    
+
     // Exit Animation - Pond Ripple
     pondWaveSpeed,
     pondWaveFrequency,
     pondWaveAmplitude,
     pondWaveCount,
-    
+
     // Exit Animation - Physics Explosion
     physicsStrength,
     physicsGravity,
     physicsFriction,
     physicsTumbleSpeed,
-    
+
+    // Exit Animation - Sawdust Drift
+    sawdustFallSpeed,
+    sawdustWindStrength,
+    sawdustTurbulence,
+    sawdustDissolveSpeed,
+
+    // Exit Animation - Disintegration/Ash
+    ashRiseSpeed,
+    ashSpreadRadius,
+    ashEmberGlow,
+    ashBurnSpeed,
+
+    // Exit Animation - Shatter/Glass
+    shatterForce,
+    shatterGravity,
+    shatterSpread,
+    shatterRotation,
+
+    // Exit Animation - Pixelate/Glitch
+    glitchIntensity,
+    glitchBlockSize,
+    glitchSpeed,
+    glitchChroma,
+
+    // Exit Animation - Black Hole
+    blackHoleStrength,
+    blackHoleSpinSpeed,
+    blackHoleRadius,
+    blackHoleStretch,
+
+    // Exit Animation - Bloom/Pollen
+    pollenDriftSpeed,
+    pollenSpread,
+    pollenWaveStrength,
+    pollenRiseSpeed,
+
+    // Exit Animation - Freeze/Shatter
+    freezeSpeed,
+    freezeCrackDensity,
+    freezeShatterDelay,
+    freezeShardSpeed,
+
+    // Exit Animation - Sand/Hourglass
+    sandFallSpeed,
+    sandFunnelWidth,
+    sandSpread,
+    sandGrainSize,
+
+    // Exit Animation - Teleport/Beam
+    teleportSpeed,
+    teleportSparkle,
+    teleportBandWidth,
+    teleportDirection,
+
     exitAnimationDuration,
   } = useControls({
     '💥 Exit Animations': folder({
@@ -269,7 +377,61 @@ export const useSceneControls = ({
         explodedRotationSpeed: { value: 0.5, min: 0.0, max: 20.0, step: 0.1, label: 'Rotation Speed' },
         explodedFadeStart: { value: 0.17, min: 0.0, max: 1.0, step: 0.01, label: 'Fade Start (0-1)' },
         explodedFadeEnd: { value: 1.00, min: 0.0, max: 1.0, step: 0.01, label: 'Fade End (0-1)' },
-      }, { collapsed: false }),
+      }, { collapsed: true }),
+      'Sawdust Drift': folder({
+        sawdustFallSpeed: { value: 4.0, min: 0.5, max: 15.0, step: 0.5, label: 'Fall Speed' },
+        sawdustWindStrength: { value: 2.0, min: 0.0, max: 10.0, step: 0.5, label: 'Wind Strength' },
+        sawdustTurbulence: { value: 1.0, min: 0.0, max: 5.0, step: 0.1, label: 'Turbulence' },
+        sawdustDissolveSpeed: { value: 1.5, min: 0.5, max: 3.0, step: 0.1, label: 'Dissolve Speed' },
+      }, { collapsed: true }),
+      'Disintegration/Ash': folder({
+        ashRiseSpeed: { value: 3.0, min: 0.5, max: 10.0, step: 0.5, label: 'Rise Speed' },
+        ashSpreadRadius: { value: 5.0, min: 1.0, max: 15.0, step: 0.5, label: 'Spread Radius' },
+        ashEmberGlow: { value: 0.5, min: 0.0, max: 1.0, step: 0.1, label: 'Ember Glow' },
+        ashBurnSpeed: { value: 1.2, min: 0.5, max: 3.0, step: 0.1, label: 'Burn Speed' },
+      }, { collapsed: true }),
+      'Shatter/Glass': folder({
+        shatterForce: { value: 20.0, min: 5.0, max: 50.0, step: 1.0, label: 'Force' },
+        shatterGravity: { value: 15.0, min: 0.0, max: 50.0, step: 1.0, label: 'Gravity' },
+        shatterSpread: { value: 1.0, min: 0.0, max: 3.0, step: 0.1, label: 'Spread' },
+        shatterRotation: { value: 5.0, min: 0.0, max: 20.0, step: 0.5, label: 'Rotation' },
+      }, { collapsed: true }),
+      'Pixelate/Glitch': folder({
+        glitchIntensity: { value: 1.0, min: 0.1, max: 3.0, step: 0.1, label: 'Intensity' },
+        glitchBlockSize: { value: 0.5, min: 0.1, max: 2.0, step: 0.1, label: 'Block Size' },
+        glitchSpeed: { value: 10.0, min: 1.0, max: 30.0, step: 1.0, label: 'Speed' },
+        glitchChroma: { value: 0.3, min: 0.0, max: 1.0, step: 0.05, label: 'Chroma Split' },
+      }, { collapsed: true }),
+      'Black Hole': folder({
+        blackHoleStrength: { value: 15.0, min: 5.0, max: 50.0, step: 1.0, label: 'Strength' },
+        blackHoleSpinSpeed: { value: 3.0, min: 0.5, max: 10.0, step: 0.5, label: 'Spin Speed' },
+        blackHoleRadius: { value: 0.5, min: 0.1, max: 2.0, step: 0.1, label: 'Event Horizon' },
+        blackHoleStretch: { value: 2.0, min: 0.5, max: 5.0, step: 0.5, label: 'Stretch' },
+      }, { collapsed: true }),
+      'Bloom/Pollen': folder({
+        pollenDriftSpeed: { value: 2.0, min: 0.5, max: 8.0, step: 0.5, label: 'Drift Speed' },
+        pollenSpread: { value: 8.0, min: 2.0, max: 20.0, step: 1.0, label: 'Spread' },
+        pollenWaveStrength: { value: 1.5, min: 0.0, max: 5.0, step: 0.5, label: 'Wave Strength' },
+        pollenRiseSpeed: { value: 1.0, min: 0.0, max: 5.0, step: 0.5, label: 'Rise Speed' },
+      }, { collapsed: true }),
+      'Freeze/Shatter': folder({
+        freezeSpeed: { value: 2.0, min: 0.5, max: 5.0, step: 0.5, label: 'Freeze Speed' },
+        freezeCrackDensity: { value: 5.0, min: 1.0, max: 15.0, step: 1.0, label: 'Crack Density' },
+        freezeShatterDelay: { value: 0.4, min: 0.1, max: 0.8, step: 0.1, label: 'Shatter Delay' },
+        freezeShardSpeed: { value: 10.0, min: 2.0, max: 30.0, step: 1.0, label: 'Shard Speed' },
+      }, { collapsed: true }),
+      'Sand/Hourglass': folder({
+        sandFallSpeed: { value: 6.0, min: 1.0, max: 15.0, step: 0.5, label: 'Fall Speed' },
+        sandFunnelWidth: { value: 1.0, min: 0.2, max: 3.0, step: 0.1, label: 'Funnel Width' },
+        sandSpread: { value: 3.0, min: 0.5, max: 10.0, step: 0.5, label: 'Spread' },
+        sandGrainSize: { value: 0.8, min: 0.3, max: 1.5, step: 0.1, label: 'Grain Size' },
+      }, { collapsed: true }),
+      'Teleport/Beam': folder({
+        teleportSpeed: { value: 2.0, min: 0.5, max: 5.0, step: 0.5, label: 'Speed' },
+        teleportSparkle: { value: 1.0, min: 0.0, max: 3.0, step: 0.1, label: 'Sparkle' },
+        teleportBandWidth: { value: 2.0, min: 0.5, max: 5.0, step: 0.5, label: 'Band Width' },
+        teleportDirection: { value: 1.0, min: -1.0, max: 1.0, step: 2.0, label: 'Direction (Up/Down)' },
+      }, { collapsed: true }),
     }, { collapsed: false }),
   });
 
@@ -348,6 +510,60 @@ export const useSceneControls = ({
     physicsGravity,
     physicsFriction,
     physicsTumbleSpeed,
+
+    // Exit Animation - Sawdust Drift
+    sawdustFallSpeed,
+    sawdustWindStrength,
+    sawdustTurbulence,
+    sawdustDissolveSpeed,
+
+    // Exit Animation - Disintegration/Ash
+    ashRiseSpeed,
+    ashSpreadRadius,
+    ashEmberGlow,
+    ashBurnSpeed,
+
+    // Exit Animation - Shatter/Glass
+    shatterForce,
+    shatterGravity,
+    shatterSpread,
+    shatterRotation,
+
+    // Exit Animation - Pixelate/Glitch
+    glitchIntensity,
+    glitchBlockSize,
+    glitchSpeed,
+    glitchChroma,
+
+    // Exit Animation - Black Hole
+    blackHoleStrength,
+    blackHoleSpinSpeed,
+    blackHoleRadius,
+    blackHoleStretch,
+
+    // Exit Animation - Bloom/Pollen
+    pollenDriftSpeed,
+    pollenSpread,
+    pollenWaveStrength,
+    pollenRiseSpeed,
+
+    // Exit Animation - Freeze/Shatter
+    freezeSpeed,
+    freezeCrackDensity,
+    freezeShatterDelay,
+    freezeShardSpeed,
+
+    // Exit Animation - Sand/Hourglass
+    sandFallSpeed,
+    sandFunnelWidth,
+    sandSpread,
+    sandGrainSize,
+
+    // Exit Animation - Teleport/Beam
+    teleportSpeed,
+    teleportSparkle,
+    teleportBandWidth,
+    teleportDirection,
 
     exitAnimationDuration,
 

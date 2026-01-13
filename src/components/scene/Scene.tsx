@@ -70,6 +70,60 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
   const physicsGravityRef = useRef(dyno.dynoFloat(25.0));
   const physicsFrictionRef = useRef(dyno.dynoFloat(0.90));
   const physicsTumbleSpeedRef = useRef(dyno.dynoFloat(5.0));
+
+  // Sawdust drift controls
+  const sawdustFallSpeedRef = useRef(dyno.dynoFloat(4.0));
+  const sawdustWindStrengthRef = useRef(dyno.dynoFloat(2.0));
+  const sawdustTurbulenceRef = useRef(dyno.dynoFloat(1.0));
+  const sawdustDissolveSpeedRef = useRef(dyno.dynoFloat(1.5));
+
+  // Disintegration/Ash controls
+  const ashRiseSpeedRef = useRef(dyno.dynoFloat(3.0));
+  const ashSpreadRadiusRef = useRef(dyno.dynoFloat(5.0));
+  const ashEmberGlowRef = useRef(dyno.dynoFloat(0.5));
+  const ashBurnSpeedRef = useRef(dyno.dynoFloat(1.2));
+
+  // Shatter/Glass controls
+  const shatterForceRef = useRef(dyno.dynoFloat(20.0));
+  const shatterGravityRef = useRef(dyno.dynoFloat(15.0));
+  const shatterSpreadRef = useRef(dyno.dynoFloat(1.0));
+  const shatterRotationRef = useRef(dyno.dynoFloat(5.0));
+
+  // Pixelate/Glitch controls
+  const glitchIntensityRef = useRef(dyno.dynoFloat(1.0));
+  const glitchBlockSizeRef = useRef(dyno.dynoFloat(0.5));
+  const glitchSpeedRef = useRef(dyno.dynoFloat(10.0));
+  const glitchChromaRef = useRef(dyno.dynoFloat(0.3));
+
+  // Black Hole controls
+  const blackHoleStrengthRef = useRef(dyno.dynoFloat(15.0));
+  const blackHoleSpinSpeedRef = useRef(dyno.dynoFloat(3.0));
+  const blackHoleRadiusRef = useRef(dyno.dynoFloat(0.5));
+  const blackHoleStretchRef = useRef(dyno.dynoFloat(2.0));
+
+  // Bloom/Pollen controls
+  const pollenDriftSpeedRef = useRef(dyno.dynoFloat(2.0));
+  const pollenSpreadRef = useRef(dyno.dynoFloat(8.0));
+  const pollenWaveStrengthRef = useRef(dyno.dynoFloat(1.5));
+  const pollenRiseSpeedRef = useRef(dyno.dynoFloat(1.0));
+
+  // Freeze/Shatter controls
+  const freezeSpeedRef = useRef(dyno.dynoFloat(2.0));
+  const freezeCrackDensityRef = useRef(dyno.dynoFloat(5.0));
+  const freezeShatterDelayRef = useRef(dyno.dynoFloat(0.4));
+  const freezeShardSpeedRef = useRef(dyno.dynoFloat(10.0));
+
+  // Sand/Hourglass controls
+  const sandFallSpeedRef = useRef(dyno.dynoFloat(6.0));
+  const sandFunnelWidthRef = useRef(dyno.dynoFloat(1.0));
+  const sandSpreadRef = useRef(dyno.dynoFloat(3.0));
+  const sandGrainSizeRef = useRef(dyno.dynoFloat(0.8));
+
+  // Teleport/Beam controls
+  const teleportSpeedRef = useRef(dyno.dynoFloat(2.0));
+  const teleportSparkleRef = useRef(dyno.dynoFloat(1.0));
+  const teleportBandWidthRef = useRef(dyno.dynoFloat(2.0));
+  const teleportDirectionRef = useRef(dyno.dynoFloat(1.0));
   
   // Mobile simplification refs - reduce small particle chaos
   const smallParticleThresholdRef = useRef(dyno.dynoFloat(0.0));
@@ -163,9 +217,63 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
     physicsGravity,
     physicsFriction,
     physicsTumbleSpeed,
-    
+
+    // Exit Animation - Sawdust Drift
+    sawdustFallSpeed,
+    sawdustWindStrength,
+    sawdustTurbulence,
+    sawdustDissolveSpeed,
+
+    // Exit Animation - Disintegration/Ash
+    ashRiseSpeed,
+    ashSpreadRadius,
+    ashEmberGlow,
+    ashBurnSpeed,
+
+    // Exit Animation - Shatter/Glass
+    shatterForce,
+    shatterGravity,
+    shatterSpread,
+    shatterRotation,
+
+    // Exit Animation - Pixelate/Glitch
+    glitchIntensity,
+    glitchBlockSize,
+    glitchSpeed,
+    glitchChroma,
+
+    // Exit Animation - Black Hole
+    blackHoleStrength,
+    blackHoleSpinSpeed,
+    blackHoleRadius,
+    blackHoleStretch,
+
+    // Exit Animation - Bloom/Pollen
+    pollenDriftSpeed,
+    pollenSpread,
+    pollenWaveStrength,
+    pollenRiseSpeed,
+
+    // Exit Animation - Freeze/Shatter
+    freezeSpeed,
+    freezeCrackDensity,
+    freezeShatterDelay,
+    freezeShardSpeed,
+
+    // Exit Animation - Sand/Hourglass
+    sandFallSpeed,
+    sandFunnelWidth,
+    sandSpread,
+    sandGrainSize,
+
+    // Exit Animation - Teleport/Beam
+    teleportSpeed,
+    teleportSparkle,
+    teleportBandWidth,
+    teleportDirection,
+
     exitAnimationDuration,
-    
+
     currentCameraX,
     currentCameraY,
     currentCameraZ,
@@ -254,6 +362,51 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
               physicsGravity: 'float',
               physicsFriction: 'float',
               physicsTumbleSpeed: 'float',
+              // Sawdust drift controls
+              sawdustFallSpeed: 'float',
+              sawdustWindStrength: 'float',
+              sawdustTurbulence: 'float',
+              sawdustDissolveSpeed: 'float',
+              // Ash/Disintegration controls
+              ashRiseSpeed: 'float',
+              ashSpreadRadius: 'float',
+              ashEmberGlow: 'float',
+              ashBurnSpeed: 'float',
+              // Shatter controls
+              shatterForce: 'float',
+              shatterGravity: 'float',
+              shatterSpread: 'float',
+              shatterRotation: 'float',
+              // Glitch controls
+              glitchIntensity: 'float',
+              glitchBlockSize: 'float',
+              glitchSpeed: 'float',
+              glitchChroma: 'float',
+              // Black hole controls
+              blackHoleStrength: 'float',
+              blackHoleSpinSpeed: 'float',
+              blackHoleRadius: 'float',
+              blackHoleStretch: 'float',
+              // Pollen controls
+              pollenDriftSpeed: 'float',
+              pollenSpread: 'float',
+              pollenWaveStrength: 'float',
+              pollenRiseSpeed: 'float',
+              // Freeze controls
+              freezeSpeed: 'float',
+              freezeCrackDensity: 'float',
+              freezeShatterDelay: 'float',
+              freezeShardSpeed: 'float',
+              // Sand controls
+              sandFallSpeed: 'float',
+              sandFunnelWidth: 'float',
+              sandSpread: 'float',
+              sandGrainSize: 'float',
+              // Teleport controls
+              teleportSpeed: 'float',
+              teleportSparkle: 'float',
+              teleportBandWidth: 'float',
+              teleportDirection: 'float',
               // Mobile simplification inputs
               smallThreshold: 'float',
               motionReduction: 'float',
@@ -425,46 +578,47 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                 vec4 exitPond(vec3 pos, vec3 scale, float progress, vec3 h, float speed, float freq, float amp, float waveCount) {
                   vec3 origin = vec3(0.0, 0.0, 0.0);
                   float dist = length(pos.xz - origin.xz);
-                  
+
                   // Wave parameters from uniforms
-                  float wavefront = progress * speed * 2.5; // Multiplier to match scale
+                  float wavefront = progress * speed * 2.5;
                   float phase = dist * freq - progress * speed;
-                  
+
                   float distFromFront = wavefront - dist;
-                  
-                  // Before wave hits: normal position
+
+                  // Before wave hits: stay in place, fully visible
                   if (distFromFront < 0.0) return vec4(pos, 1000.0 + 0.999);
-                  
-                  // Calculate ripple envelope
-                  // Only show ripple for a certain distance behind wavefront
+
+                  // Ripple envelope - how much this particle is affected
                   float rippleWidth = waveCount / freq;
-                  float envelope = smoothstep(rippleWidth, 0.0, distFromFront) * smoothstep(0.0, 1.0, distFromFront);
-                  
-                  // Calculate wave displacement
-                  float rippleY = sin(phase) * amp * envelope;
-                  
-                  // Apply position changes
+                  float envelope = smoothstep(rippleWidth, 0.0, distFromFront) * smoothstep(0.0, 2.0, distFromFront);
+
+                  // Gentle wave displacement
+                  float rippleY = sin(phase) * amp * envelope * 0.5;
+
                   vec3 newPos = pos;
                   newPos.y += rippleY;
-                  
+
+                  // Subtle horizontal ripple
                   vec2 dir = normalize(pos.xz - origin.xz + vec2(0.001));
-                  float rippleH = cos(phase) * amp * 0.3 * envelope;
+                  float rippleH = cos(phase) * amp * 0.15 * envelope;
                   newPos.x += dir.x * rippleH;
                   newPos.z += dir.y * rippleH;
-                  
-                  // Fading logic:
-                  // Particles fade out AFTER the wave passes them
-                  // Calculate how "passed" the wave is
-                  float passedDistance = distFromFront;
-                  float fadeStart = rippleWidth * 0.2; // Start fading just after peak
-                  float fadeEnd = rippleWidth * 0.8;   // Fully faded by end of tail
-                  
-                  float fadeProgress = smoothstep(fadeStart, fadeEnd, passedDistance);
-                  float opacity = 1.0 - fadeProgress;
-                  
-                  // Scale effect: bulge up on wave, then shrink on fade
-                  float scaleMult = 1.0 + rippleY * 0.5 - fadeProgress * 0.5;
-                  
+
+                  // Fade calculation - ensure BOTH scale and opacity reach 0
+                  float fadeStart = rippleWidth * 0.3;
+                  float fadeEnd = rippleWidth * 0.95;
+                  float fadeProgress = smoothstep(fadeStart, fadeEnd, distFromFront);
+
+                  // Critical: Both scale AND opacity must go to 0 to avoid white artifacts
+                  float scaleMult = max(0.0, 1.0 - fadeProgress);
+                  float opacity = max(0.0, 1.0 - fadeProgress);
+
+                  // If fully faded, ensure complete invisibility
+                  if (fadeProgress > 0.99) {
+                    scaleMult = 0.0;
+                    opacity = 0.0;
+                  }
+
                   return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
                 }
 
@@ -498,152 +652,530 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                   return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
                 }
 
-                // 6. Sawdust Drift (Gentle)
-                vec4 exitSawdust(vec3 pos, vec3 scale, float progress, vec3 h) {
-                  // Coordinate Space Correction:
-                  // Mesh has -90 deg X rotation.
-                  // Local +Z is World Up (approx)
-                  // Local -Y is World Back (Away from Camera)
-                  
-                  // Drift direction: 
-                  // We want them to fall DOWN (Local +Z) and drift BACK (Local -Y)
-                  // drift x, y, z
-                  vec3 drift = vec3(0.2, -1.0, 1.0); // -Y is back, +Z is down? No.
-                  
-                  // Let's re-verify:
-                  // Rotation X = -1.6 (-90 deg)
-                  // Local Z -> World Y (Up)  [Rotated -90 deg around X means Z goes to Y]
-                  // Local Y -> World -Z (Away) [Rotated -90 deg around X means Y goes to -Z]
-                  
-                  // So "Falling" means decreasing World Y, which means decreasing Local Z.
-                  // "Drifting Away" means decreasing World Z, which means increasing Local Y? No, Y goes to -Z.
-                  // Wait. 
-                  // (0,1,0) * RotX(-90) = (0, 0, -1) -> Y became -Z.
-                  // (0,0,1) * RotX(-90) = (0, 1, 0) -> Z became Y.
-                  
-                  // So to fall (World -Y), we need Local -Z.
-                  // To drift away (World -Z), we need Local +Y.
-                  
-                  vec3 gravityDir = vec3(0.0, 0.0, -1.0); // Local -Z is World -Y (Down)
-                  vec3 windDir = vec3(0.2, 1.0, 0.0);    // Local +Y is World -Z (Away)
-                  
-                  float normY = (pos.z + 5.0) / 10.0; // Use Z for vertical gradient (since Z is Up/Down)
-                  
-                  float dissolveThreshold = 1.0 - (progress * 1.5);
-                  // Dissolve from top to bottom (World Y) -> Local Z
-                  float isDissolving = smoothstep(dissolveThreshold + 0.2, dissolveThreshold - 0.2, normY + (h.x * 0.4 - 0.2));
-                  
-                  if (isDissolving < 0.01) return vec4(pos, 1000.0 + 0.999);
-                  
-                  float particleTime = progress; 
+                // 6. Sawdust Drift (Gentle falling particles like sawdust)
+                vec4 exitSawdust(vec3 pos, vec3 scale, float progress, vec3 h,
+                                 float fallSpeed, float windStrength, float turbulence, float dissolveSpeed) {
+                  // Coordinate Space: Mesh has -90 deg X rotation
+                  // Local -Z = World Down, Local +Y = World Away from camera
+
+                  // All particles participate - use progress directly with per-particle delay
+                  float particleDelay = h.x * 0.4; // Stagger start times
+                  float adjustedProgress = max(0.0, (progress - particleDelay) / (1.0 - particleDelay));
+
+                  // Smooth easing for graceful motion
+                  float t = adjustedProgress * adjustedProgress * 2.0;
+
+                  // Per-particle fall speed variation
+                  float particleFallSpeed = fallSpeed * (0.7 + h.y * 0.6);
+
                   vec3 newPos = pos;
-                  
-                  float fallSpeed = 3.0 + h.y * 2.0;
-                  
-                  // Apply movement
-                  vec3 movement = (gravityDir * fallSpeed) + (windDir * fallSpeed * 0.5);
-                  newPos += movement * particleTime * isDissolving;
-                  
-                  float t = particleTime * 2.0;
-                  // Add noise
-                  newPos.x += sin(t * 3.0 + h.z * 10.0) * 0.5 * isDissolving;
-                  
-                  // Oscillate other axes
-                  newPos.y += cos(t * 2.5 + h.x * 10.0) * 0.2 * isDissolving; // Forward/Back oscillation
-                  newPos.z += sin(t * 2.0 + h.y * 10.0) * 0.2 * isDissolving; // Up/Down oscillation
-                  
-                  float scaleMult = 1.0 - isDissolving * 0.8;
-                  float opacity = 1.0 - isDissolving;
-                  
+
+                  // Gravity: fall down (Local -Z = World -Y)
+                  newPos.z -= particleFallSpeed * t;
+
+                  // Wind: drift away from camera (Local +Y = World -Z)
+                  newPos.y += windStrength * t * (0.5 + h.z * 0.5);
+
+                  // Gentle lateral drift
+                  newPos.x += (h.x - 0.5) * windStrength * 0.3 * t;
+
+                  // Soft turbulence oscillation
+                  float turbTime = adjustedProgress * 4.0;
+                  newPos.x += sin(turbTime * 2.0 + h.z * 6.28) * turbulence * 0.3 * adjustedProgress;
+                  newPos.y += cos(turbTime * 1.5 + h.x * 6.28) * turbulence * 0.2 * adjustedProgress;
+                  newPos.z += sin(turbTime * 1.0 + h.y * 6.28) * turbulence * 0.1 * adjustedProgress;
+
+                  // Graceful fade - both scale AND opacity go to 0
+                  float fadeProgress = smoothstep(0.3, 1.0, adjustedProgress);
+                  float scaleMult = 1.0 - fadeProgress;
+                  float opacity = 1.0 - fadeProgress;
+
                   return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
                 }
 
-                // 7. Physics Explosion (Radial)
-                vec4 exitExplosion(vec3 pos, vec3 scale, float progress, vec3 h, float strength, float gravity, float friction, float tumbleSpeed) {
-                  float t = progress * 1.5; // Duration in seconds (approx)
+                // 7. Physics Explosion (Radial burst with gravity AND ground bounce!)
+                vec4 exitExplosion(vec3 pos, vec3 scale, float progress, vec3 h,
+                                   float strength, float gravity, float friction, float tumbleSpeed) {
+                  float t = progress * 2.5; // Slightly longer time scale for bounces
                   if (t <= 0.0) return vec4(pos, 1000.0 + 0.999);
-                  
-                  // Center of explosion (approximate center of mesh)
-                  // Place center slightly in FRONT of the object to push everything backwards away from camera
-                  vec3 center = vec3(0.0, 1.0, 2.0);
-                  
-                  // Radial direction from center
+
+                  // Ground plane in local space (Local -Z = World Down)
+                  // Position it below the scene
+                  float groundZ = -4.0;
+                  float bounceDamping = 0.55; // Energy retained after bounce (0.55 = decent bounce)
+
+                  // Explosion center in local space
+                  vec3 center = vec3(0.0, 0.0, 0.0);
                   vec3 dir = pos - center;
-                  
-                  // No need for manual bias if we move the center forward, 
-                  // but let's clamp Z to be safe if desired, or just let physics do it.
-                  // Since center.z is 2.0 and object is around 0.0, dir.z will be negative (approx -2.0).
-                  // This ensures strong backward momentum.
-                  
                   float dist = length(dir);
                   vec3 normDir = normalize(dir + vec3(0.001));
-                  
-                  // Calculate initial velocity
-                  // Mix of radial (explosive) and random (chaos)
-                  
-                  // Radial component
-                  vec3 radialVel = normDir * strength;
-                  
-                  // Coordinate Space Correction:
-                  // The mesh is rotated by -1.6 radians on X (approx -90 deg).
-                  // Local Y aligns with World Z.
-                  // BUT, if we are modifying position in local space, and the mesh is rotated...
-                  // Let's try forcing Z heavily negative in local space, and if that fails, Y.
-                  // If rotation is -90 deg X:
-                  // Local (0, 0, -1) -> World (0, 1, 0) [Up]
-                  // Local (0, 1, 0) -> World (0, 0, 1) [Towards Camera]
-                  // Local (0, -1, 0) -> World (0, 0, -1) [Away from Camera]
-                  
-                  // So we want NEGATIVE Y in local space to go AWAY from camera (World -Z).
-                  
-                  if (radialVel.y > 0.0) {
-                     radialVel.y = -radialVel.y * 0.5; // Flip to negative Y
-                  } else {
-                     radialVel.y *= 2.0; // Boost negative Y
-                  }
-                  
-                  // Random component
-                  vec3 randomDir = h - 0.5;
-                  if (randomDir.y > 0.0) randomDir.y *= -1.0; // Force negative Y
-                  vec3 randomVel = randomDir * strength * 0.5;
-                  
-                  // Combine
-                  vec3 velocity = radialVel + randomVel;
-                  
-                  // Final safety check: subtract constant from Y to guarantee backward drift in World Space
-                  // (Negative Y local = Negative Z world)
-                  velocity.y -= 5.0; 
-                  
-                  // Apply friction (damping)
-                  float frictionFactor = pow(friction, t * 60.0);
-                  
-                  // Update position
+
+                  // Initial radial velocity - explode outward
+                  vec3 velocity = normDir * strength * (0.5 + h.x * 0.5);
+
+                  // Add random scatter
+                  velocity += (h - 0.5) * strength * 0.4;
+
+                  // Bias toward going away from camera (Local +Y = World -Z)
+                  velocity.y += strength * 0.3;
+
+                  // Slight upward initial velocity so particles arc before falling
+                  velocity.z += strength * 0.15 * (0.5 + h.z * 0.5);
+
+                  // Apply air friction (reduces horizontal velocity over time)
+                  float airFriction = exp(-friction * 0.5 * t);
+
+                  // Simulate position with bouncing
                   vec3 newPos = pos;
-                  newPos += velocity * t * frictionFactor;
-                  newPos.y -= 0.5 * gravity * t * t;
-                  
-                  // Add subtle turbulence/tumble to position (fake tumbling)
-                  // Using tumbleSpeed to drive high frequency noise
+                  float remainingTime = t;
+                  vec3 vel = velocity;
+                  float currentZ = pos.z;
+                  float currentVelZ = vel.z;
+
+                  // Simulate up to 4 bounces
+                  for (int bounce = 0; bounce < 4; bounce++) {
+                    // Calculate time to hit ground: z + vz*t - 0.5*g*t^2 = groundZ
+                    // Solving quadratic: -0.5*g*t^2 + vz*t + (z - groundZ) = 0
+                    // t = (vz + sqrt(vz^2 + 2*g*(z - groundZ))) / g
+
+                    float heightAboveGround = currentZ - groundZ;
+
+                    // If already below ground or no time left, stop
+                    if (heightAboveGround < 0.0 || remainingTime <= 0.0) break;
+
+                    // Quadratic formula for time to impact
+                    float a = 0.5 * gravity;
+                    float b = -currentVelZ;
+                    float c = -heightAboveGround;
+                    float discriminant = b * b - 4.0 * a * c;
+
+                    if (discriminant < 0.0) {
+                      // No impact - particle stays in air
+                      // Just apply normal physics for remaining time
+                      newPos.x = pos.x + vel.x * t * airFriction;
+                      newPos.y = pos.y + vel.y * t * airFriction;
+                      newPos.z = currentZ + currentVelZ * remainingTime - 0.5 * gravity * remainingTime * remainingTime;
+                      break;
+                    }
+
+                    float sqrtDisc = sqrt(discriminant);
+                    float t1 = (-b - sqrtDisc) / (2.0 * a);
+                    float t2 = (-b + sqrtDisc) / (2.0 * a);
+
+                    // We want the smallest positive time
+                    float timeToImpact = t1 > 0.001 ? t1 : t2;
+
+                    if (timeToImpact > remainingTime || timeToImpact < 0.001) {
+                      // No impact within remaining time
+                      newPos.x = pos.x + vel.x * t * airFriction;
+                      newPos.y = pos.y + vel.y * t * airFriction;
+                      newPos.z = currentZ + currentVelZ * remainingTime - 0.5 * gravity * remainingTime * remainingTime;
+                      break;
+                    }
+
+                    // Move to impact point
+                    float impactFriction = exp(-friction * 0.5 * (t - remainingTime + timeToImpact));
+                    newPos.x = pos.x + vel.x * (t - remainingTime + timeToImpact) * airFriction;
+                    newPos.y = pos.y + vel.y * (t - remainingTime + timeToImpact) * airFriction;
+                    newPos.z = groundZ;
+
+                    // Velocity at impact (v = v0 - g*t)
+                    float impactVelZ = currentVelZ - gravity * timeToImpact;
+
+                    // Bounce! Reflect and dampen Z velocity
+                    currentVelZ = -impactVelZ * bounceDamping;
+                    currentZ = groundZ + 0.01; // Slightly above ground
+
+                    // Also dampen horizontal velocity on ground contact
+                    vel.x *= 0.85;
+                    vel.y *= 0.85;
+
+                    remainingTime -= timeToImpact;
+
+                    // If bounce velocity is very small, just settle on ground
+                    if (abs(currentVelZ) < 0.5) {
+                      newPos.z = groundZ;
+                      break;
+                    }
+
+                    // Continue simulation from bounce point
+                    if (remainingTime > 0.0) {
+                      newPos.z = currentZ + currentVelZ * remainingTime - 0.5 * gravity * remainingTime * remainingTime;
+                      // Clamp to ground
+                      newPos.z = max(newPos.z, groundZ);
+                    }
+                  }
+
+                  // Final ground clamp (safety)
+                  newPos.z = max(newPos.z, groundZ);
+
+                  // Tumble effect - more intense during flight, settles after bouncing
+                  float flightPhase = 1.0 - smoothstep(0.5, 1.0, progress);
+                  float tumblePhase = t * tumbleSpeed;
                   vec3 tumble = vec3(
-                    sin(t * tumbleSpeed * 5.0 + h.x * 10.0),
-                    cos(t * tumbleSpeed * 4.0 + h.y * 10.0),
-                    sin(t * tumbleSpeed * 6.0 + h.z * 10.0)
-                  ) * 0.1 * t;
+                    sin(tumblePhase * 5.0 + h.x * 20.0),
+                    cos(tumblePhase * 4.0 + h.y * 20.0),
+                    sin(tumblePhase * 6.0 + h.z * 20.0)
+                  ) * 0.12 * flightPhase;
                   newPos += tumble;
 
-                  // Scale down over time
-                  float scaleMult = 1.0 - smoothstep(0.5, 1.5, t);
-                  float opacity = 1.0 - smoothstep(1.0, 1.5, t);
-                  
+                  // Final ground clamp again after tumble
+                  newPos.z = max(newPos.z, groundZ);
+
+                  // Fade and shrink - delayed to let bounces be visible
+                  float scaleMult = 1.0 - smoothstep(0.5, 1.0, progress);
+                  float opacity = 1.0 - smoothstep(0.6, 1.0, progress);
+
                   return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
+
+                // 8. Disintegration/Ash (Burn away with rising embers)
+                vec4 exitAsh(vec3 pos, vec3 scale, float progress, vec3 h,
+                             float riseSpeed, float spreadRadius, float emberGlow, float burnSpeed) {
+                  // All particles participate with staggered timing based on distance from center
+                  vec3 center = vec3(0.0, 0.0, 0.0);
+                  float distFromCenter = length(pos.xz - center.xz);
+                  float maxDist = 8.0;
+                  float normDist = clamp(distFromCenter / maxDist, 0.0, 1.0);
+
+                  // Edges burn first - particle delay based on distance (outer = earlier)
+                  float particleDelay = (1.0 - normDist) * 0.5 + h.x * 0.2;
+                  float adjustedProgress = max(0.0, (progress * burnSpeed - particleDelay) / (1.0 - particleDelay * 0.5));
+                  adjustedProgress = min(adjustedProgress, 1.0);
+
+                  // Smooth easing
+                  float t = adjustedProgress * 2.0;
+
+                  vec3 newPos = pos;
+
+                  // Rise up like embers (Local +Z = World +Y) - graceful upward motion
+                  float riseAmount = riseSpeed * t * t * (0.5 + h.y * 0.5);
+                  newPos.z += riseAmount;
+
+                  // Gentle spread outward
+                  vec2 spreadDir = normalize(pos.xz - center.xz + vec2(0.001));
+                  float spreadAmount = spreadRadius * t * (0.3 + h.z * 0.4);
+                  newPos.x += spreadDir.x * spreadAmount;
+                  newPos.y += spreadDir.y * spreadAmount * 0.5;
+
+                  // Subtle ember flicker (not jarring)
+                  float flickerPhase = t * 8.0 + h.x * 6.28;
+                  float flicker = sin(flickerPhase) * cos(flickerPhase * 0.7) * 0.5 + 0.5;
+                  newPos.x += (flicker - 0.5) * 0.05 * adjustedProgress;
+
+                  // Graceful fade out - scale and opacity both go to 0
+                  float fadeProgress = smoothstep(0.2, 1.0, adjustedProgress);
+                  float scaleMult = (1.0 - fadeProgress) * (0.9 + emberGlow * 0.2 * flicker);
+                  float opacity = 1.0 - fadeProgress;
+
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
+
+                // 9. Shatter/Glass Break (Graceful collapse inward then fall)
+                vec4 exitShatter(vec3 pos, vec3 scale, float progress, vec3 h,
+                                 float force, float grav, float spread, float rotation) {
+                  // Smooth eased time
+                  float t = progress * progress;
+
+                  // Center point for implosion
+                  vec3 center = vec3(0.0, 1.0, 0.0);
+                  vec3 toCenter = center - pos;
+                  float distFromCenter = length(toCenter);
+                  vec3 dirToCenter = normalize(toCenter + vec3(0.001));
+
+                  // Phase 1 (0-0.4): Gentle pull toward center (implosion feel)
+                  // Phase 2 (0.4-1.0): Fall away gracefully
+                  float implodePhase = smoothstep(0.0, 0.4, progress);
+                  float fallPhase = smoothstep(0.3, 1.0, progress);
+
+                  vec3 newPos = pos;
+
+                  // Gentle implosion - particles drift toward center
+                  float implodeStrength = force * 0.15 * implodePhase * (1.0 - fallPhase * 0.5);
+                  newPos += dirToCenter * implodeStrength;
+
+                  // Graceful outward drift with per-particle variation
+                  vec3 driftDir = -dirToCenter + (h - 0.5) * spread * 0.3;
+                  float driftAmount = force * 0.1 * fallPhase * (0.5 + h.x * 0.5);
+                  newPos += driftDir * driftAmount;
+
+                  // Smooth gravity fall (Local -Z = World Down)
+                  float fallAmount = grav * 0.5 * fallPhase * fallPhase;
+                  newPos.z -= fallAmount;
+
+                  // Very subtle rotation - not jarring
+                  float rotAmount = rotation * 0.02 * fallPhase * (h.y - 0.5);
+                  newPos.x += sin(progress * 3.14159) * rotAmount;
+
+                  // Graceful fade
+                  float fadeProgress = smoothstep(0.4, 1.0, progress);
+                  float scaleMult = 1.0 - fadeProgress;
+                  float opacity = 1.0 - fadeProgress;
+
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
+
+                // 10. Pixelate/Glitch (Digital dissolution)
+                vec4 exitGlitch(vec3 pos, vec3 scale, float progress, vec3 h,
+                                float intensity, float blockSize, float speed, float chroma) {
+                  float t = progress;
+
+                  // Snap to grid blocks
+                  vec3 blockPos = floor(pos / blockSize) * blockSize;
+                  float blockHash = fract(sin(dot(blockPos.xy, vec2(12.9898, 78.233))) * 43758.5453);
+
+                  // Glitch timing - different blocks glitch at different times
+                  float glitchTime = blockHash * 0.5;
+                  float isGlitching = smoothstep(glitchTime, glitchTime + 0.3, t);
+
+                  if (isGlitching < 0.01) return vec4(pos, 1000.0 + 0.999);
+
+                  vec3 newPos = pos;
+
+                  // Random block displacement
+                  float glitchPhase = floor(t * speed + blockHash * 10.0);
+                  float displacement = fract(sin(glitchPhase * 12.9898 + blockHash * 78.233) * 43758.5453);
+
+                  // Horizontal glitch bands
+                  newPos.x += (displacement - 0.5) * intensity * 2.0 * isGlitching;
+
+                  // Vertical jitter
+                  newPos.z += (fract(displacement * 7.0) - 0.5) * intensity * 0.5 * isGlitching;
+
+                  // Chromatic aberration offset (position shift simulates color separation)
+                  float chromaOffset = chroma * sin(t * speed * 2.0 + blockHash * 20.0) * isGlitching;
+                  newPos.x += chromaOffset * h.x;
+
+                  // Scale pulsing
+                  float scalePulse = 1.0 + sin(t * speed * 3.0 + blockHash * 30.0) * 0.2 * isGlitching;
+                  float scaleMult = scalePulse * (1.0 - isGlitching * 0.8);
+                  float opacity = 1.0 - isGlitching;
+
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
+
+                // 11. Black Hole (Spiral into singularity)
+                vec4 exitBlackHole(vec3 pos, vec3 scale, float progress, vec3 h,
+                                   float strength, float spinSpeed, float radius, float stretch) {
+                  vec3 center = vec3(0.0, 2.0, 0.0);
+                  vec3 offset = pos - center;
+                  float dist = length(offset);
+
+                  // Gravitational pull increases with progress
+                  float pullStrength = progress * progress * strength;
+                  float newDist = max(radius * 0.1, dist - pullStrength);
+                  float pullFactor = 1.0 - (newDist / (dist + 0.001));
+
+                  // Spiral rotation
+                  float angle = pullFactor * spinSpeed * 10.0 + h.x * 6.28;
+                  float cosA = cos(angle);
+                  float sinA = sin(angle);
+
+                  vec3 newPos = center;
+                  float rotX = offset.x * cosA - offset.y * sinA;
+                  float rotY = offset.x * sinA + offset.y * cosA;
+                  newPos.x += rotX * (newDist / (dist + 0.001));
+                  newPos.y += rotY * (newDist / (dist + 0.001));
+                  newPos.z += offset.z * (newDist / (dist + 0.001));
+
+                  // Spaghettification - stretch toward center
+                  vec3 stretchDir = normalize(center - pos + vec3(0.001));
+                  newPos += stretchDir * pullFactor * stretch;
+
+                  // Particles compress as they approach event horizon
+                  float horizonDist = newDist / radius;
+                  float scaleMult = smoothstep(0.0, 1.0, horizonDist) * (1.0 - pullFactor * 0.9);
+                  float opacity = smoothstep(0.0, 0.5, horizonDist);
+
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
+
+                // 12. Bloom/Pollen (Gentle outward drift like dandelion seeds)
+                vec4 exitPollen(vec3 pos, vec3 scale, float progress, vec3 h,
+                                float driftSpeed, float spread, float waveStrength, float riseSpeed) {
+                  float t = progress * 2.0;
+
+                  // Gentle radial expansion
+                  vec3 center = vec3(0.0, 0.0, 0.0);
+                  vec3 dir = normalize(pos - center + vec3(0.001));
+
+                  vec3 newPos = pos;
+
+                  // Drift outward
+                  newPos += dir * driftSpeed * t * (0.5 + h.x * 0.5);
+
+                  // Random spread
+                  newPos += (h - 0.5) * spread * t;
+
+                  // Gentle rise (Local +Z = World Up)
+                  newPos.z += riseSpeed * t * (0.3 + h.y * 0.7);
+
+                  // Floating wave motion
+                  float wavePhase = t * 2.0 + h.z * 10.0;
+                  newPos.x += sin(wavePhase) * waveStrength * 0.3;
+                  newPos.y += cos(wavePhase * 0.7) * waveStrength * 0.2;
+                  newPos.z += sin(wavePhase * 0.5 + 1.0) * waveStrength * 0.15;
+
+                  // Slow fade
+                  float scaleMult = 1.0 - smoothstep(0.3, 1.0, progress) * 0.7;
+                  float opacity = 1.0 - smoothstep(0.4, 1.0, progress);
+
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
+
+                // 13. Freeze/Shatter (Ice crystallization then break apart)
+                vec4 exitFreeze(vec3 pos, vec3 scale, float progress, vec3 h,
+                                float freezeSpd, float crackDensity, float shatterDelay, float shardSpeed) {
+                  // Phase 1: Freeze (0 to shatterDelay)
+                  // Phase 2: Shatter (shatterDelay to 1)
+
+                  float freezeProgress = smoothstep(0.0, shatterDelay, progress);
+                  float shatterProgress = smoothstep(shatterDelay, 1.0, progress);
+
+                  vec3 newPos = pos;
+
+                  // Freeze phase: slight contraction and jitter
+                  if (progress < shatterDelay) {
+                    // Crystallization jitter
+                    float jitter = sin(progress * crackDensity * 50.0 + h.x * 100.0) * 0.02 * freezeProgress;
+                    newPos += vec3(jitter, jitter * 0.5, jitter * 0.7);
+
+                    // Slight pull toward center (ice forming)
+                    vec3 center = vec3(0.0, 0.0, 0.0);
+                    vec3 toCenter = normalize(center - pos + vec3(0.001));
+                    newPos += toCenter * freezeProgress * 0.1;
+
+                    return vec4(newPos, 1000.0 + 0.999);
+                  }
+
+                  // Shatter phase
+                  float t = shatterProgress;
+
+                  // Create ice shard groups
+                  vec3 shardCenter = floor(pos * crackDensity) / crackDensity;
+                  vec3 shardDir = normalize(shardCenter + vec3(0.001));
+
+                  // Burst outward
+                  vec3 velocity = shardDir * shardSpeed * (0.5 + h.y * 0.5);
+                  velocity += (h - 0.5) * shardSpeed * 0.3;
+
+                  newPos += velocity * t;
+
+                  // Ice falls down
+                  newPos.z -= 8.0 * t * t;
+
+                  // Spin
+                  float spin = t * 5.0 * (h.x - 0.5);
+                  newPos.x += sin(spin) * 0.1;
+
+                  float scaleMult = 1.0 - smoothstep(0.5, 1.0, shatterProgress);
+                  float opacity = 1.0 - smoothstep(0.6, 1.0, shatterProgress);
+
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
+
+                // 14. Sand/Hourglass (Smooth flowing sand through a point)
+                vec4 exitSand(vec3 pos, vec3 scale, float progress, vec3 h,
+                              float fallSpd, float funnelWidth, float spread, float grainSize) {
+                  // Funnel center point
+                  vec3 funnel = vec3(0.0, 1.0, 0.0);
+
+                  // Distance from funnel axis
+                  float distFromAxis = length(pos.xy - funnel.xy);
+
+                  // Smooth staggered start - center particles move first, then outward
+                  float particleDelay = distFromAxis * 0.08 + h.y * 0.15;
+                  float adjustedProgress = max(0.0, (progress - particleDelay) / (1.0 - particleDelay * 0.5));
+                  adjustedProgress = min(adjustedProgress, 1.0);
+
+                  // Smooth easing for graceful motion
+                  float t = adjustedProgress * adjustedProgress;
+
+                  vec3 newPos = pos;
+
+                  // Gentle pull toward funnel axis
+                  vec2 toAxis = funnel.xy - pos.xy;
+                  float pullStrength = smoothstep(funnelWidth * 3.0, 0.0, distFromAxis);
+                  newPos.xy += toAxis * pullStrength * t * 0.4;
+
+                  // Smooth gravity fall (Local -Z = World Down)
+                  float fallAmount = fallSpd * t * t * (0.6 + h.x * 0.4);
+                  newPos.z -= fallAmount;
+
+                  // Gentle spread after falling past funnel
+                  float belowFunnel = smoothstep(funnel.z, funnel.z - 4.0, newPos.z);
+                  newPos.x += (h.x - 0.5) * spread * belowFunnel * 0.5;
+                  newPos.y += (h.z - 0.5) * spread * belowFunnel * 0.3;
+
+                  // Very subtle grain tumble (not jarring)
+                  float tumble = sin(adjustedProgress * 4.0 + h.y * 6.28) * 0.03 * adjustedProgress;
+                  newPos.x += tumble;
+
+                  // Graceful fade - both scale and opacity
+                  float fadeProgress = smoothstep(0.5, 1.0, adjustedProgress);
+                  float scaleMult = grainSize * (1.0 - fadeProgress);
+                  float opacity = 1.0 - fadeProgress;
+
+                  return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
+                }
+
+                // 15. Teleport/Beam (Star Trek-style vertical dissolve)
+                vec4 exitTeleport(vec3 pos, vec3 scale, float progress, vec3 h,
+                                  float speed, float sparkle, float bandWidth, float direction) {
+                  // Dissolve band moves vertically
+                  // direction: 1.0 = up, -1.0 = down
+                  float bandCenter = mix(-6.0, 8.0, progress) * direction;
+                  float distFromBand = abs(pos.z - bandCenter);
+
+                  // Particles dissolve when band passes
+                  float inBand = smoothstep(bandWidth, 0.0, distFromBand);
+                  float dissolved = smoothstep(bandCenter - bandWidth * direction, bandCenter, pos.z * direction);
+
+                  if (direction > 0.0) {
+                    dissolved = pos.z < bandCenter - bandWidth ? 1.0 : dissolved;
+                  } else {
+                    dissolved = pos.z > bandCenter + bandWidth ? 1.0 : dissolved;
+                  }
+
+                  if (dissolved > 0.99) return vec4(pos, 0.0 + 0.0);
+
+                  vec3 newPos = pos;
+
+                  // Sparkle effect at the band edge
+                  float sparkleIntensity = inBand * sparkle;
+                  float sparklePhase = progress * speed * 20.0 + h.x * 100.0;
+
+                  // Horizontal scatter at band
+                  newPos.x += sin(sparklePhase) * sparkleIntensity * 0.3;
+                  newPos.y += cos(sparklePhase * 1.3) * sparkleIntensity * 0.3;
+
+                  // Vertical stretch toward band
+                  newPos.z += (bandCenter - pos.z) * inBand * 0.2;
+
+                  // Scale pulsing at band edge (sparkle effect)
+                  float scalePulse = 1.0 + sin(sparklePhase * 2.0) * sparkleIntensity * 0.5;
+                  float scaleMult = scalePulse * (1.0 - dissolved);
+                  float opacity = (1.0 - dissolved) * (1.0 + sparkleIntensity * 0.3);
+
+                  return vec4(newPos, floor(max(0.001, scaleMult) * 1000.0) + min(opacity, 0.999));
                 }
 
                 // Apply exit animation based on type
                 // 1=Gust, 2=Sonic, 3=Cosmic, 4=Pond, 5=Exploded, 6=Sawdust, 7=Explosion
-                vec4 applyExitAnimation(vec3 pos, vec3 scale, float exitType, float exitProgress, vec3 h, 
+                // 8=Ash, 9=Shatter, 10=Glitch, 11=BlackHole, 12=Pollen, 13=Freeze, 14=Sand, 15=Teleport
+                vec4 applyExitAnimation(vec3 pos, vec3 scale, float exitType, float exitProgress, vec3 h,
                                        float expStrength, float expRotSpeed, float expFadeStart, float expFadeEnd,
                                        float pondSpeed, float pondFreq, float pondAmp, float pondCount,
-                                       float physStrength, float physGravity, float physFriction, float physTumble) {
+                                       float physStrength, float physGravity, float physFriction, float physTumble,
+                                       float sawFall, float sawWind, float sawTurb, float sawDissolve,
+                                       float ashRise, float ashSpread, float ashEmber, float ashBurn,
+                                       float shatterForce, float shatterGrav, float shatterSpread, float shatterRot,
+                                       float glitchInt, float glitchBlock, float glitchSpd, float glitchChroma,
+                                       float bhStrength, float bhSpin, float bhRadius, float bhStretch,
+                                       float pollenDrift, float pollenSpread, float pollenWave, float pollenRise,
+                                       float freezeSpd, float freezeCrack, float freezeDelay, float freezeShard,
+                                       float sandFall, float sandFunnel, float sandSpread, float sandGrain,
+                                       float teleSpd, float teleSparkle, float teleBand, float teleDir) {
                   if (exitProgress <= 0.001 || exitType < 0.5) {
                     return vec4(pos, 1000.0 + 0.999);
                   }
@@ -653,8 +1185,16 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                   if (exitType < 3.5) return exitCosmic(pos, scale, exitProgress, h);
                   if (exitType < 4.5) return exitPond(pos, scale, exitProgress, h, pondSpeed, pondFreq, pondAmp, pondCount);
                   if (exitType < 5.5) return exitExploded(pos, scale, exitProgress, h, expStrength, expRotSpeed, expFadeStart, expFadeEnd);
-                  if (exitType < 6.5) return exitSawdust(pos, scale, exitProgress, h);
-                  return exitExplosion(pos, scale, exitProgress, h, physStrength, physGravity, physFriction, physTumble);
+                  if (exitType < 6.5) return exitSawdust(pos, scale, exitProgress, h, sawFall, sawWind, sawTurb, sawDissolve);
+                  if (exitType < 7.5) return exitExplosion(pos, scale, exitProgress, h, physStrength, physGravity, physFriction, physTumble);
+                  if (exitType < 8.5) return exitAsh(pos, scale, exitProgress, h, ashRise, ashSpread, ashEmber, ashBurn);
+                  if (exitType < 9.5) return exitShatter(pos, scale, exitProgress, h, shatterForce, shatterGrav, shatterSpread, shatterRot);
+                  if (exitType < 10.5) return exitGlitch(pos, scale, exitProgress, h, glitchInt, glitchBlock, glitchSpd, glitchChroma);
+                  if (exitType < 11.5) return exitBlackHole(pos, scale, exitProgress, h, bhStrength, bhSpin, bhRadius, bhStretch);
+                  if (exitType < 12.5) return exitPollen(pos, scale, exitProgress, h, pollenDrift, pollenSpread, pollenWave, pollenRise);
+                  if (exitType < 13.5) return exitFreeze(pos, scale, exitProgress, h, freezeSpd, freezeCrack, freezeDelay, freezeShard);
+                  if (exitType < 14.5) return exitSand(pos, scale, exitProgress, h, sandFall, sandFunnel, sandSpread, sandGrain);
+                  return exitTeleport(pos, scale, exitProgress, h, teleSpd, teleSparkle, teleBand, teleDir);
                 }
               `),
             ],
@@ -709,6 +1249,60 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
               float physFriction = ${inputs.physicsFriction};
               float physTumble = ${inputs.physicsTumbleSpeed};
 
+              // Sawdust drift controls
+              float sawFall = ${inputs.sawdustFallSpeed};
+              float sawWind = ${inputs.sawdustWindStrength};
+              float sawTurb = ${inputs.sawdustTurbulence};
+              float sawDissolve = ${inputs.sawdustDissolveSpeed};
+
+              // Ash/Disintegration controls
+              float ashRise = ${inputs.ashRiseSpeed};
+              float ashSpread = ${inputs.ashSpreadRadius};
+              float ashEmber = ${inputs.ashEmberGlow};
+              float ashBurn = ${inputs.ashBurnSpeed};
+
+              // Shatter controls
+              float shatterForce = ${inputs.shatterForce};
+              float shatterGrav = ${inputs.shatterGravity};
+              float shatterSpread = ${inputs.shatterSpread};
+              float shatterRot = ${inputs.shatterRotation};
+
+              // Glitch controls
+              float glitchInt = ${inputs.glitchIntensity};
+              float glitchBlock = ${inputs.glitchBlockSize};
+              float glitchSpd = ${inputs.glitchSpeed};
+              float glitchChroma = ${inputs.glitchChroma};
+
+              // Black hole controls
+              float bhStrength = ${inputs.blackHoleStrength};
+              float bhSpin = ${inputs.blackHoleSpinSpeed};
+              float bhRadius = ${inputs.blackHoleRadius};
+              float bhStretch = ${inputs.blackHoleStretch};
+
+              // Pollen controls
+              float pollenDrift = ${inputs.pollenDriftSpeed};
+              float pollenSpread = ${inputs.pollenSpread};
+              float pollenWave = ${inputs.pollenWaveStrength};
+              float pollenRise = ${inputs.pollenRiseSpeed};
+
+              // Freeze controls
+              float freezeSpd = ${inputs.freezeSpeed};
+              float freezeCrack = ${inputs.freezeCrackDensity};
+              float freezeDelay = ${inputs.freezeShatterDelay};
+              float freezeShard = ${inputs.freezeShardSpeed};
+
+              // Sand controls
+              float sandFall = ${inputs.sandFallSpeed};
+              float sandFunnel = ${inputs.sandFunnelWidth};
+              float sandSpread = ${inputs.sandSpread};
+              float sandGrain = ${inputs.sandGrainSize};
+
+              // Teleport controls
+              float teleSpd = ${inputs.teleportSpeed};
+              float teleSparkle = ${inputs.teleportSparkle};
+              float teleBand = ${inputs.teleportBandWidth};
+              float teleDir = ${inputs.teleportDirection};
+
               // Get random hash for this particle (used by both entrance and exit animations)
               vec3 h = hash(localPos);
 
@@ -731,10 +1325,19 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
 
                 // Apply exit animation if active
                 if (exitProgress > 0.0 && exitType > 0.5) {
-                  vec4 exitResult = applyExitAnimation(${outputs.gsplat}.center, ${outputs.gsplat}.scales, exitType, exitProgress, h, 
+                  vec4 exitResult = applyExitAnimation(${outputs.gsplat}.center, ${outputs.gsplat}.scales, exitType, exitProgress, h,
                                                       expStrength, expRotSpeed, expFadeStart, expFadeEnd,
                                                       pondSpeed, pondFreq, pondAmp, pondCount,
-                                                      physStrength, physGravity, physFriction, physTumble);
+                                                      physStrength, physGravity, physFriction, physTumble,
+                                                      sawFall, sawWind, sawTurb, sawDissolve,
+                                                      ashRise, ashSpread, ashEmber, ashBurn,
+                                                      shatterForce, shatterGrav, shatterSpread, shatterRot,
+                                                      glitchInt, glitchBlock, glitchSpd, glitchChroma,
+                                                      bhStrength, bhSpin, bhRadius, bhStretch,
+                                                      pollenDrift, pollenSpread, pollenWave, pollenRise,
+                                                      freezeSpd, freezeCrack, freezeDelay, freezeShard,
+                                                      sandFall, sandFunnel, sandSpread, sandGrain,
+                                                      teleSpd, teleSparkle, teleBand, teleDir);
                   ${outputs.gsplat}.center = exitResult.xyz;
 
                   // Unpack scale multiplier and opacity from w component
@@ -848,6 +1451,51 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
             physicsGravity: physicsGravityRef.current,
             physicsFriction: physicsFrictionRef.current,
             physicsTumbleSpeed: physicsTumbleSpeedRef.current,
+            // Sawdust
+            sawdustFallSpeed: sawdustFallSpeedRef.current,
+            sawdustWindStrength: sawdustWindStrengthRef.current,
+            sawdustTurbulence: sawdustTurbulenceRef.current,
+            sawdustDissolveSpeed: sawdustDissolveSpeedRef.current,
+            // Ash
+            ashRiseSpeed: ashRiseSpeedRef.current,
+            ashSpreadRadius: ashSpreadRadiusRef.current,
+            ashEmberGlow: ashEmberGlowRef.current,
+            ashBurnSpeed: ashBurnSpeedRef.current,
+            // Shatter
+            shatterForce: shatterForceRef.current,
+            shatterGravity: shatterGravityRef.current,
+            shatterSpread: shatterSpreadRef.current,
+            shatterRotation: shatterRotationRef.current,
+            // Glitch
+            glitchIntensity: glitchIntensityRef.current,
+            glitchBlockSize: glitchBlockSizeRef.current,
+            glitchSpeed: glitchSpeedRef.current,
+            glitchChroma: glitchChromaRef.current,
+            // Black Hole
+            blackHoleStrength: blackHoleStrengthRef.current,
+            blackHoleSpinSpeed: blackHoleSpinSpeedRef.current,
+            blackHoleRadius: blackHoleRadiusRef.current,
+            blackHoleStretch: blackHoleStretchRef.current,
+            // Pollen
+            pollenDriftSpeed: pollenDriftSpeedRef.current,
+            pollenSpread: pollenSpreadRef.current,
+            pollenWaveStrength: pollenWaveStrengthRef.current,
+            pollenRiseSpeed: pollenRiseSpeedRef.current,
+            // Freeze
+            freezeSpeed: freezeSpeedRef.current,
+            freezeCrackDensity: freezeCrackDensityRef.current,
+            freezeShatterDelay: freezeShatterDelayRef.current,
+            freezeShardSpeed: freezeShardSpeedRef.current,
+            // Sand
+            sandFallSpeed: sandFallSpeedRef.current,
+            sandFunnelWidth: sandFunnelWidthRef.current,
+            sandSpread: sandSpreadRef.current,
+            sandGrainSize: sandGrainSizeRef.current,
+            // Teleport
+            teleportSpeed: teleportSpeedRef.current,
+            teleportSparkle: teleportSparkleRef.current,
+            teleportBandWidth: teleportBandWidthRef.current,
+            teleportDirection: teleportDirectionRef.current,
             smallThreshold: smallParticleThresholdRef.current,
             motionReduction: smallMotionReductionRef.current,
             skipSmall: skipSmallAnimationRef.current,
@@ -953,6 +1601,60 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
     physicsGravityRef.current.value = physicsGravity;
     physicsFrictionRef.current.value = physicsFriction;
     physicsTumbleSpeedRef.current.value = physicsTumbleSpeed;
+
+    // Sawdust drift parameters
+    sawdustFallSpeedRef.current.value = sawdustFallSpeed;
+    sawdustWindStrengthRef.current.value = sawdustWindStrength;
+    sawdustTurbulenceRef.current.value = sawdustTurbulence;
+    sawdustDissolveSpeedRef.current.value = sawdustDissolveSpeed;
+
+    // Ash/Disintegration parameters
+    ashRiseSpeedRef.current.value = ashRiseSpeed;
+    ashSpreadRadiusRef.current.value = ashSpreadRadius;
+    ashEmberGlowRef.current.value = ashEmberGlow;
+    ashBurnSpeedRef.current.value = ashBurnSpeed;
+
+    // Shatter parameters
+    shatterForceRef.current.value = shatterForce;
+    shatterGravityRef.current.value = shatterGravity;
+    shatterSpreadRef.current.value = shatterSpread;
+    shatterRotationRef.current.value = shatterRotation;
+
+    // Glitch parameters
+    glitchIntensityRef.current.value = glitchIntensity;
+    glitchBlockSizeRef.current.value = glitchBlockSize;
+    glitchSpeedRef.current.value = glitchSpeed;
+    glitchChromaRef.current.value = glitchChroma;
+
+    // Black hole parameters
+    blackHoleStrengthRef.current.value = blackHoleStrength;
+    blackHoleSpinSpeedRef.current.value = blackHoleSpinSpeed;
+    blackHoleRadiusRef.current.value = blackHoleRadius;
+    blackHoleStretchRef.current.value = blackHoleStretch;
+
+    // Pollen parameters
+    pollenDriftSpeedRef.current.value = pollenDriftSpeed;
+    pollenSpreadRef.current.value = pollenSpread;
+    pollenWaveStrengthRef.current.value = pollenWaveStrength;
+    pollenRiseSpeedRef.current.value = pollenRiseSpeed;
+
+    // Freeze parameters
+    freezeSpeedRef.current.value = freezeSpeed;
+    freezeCrackDensityRef.current.value = freezeCrackDensity;
+    freezeShatterDelayRef.current.value = freezeShatterDelay;
+    freezeShardSpeedRef.current.value = freezeShardSpeed;
+
+    // Sand parameters
+    sandFallSpeedRef.current.value = sandFallSpeed;
+    sandFunnelWidthRef.current.value = sandFunnelWidth;
+    sandSpreadRef.current.value = sandSpread;
+    sandGrainSizeRef.current.value = sandGrainSize;
+
+    // Teleport parameters
+    teleportSpeedRef.current.value = teleportSpeed;
+    teleportSparkleRef.current.value = teleportSparkle;
+    teleportBandWidthRef.current.value = teleportBandWidth;
+    teleportDirectionRef.current.value = teleportDirection;
 
     // Mobile simplification - reduce small particle chaos
     smallParticleThresholdRef.current.value = smallParticleThreshold;
