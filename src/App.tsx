@@ -11,7 +11,9 @@ import {
   ANIMATION_TIMING,
   EXIT_ANIMATION_DURATION,
   ENTRANCE_ANIMATION_DURATION,
+  TRANSITION_DURATION,
 } from './constants';
+import ContactOverlay from './components/contact/ContactOverlay';
 import type { SceneId, AnimationPhase } from './constants';
 import './types/r3f.d';
 
@@ -36,34 +38,59 @@ function App() {
     // Set target scene for exit animation type lookup
     setTargetScene(newTarget);
     setHasNavigated(true);
-
-    // Start exit animation
-    setAnimationPhase('exiting');
-    exitStartTimeRef.current = performance.now();
     setShowText(false); // Hide title during transition
 
-    // After exit animation completes, show the target scene
-    setTimeout(() => {
-      setActiveScene(newTarget);
-      setAnimationPhase('idle');
-    }, EXIT_ANIMATION_DURATION * 1000);
+    // Use different animation for Contact (splat-to-splat transition)
+    if (newTarget === 'contact') {
+      setAnimationPhase('transitioning');
+      exitStartTimeRef.current = performance.now();
+
+      // After transition completes, show the contact scene
+      setTimeout(() => {
+        setActiveScene(newTarget);
+        setAnimationPhase('idle');
+      }, TRANSITION_DURATION * 1000);
+    } else {
+      // Use standard exit animation for other scenes
+      setAnimationPhase('exiting');
+      exitStartTimeRef.current = performance.now();
+
+      // After exit animation completes, show the target scene
+      setTimeout(() => {
+        setActiveScene(newTarget);
+        setAnimationPhase('idle');
+      }, EXIT_ANIMATION_DURATION * 1000);
+    }
   }, [animationPhase, activeScene]);
 
   // Handle returning to home
   const handleReturnHome = useCallback(() => {
     if (animationPhase !== 'idle' || activeScene === 'home') return;
 
-    // Start entrance animation (reverse of exit)
-    // Keep targetScene the same so we use the same animation type in reverse
-    setActiveScene('home');
-    setAnimationPhase('entering');
     exitStartTimeRef.current = performance.now();
 
-    // After entrance animation completes, show menu and title
-    setTimeout(() => {
-      setAnimationPhase('idle');
-      setShowText(true);
-    }, ENTRANCE_ANIMATION_DURATION * 1000);
+    // Use different animation when returning from Contact (reverse transition)
+    if (activeScene === 'contact') {
+      setAnimationPhase('transitioningBack');
+
+      // After transition completes, show menu and title
+      setTimeout(() => {
+        setActiveScene('home');
+        setAnimationPhase('idle');
+        setShowText(true);
+      }, TRANSITION_DURATION * 1000);
+    } else {
+      // Start entrance animation (reverse of exit)
+      // Keep targetScene the same so we use the same animation type in reverse
+      setActiveScene('home');
+      setAnimationPhase('entering');
+
+      // After entrance animation completes, show menu and title
+      setTimeout(() => {
+        setAnimationPhase('idle');
+        setShowText(true);
+      }, ENTRANCE_ANIMATION_DURATION * 1000);
+    }
   }, [animationPhase, activeScene]);
 
   // Leva control to hide overlays for screenshots
@@ -121,8 +148,13 @@ function App() {
         <HandDrawnText key={animationKey} show={showText} />
       )}
 
-      {/* Back button - show during exit animation and when on other scenes (not during entrance) */}
-      {(animationPhase === 'exiting' || (activeScene !== 'home' && animationPhase === 'idle')) && (
+      {/* Contact overlay - show on contact scene */}
+      {activeScene === 'contact' && animationPhase === 'idle' && (
+        <ContactOverlay />
+      )}
+
+      {/* Back button - show during exit/transition animations and when on other scenes */}
+      {(animationPhase === 'exiting' || animationPhase === 'transitioning' || (activeScene !== 'home' && animationPhase === 'idle')) && (
         <BackButton onClick={handleReturnHome} />
       )}
     </div>

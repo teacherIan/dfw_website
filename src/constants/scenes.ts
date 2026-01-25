@@ -5,7 +5,26 @@
 
 export type SceneId = 'home' | 'ethos' | 'contact' | 'gallery';
 
-export type AnimationPhase = 'idle' | 'exiting' | 'entering';
+export type AnimationPhase = 'idle' | 'exiting' | 'entering' | 'transitioning' | 'transitioningBack';
+
+/**
+ * Splat transition types for transitioning between two splat meshes
+ * Used when navigating to Contact (main scene -> logo)
+ */
+export type TransitionType = 'morph' | 'dissolve' | 'vortex' | 'wipe' | 'pixelate';
+
+export const TRANSITION_TYPE_VALUES: Record<TransitionType, number> = {
+  morph: 0,
+  dissolve: 1,
+  vortex: 2,
+  wipe: 3,
+  pixelate: 4,
+} as const;
+
+/**
+ * Duration of splat-to-splat transitions in seconds
+ */
+export const TRANSITION_DURATION = 3.0;
 
 /**
  * Exit animation types mapped to shader values

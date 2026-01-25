@@ -5,7 +5,7 @@ import type { SplatMesh as SparkSplatMesh } from '@sparkjsdev/spark';
 import { dyno } from '@sparkjsdev/spark';
 import { easeOutCubic, lerp } from '../../utils';
 import { useSceneControls } from '../../hooks';
-import { EXIT_ANIMATION_TYPE, EXIT_ANIMATION_DURATION, ENTRANCE_ANIMATION_DURATION } from '../../constants';
+import { EXIT_ANIMATION_TYPE, ENTRANCE_ANIMATION_DURATION } from '../../constants';
 import type { SceneId, AnimationPhase } from '../../constants';
 import '../spark';
 
@@ -32,6 +32,17 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
       setMeshReady(node);
     }
   }, []);
+
+  // Logo splat mesh refs for transitions
+  const [logoMeshReady, setLogoMeshReady] = useState<SparkSplatMesh | null>(null);
+  const logoMeshRef = useRef<SparkSplatMesh | null>(null);
+  const logoMeshCallbackRef = useCallback((node: SparkSplatMesh | null) => {
+    logoMeshRef.current = node;
+    if (node) {
+      setLogoMeshReady(node);
+    }
+  }, []);
+  const logoEffectSetupRef = useRef(false);
   const animateT = useRef(dyno.dynoFloat(0));
   const depthOffsetRef = useRef(dyno.dynoFloat(15.0));
   const animationSpeedRef = useRef(dyno.dynoFloat(1.0));
@@ -138,6 +149,11 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
   const effectSetupRef = useRef(false);
   const cameraAnimationComplete = useRef(false);
 
+  // Splat transition refs (for transitioning between main scene and logo)
+  const transitionProgressRef = useRef(dyno.dynoFloat(0.0));
+  const transitionStartTimeRef = useRef<number | null>(null);
+  const logoOpacityRef = useRef(dyno.dynoFloat(0.0));
+
   // Detect mobile viewport
   const [isMobile, setIsMobile] = useState(false);
 
@@ -159,6 +175,20 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
       meshRef.current.updateVersion();
     }
     window.dispatchEvent(new Event('resetAnimation'));
+  }, []);
+
+  // Transition test handlers
+  const handleTestTransition = useCallback(() => {
+    transitionStartTimeRef.current = performance.now();
+    transitionProgressRef.current.value = 0;
+  }, []);
+
+  const handleResetTransition = useCallback(() => {
+    transitionStartTimeRef.current = null;
+    transitionProgressRef.current.value = 0;
+    logoOpacityRef.current.value = 0;
+    if (meshRef.current) meshRef.current.updateVersion();
+    if (logoMeshRef.current) logoMeshRef.current.updateVersion();
   }, []);
 
   // All Leva controls extracted to custom hook
@@ -274,12 +304,30 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
 
     exitAnimationDuration,
 
+    // Splat Transitions
+    transitionType,
+    transitionDuration,
+    transitionScatterRadius: _transitionScatterRadius,
+    transitionSpinSpeed: _transitionSpinSpeed,
+    transitionWipeDirection: _transitionWipeDirection,
+
+    // Logo Transform
+    logoRotationX,
+    logoRotationY,
+    logoRotationZ,
+    logoScale,
+    logoPositionX,
+    logoPositionY,
+    logoPositionZ,
+
     currentCameraX,
     currentCameraY,
     currentCameraZ,
   } = useSceneControls({
     isMobile,
     onResetAnimation: handleResetAnimation,
+    onTestTransition: handleTestTransition,
+    onResetTransition: handleResetTransition,
   });
 
   // Initialize camera to starting position if animation is enabled (runs once on mount)
@@ -309,6 +357,16 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
     () =>
       ({
         url: '/assets/v_one_final.spz',
+        stream: true,
+      }) as const,
+    []
+  );
+
+  // Memoize Logo SplatMesh args for transitions
+  const logoSplatMeshArgs = useMemo(
+    () =>
+      ({
+        url: '/assets/dfw_logo.spz',
         stream: true,
       }) as const,
     []
@@ -1513,23 +1571,82 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
     }
   }, [meshReady]);
 
+  // Setup logo mesh modifier for transitions
+  useEffect(() => {
+    if (logoMeshReady && !logoEffectSetupRef.current) {
+      logoEffectSetupRef.current = true;
+
+      logoMeshReady.objectModifier = dyno.dynoBlock(
+        { gsplat: dyno.Gsplat },
+        { gsplat: dyno.Gsplat },
+        ({ gsplat }) => {
+          const d = new dyno.Dyno({
+            inTypes: {
+              gsplat: dyno.Gsplat,
+              logoOpacity: 'float',
+            },
+            outTypes: { gsplat: dyno.Gsplat },
+            globals: () => [],
+            statements: ({ inputs, outputs }) =>
+              dyno.unindentLines(`
+              ${outputs.gsplat} = ${inputs.gsplat};
+              float logoOpacity = ${inputs.logoOpacity};
+
+              // Control logo visibility based on transition progress
+              // When logoOpacity is 0, the logo is invisible
+              // When logoOpacity is 1, the logo is fully visible
+              ${outputs.gsplat}.rgba.a *= logoOpacity;
+              ${outputs.gsplat}.scales *= logoOpacity;
+            `),
+          });
+
+          gsplat = d.apply({
+            gsplat,
+            logoOpacity: logoOpacityRef.current,
+          }).gsplat;
+
+          return { gsplat };
+        }
+      );
+
+      logoMeshReady.updateGenerator();
+    }
+  }, [logoMeshReady]);
+
   // Update exit animation when phase changes
   useEffect(() => {
     if (animationPhase === 'exiting') {
       // Set the exit animation type based on target scene or override
       // Use override if present, otherwise fallback to scene default
-      const type = overrideExitType !== null && overrideExitType !== undefined 
-        ? overrideExitType 
+      const type = overrideExitType !== null && overrideExitType !== undefined
+        ? overrideExitType
         : (EXIT_ANIMATION_TYPE[targetScene] || 0);
-        
+
       exitTypeRef.current.value = type;
       exitStartTimeRef.current = performance.now();
       exitProgressRef.current.value = 0;
+    } else if (animationPhase === 'transitioning') {
+      // Start transition to logo (for Contact)
+      transitionStartTimeRef.current = performance.now();
+      transitionProgressRef.current.value = 0;
+      logoOpacityRef.current.value = 0;
+    } else if (animationPhase === 'transitioningBack') {
+      // Start transition back from logo to main scene
+      transitionStartTimeRef.current = performance.now();
+      transitionProgressRef.current.value = 1;
+      logoOpacityRef.current.value = 1;
     } else if (animationPhase === 'idle' && activeScene === 'home') {
       // Only reset exit animation when back on home
       exitTypeRef.current.value = 0;
       exitProgressRef.current.value = 0;
       exitStartTimeRef.current = null;
+      // Reset transition state
+      transitionProgressRef.current.value = 0;
+      logoOpacityRef.current.value = 0;
+    } else if (animationPhase === 'idle' && activeScene === 'contact') {
+      // Keep logo visible on contact scene
+      transitionProgressRef.current.value = 1;
+      logoOpacityRef.current.value = 1;
     } else if (animationPhase === 'idle' && activeScene !== 'home') {
       // Keep splat hidden when on other scenes
       exitProgressRef.current.value = 1;
@@ -1567,6 +1684,35 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
       const easedProgress = 1 - easeOutCubic(linearProgress);
       exitProgressRef.current.value = easedProgress;
     }
+
+    // Update transition progress (main scene -> logo)
+    if (animationPhase === 'transitioning' && transitionStartTimeRef.current !== null) {
+      const elapsed = (performance.now() - transitionStartTimeRef.current) / 1000;
+      const linearProgress = Math.min(elapsed / transitionDuration, 1);
+      const easedProgress = easeOutCubic(linearProgress);
+      transitionProgressRef.current.value = easedProgress;
+      // Main scene fades out, logo fades in
+      logoOpacityRef.current.value = easedProgress;
+      // Use existing exit animation to hide the main scene
+      exitProgressRef.current.value = easedProgress;
+      exitTypeRef.current.value = transitionType + 1; // Offset by 1 since 0 means no animation
+
+      if (logoMeshRef.current) logoMeshRef.current.updateVersion();
+    }
+
+    // Update transition back progress (logo -> main scene)
+    if (animationPhase === 'transitioningBack' && transitionStartTimeRef.current !== null) {
+      const elapsed = (performance.now() - transitionStartTimeRef.current) / 1000;
+      const linearProgress = Math.min(elapsed / transitionDuration, 1);
+      const easedProgress = 1 - easeOutCubic(linearProgress);
+      transitionProgressRef.current.value = easedProgress;
+      // Logo fades out, main scene fades in
+      logoOpacityRef.current.value = easedProgress;
+      exitProgressRef.current.value = easedProgress;
+
+      if (logoMeshRef.current) logoMeshRef.current.updateVersion();
+    }
+
     grassDarkenRef.current.value = grassDarkenAmount;
     bottomLeftMultiplierRef.current.value = bottomLeftMultiplier;
     bottomRightMultiplierRef.current.value = bottomRightMultiplier;
@@ -1725,6 +1871,13 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
             args={[splatMeshArgs]}
             position={[0, -0.5, 0]}
             rotation={[rotationX, rotationY, rotationZ]}
+          />
+          <splatMesh
+            ref={logoMeshCallbackRef}
+            args={[logoSplatMeshArgs]}
+            position={[logoPositionX, logoPositionY, logoPositionZ]}
+            rotation={[logoRotationX, logoRotationY, logoRotationZ]}
+            scale={logoScale}
           />
         </sparkRenderer>
       </PresentationControls>
