@@ -1,90 +1,116 @@
 import { memo } from 'react';
-import { useControls } from 'leva';
+import { useControls, folder } from 'leva';
 import { EthosArrow, ContactArrow, GalleryArrow } from './MobileArrows';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
 import NavLabel from './NavLabel';
 import { createFadeSlideStyle, createPopInStyle, createPopInCenteredStyle } from '../../utils/styles';
 import { MOBILE_NAV_DELAYS } from '../../constants/animation';
+import type { SceneId } from '../../constants';
+
+type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
 interface MobileNavLayoutProps {
   font: string;
   isVisible: boolean;
+  onNavigate: (scene: SceneId) => void;
+  controlsStore?: LevaStore;
 }
 
-const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
+const MobileNavLayout = ({
+  font,
+  isVisible,
+  onNavigate,
+  controlsStore,
+}: MobileNavLayoutProps) => {
   // Button positions for each breakpoint (nested under Mobile Buttons)
-  const btnPositionsSmall = useControls('📱 Mobile Buttons.Small (<400px)', {
-    ethosLeft: { value: 14, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
-    ethosBottom: { value: 26, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-    contactLeft: { value: 45, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-    contactBottom: { value: 7, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
-    galleryRight: { value: 17, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
-    galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-  }, { collapsed: true });
+  const btnPositionsSmall = useControls({
+    '🏠 Base.📱 Mobile Buttons.Small (<400px)': folder({
+      ethosLeft: { value: 14, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
+      ethosBottom: { value: 26, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
+      contactLeft: { value: 45, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
+      contactBottom: { value: 7, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
+      galleryRight: { value: 17, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
+      galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
+    }, { collapsed: true }),
+  }, { store: controlsStore });
 
-  const btnPositionsMid = useControls('📱 Mobile Buttons.Mid (400-699px)', {
-    ethosLeft: { value: 14, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
-    ethosBottom: { value: 26, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-    contactLeft: { value: 45, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-    contactBottom: { value: 7.0, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
-    galleryRight: { value: 17, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
-    galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-  }, { collapsed: true });
+  const btnPositionsMid = useControls({
+    '🏠 Base.📱 Mobile Buttons.Mid (400-699px)': folder({
+      ethosLeft: { value: 14, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
+      ethosBottom: { value: 26, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
+      contactLeft: { value: 45, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
+      contactBottom: { value: 7.0, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
+      galleryRight: { value: 17, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
+      galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
+    }, { collapsed: true }),
+  }, { store: controlsStore });
 
-  const btnPositionsTablet = useControls('📱 Mobile Buttons.Tablet (700-999px)', {
-    ethosLeft: { value: 11, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
-    ethosBottom: { value: 29, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-    contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-    contactBottom: { value: 5.0, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
-    galleryRight: { value: 8, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
-    galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-  }, { collapsed: true });
+  const btnPositionsTablet = useControls({
+    '🏠 Base.📱 Mobile Buttons.Tablet (700-999px)': folder({
+      ethosLeft: { value: 11, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
+      ethosBottom: { value: 29, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
+      contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
+      contactBottom: { value: 5.0, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
+      galleryRight: { value: 8, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
+      galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
+    }, { collapsed: true }),
+  }, { store: controlsStore });
 
-  const btnPositionsIpadPro = useControls('📱 Mobile Buttons.iPad Pro (1000-1199px)', {
-    ethosLeft: { value: 11, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
-    ethosBottom: { value: 29, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-    contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-    contactBottom: { value: 5.0, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
-    galleryRight: { value: 8, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
-    galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-  }, { collapsed: true });
+  const btnPositionsIpadPro = useControls({
+    '🏠 Base.📱 Mobile Buttons.iPad Pro (1000-1199px)': folder({
+      ethosLeft: { value: 11, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
+      ethosBottom: { value: 29, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
+      contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
+      contactBottom: { value: 5.0, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
+      galleryRight: { value: 8, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
+      galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
+    }, { collapsed: true }),
+  }, { store: controlsStore });
 
   // Label positions for each breakpoint (nested under Mobile Labels)
-  const labelPositionsSmall = useControls('📱 Mobile Labels.Small (<400px)', {
-    ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
-    ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-    contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-    contactBottom: { value: 15, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
-    galleryRight: { value: 10, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
-    galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-  }, { collapsed: true });
+  const labelPositionsSmall = useControls({
+    '🏠 Base.📱 Mobile Labels.Small (<400px)': folder({
+      ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
+      ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
+      contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
+      contactBottom: { value: 15, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
+      galleryRight: { value: 10, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
+      galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
+    }, { collapsed: true }),
+  }, { store: controlsStore });
 
-  const labelPositionsMid = useControls('📱 Mobile Labels.Mid (400-699px)', {
-    ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
-    ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-    contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-    contactBottom: { value: 15, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
-    galleryRight: { value: 10, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
-    galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-  }, { collapsed: true });
+  const labelPositionsMid = useControls({
+    '🏠 Base.📱 Mobile Labels.Mid (400-699px)': folder({
+      ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
+      ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
+      contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
+      contactBottom: { value: 15, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
+      galleryRight: { value: 10, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
+      galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
+    }, { collapsed: true }),
+  }, { store: controlsStore });
 
-  const labelPositionsTablet = useControls('📱 Mobile Labels.Tablet (700-999px)', {
-    ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
-    ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-    contactLeft: { value: 51, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-    contactBottom: { value: 13, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
-    galleryRight: { value: 21, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
-    galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-  }, { collapsed: true });
+  const labelPositionsTablet = useControls({
+    '🏠 Base.📱 Mobile Labels.Tablet (700-999px)': folder({
+      ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
+      ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
+      contactLeft: { value: 51, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
+      contactBottom: { value: 13, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
+      galleryRight: { value: 21, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
+      galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
+    }, { collapsed: true }),
+  }, { store: controlsStore });
 
-  const labelPositionsIpadPro = useControls('📱 Mobile Labels.iPad Pro (1000-1199px)', {
-    ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
-    ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-    contactLeft: { value: 51, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-    contactBottom: { value: 13, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
-    galleryRight: { value: 21, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
-    galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-  }, { collapsed: true });
+  const labelPositionsIpadPro = useControls({
+    '🏠 Base.📱 Mobile Labels.iPad Pro (1000-1199px)': folder({
+      ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
+      ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
+      contactLeft: { value: 51, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
+      contactBottom: { value: 13, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
+      galleryRight: { value: 21, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
+      galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
+    }, { collapsed: true }),
+  }, { store: controlsStore });
 
   return (
     <div className="mobile-nav-only">
@@ -105,6 +131,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -ml-14 md:-ml-[55px]"
           aria-label="Open ethos"
+          onClick={() => onNavigate('ethos')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View ethos</span>
@@ -124,6 +151,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -ml-14 md:-ml-[55px]"
           aria-label="Open ethos"
+          onClick={() => onNavigate('ethos')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View ethos</span>
@@ -143,6 +171,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -ml-14 md:-ml-[55px]"
           aria-label="Open ethos"
+          onClick={() => onNavigate('ethos')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View ethos</span>
@@ -162,6 +191,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -ml-14 md:-ml-[55px]"
           aria-label="Open ethos"
+          onClick={() => onNavigate('ethos')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View ethos</span>
@@ -236,6 +266,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mb-14 md:-mb-[55px]"
           aria-label="Open contact"
+          onClick={() => onNavigate('contact')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View contact</span>
@@ -255,6 +286,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mb-14 md:-mb-[55px]"
           aria-label="Open contact"
+          onClick={() => onNavigate('contact')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View contact</span>
@@ -274,6 +306,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mb-14 md:-mb-[55px]"
           aria-label="Open contact"
+          onClick={() => onNavigate('contact')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View contact</span>
@@ -293,6 +326,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mb-14 md:-mb-[55px]"
           aria-label="Open contact"
+          onClick={() => onNavigate('contact')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View contact</span>
@@ -367,6 +401,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mr-14 md:-mr-[55px]"
           aria-label="Open gallery"
+          onClick={() => onNavigate('gallery')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View gallery</span>
@@ -386,6 +421,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mr-14 md:-mr-[55px]"
           aria-label="Open gallery"
+          onClick={() => onNavigate('gallery')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View gallery</span>
@@ -405,6 +441,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mr-14 md:-mr-[55px]"
           aria-label="Open gallery"
+          onClick={() => onNavigate('gallery')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View gallery</span>
@@ -424,6 +461,7 @@ const MobileNavLayout = ({ font, isVisible }: MobileNavLayoutProps) => {
           type="button"
           className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mr-14 md:-mr-[55px]"
           aria-label="Open gallery"
+          onClick={() => onNavigate('gallery')}
         >
           <BlueprintButtonSVG />
           <span className="sr-only">View gallery</span>

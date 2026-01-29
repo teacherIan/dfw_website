@@ -5,8 +5,17 @@ import MobileNavLayout from './MobileNavLayout';
 import { LoopArrow, SpiralArrow, WaveArrow } from './DesktopArrows';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
 import { ANIMATION_TIMING, navItems, fontOptions, fontFamilyMap } from '../../constants';
-import type { ArrowType } from '../../constants';
+import type { ArrowType, SceneId } from '../../constants';
 import { useWindowWidth } from '../../hooks';
+
+type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
+
+interface MenuOverlayProps {
+  onNavigate: (scene: SceneId) => void;
+  skipDelay?: boolean;
+  isExiting?: boolean;
+  controlsStore?: LevaStore;
+}
 
 // Arrow component mapping for desktop navigation
 const ArrowComponents: Record<ArrowType, typeof LoopArrow> = {
@@ -15,21 +24,27 @@ const ArrowComponents: Record<ArrowType, typeof LoopArrow> = {
   wave: WaveArrow,
 };
 
+const MENU_RETURN_DELAY = 160;
+
 // Small circular blueprint button component
 const BlueprintButton = ({
   label,
+  sceneId,
   isVisible,
   delay,
   arrowType,
   currentFont,
   fontSize = 1,
+  onNavigate,
 }: {
   label: string;
+  sceneId: SceneId;
   isVisible: boolean;
   delay: number;
   arrowType: keyof typeof ArrowComponents;
   currentFont: string;
   fontSize?: number;
+  onNavigate: (scene: SceneId) => void;
 }) => {
   const ArrowComponent = ArrowComponents[arrowType];
 
@@ -72,6 +87,7 @@ const BlueprintButton = ({
         type="button"
         className="nav-button-circle pointer-events-auto"
         aria-label={`Open ${label.toLowerCase()}`}
+        onClick={() => onNavigate(sceneId)}
         style={{
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? 'scale(1)' : 'scale(0)',
@@ -85,38 +101,47 @@ const BlueprintButton = ({
   );
 };
 
-const MenuOverlay = () => {
+const MenuOverlay = ({
+  onNavigate,
+  skipDelay = false,
+  isExiting = false,
+  controlsStore,
+}: MenuOverlayProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
   const { isSmallLandscape } = useWindowWidth();
 
-  const { menuFont } = useControls('🎨 Menu Style', {
-    menuFont: {
-      value: 'Caveat',
-      options: [...fontOptions],
-      label: 'Font Family',
-    },
-  }, { collapsed: true });
+  const { menuFont } = useControls({
+    '🏠 Base.🎨 Menu Style': folder({
+      menuFont: {
+        value: 'Caveat',
+        options: [...fontOptions],
+        label: 'Font Family',
+      },
+    }, { collapsed: true }),
+  }, { store: controlsStore });
 
   const currentFont = fontFamilyMap[menuFont];
 
   // Responsive navigation controls organized in folders
-  const layout = useControls('🖥️ Desktop/Landscape Nav', {
-    'Desktop (1200px+)': folder({
-      desktopTop: { value: 45, min: 0, max: 100, step: 1, label: 'Top (%)' },
-      desktopRight: { value: 1.25, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
-      desktopGap: { value: 1.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
-      desktopScale: { value: 1, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
-      desktopFontSize: { value: 3.6, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
+  const layout = useControls({
+    '🏠 Base.🖥️ Desktop/Landscape Nav': folder({
+      'Desktop (1200px+)': folder({
+        desktopTop: { value: 45, min: 0, max: 100, step: 1, label: 'Top (%)' },
+        desktopRight: { value: 1.25, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
+        desktopGap: { value: 1.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
+        desktopScale: { value: 1, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
+        desktopFontSize: { value: 3.6, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
+      }, { collapsed: true }),
+      'Small Landscape': folder({
+        smallTop: { value: 30, min: 0, max: 100, step: 1, label: 'Top (%)' },
+        smallRight: { value: 0.75, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
+        smallGap: { value: 0.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
+        smallScale: { value: 0.7, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
+        smallFontSize: { value: 1.2, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
+      }, { collapsed: true }),
     }, { collapsed: true }),
-    'Small Landscape': folder({
-      smallTop: { value: 30, min: 0, max: 100, step: 1, label: 'Top (%)' },
-      smallRight: { value: 0.75, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
-      smallGap: { value: 0.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
-      smallScale: { value: 0.7, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
-      smallFontSize: { value: 1.2, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
-    }, { collapsed: true }),
-  }, { collapsed: true });
+  }, { store: controlsStore });
 
   // Select which position config to use based on screen width
   const navPos = isSmallLandscape
@@ -124,13 +149,24 @@ const MenuOverlay = () => {
     : { top: layout.desktopTop, right: layout.desktopRight, gap: layout.desktopGap, scale: layout.desktopScale, fontSize: layout.desktopFontSize };
 
   useEffect(() => {
-    // Animate in after the main content has loaded
+    // Animate in after the main content has loaded (skip delay when returning home)
+    if (isExiting) {
+      setIsVisible(false);
+      return;
+    }
+    if (skipDelay) {
+      setIsVisible(false);
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, MENU_RETURN_DELAY);
+      return () => clearTimeout(timer);
+    }
     setIsVisible(false);
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, ANIMATION_TIMING.MENU_APPEAR);
     return () => clearTimeout(timer);
-  }, [animationKey]);
+  }, [animationKey, skipDelay, isExiting]);
 
   useEffect(() => {
     const handleReset = () => {
@@ -142,36 +178,47 @@ const MenuOverlay = () => {
   }, []);
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-30">
+    <div className={clsx('pointer-events-none absolute inset-0 z-30', isExiting && 'nav-exiting')}>
       {/* ============================================
           MOBILE NAVIGATION
           ============================================ */}
-      <MobileNavLayout font={currentFont} isVisible={isVisible} />
+      <div className="nav-exit-mobile">
+        <MobileNavLayout
+          font={currentFont}
+          isVisible={isVisible}
+          onNavigate={onNavigate}
+          controlsStore={controlsStore}
+        />
+      </div>
 
       {/* ============================================
           DESKTOP NAVIGATION
           ============================================ */}
-      <div
-        className="desktop-nav-only"
-        style={{
-          top: `${navPos.top}%`,
-          right: `${navPos.right}rem`,
-          gap: `${navPos.gap}rem`,
-          transform: `scale(${navPos.scale})`,
-          transformOrigin: 'top right',
-        }}
-      >
-        {navItems.map((item) => (
-          <BlueprintButton
-            key={item.id}
-            label={item.label}
-            isVisible={isVisible}
-            delay={item.delay}
-            arrowType={item.arrowType as keyof typeof ArrowComponents}
-            currentFont={currentFont}
-            fontSize={navPos.fontSize}
-          />
-        ))}
+      <div className="nav-exit-desktop">
+        <div
+          className="desktop-nav-only"
+          style={{
+            top: `${navPos.top}%`,
+            right: `${navPos.right}rem`,
+            gap: `${navPos.gap}rem`,
+            transform: `scale(${navPos.scale})`,
+            transformOrigin: 'top right',
+          }}
+        >
+          {navItems.map((item) => (
+            <BlueprintButton
+              key={item.id}
+              label={item.label}
+              sceneId={item.id as SceneId}
+              isVisible={isVisible}
+              delay={item.delay}
+              arrowType={item.arrowType as keyof typeof ArrowComponents}
+              currentFont={currentFont}
+              fontSize={navPos.fontSize}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
