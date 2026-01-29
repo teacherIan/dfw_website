@@ -147,6 +147,38 @@
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
 }
 
+.nav-exit-mobile,
+.nav-exit-desktop {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  transition:
+    transform 0.75s cubic-bezier(0.25, 0.8, 0.25, 1),
+    opacity 0.75s cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform, opacity;
+}
+
+.nav-exit-mobile {
+  transform-origin: center;
+}
+
+.nav-exit-desktop {
+  transform-origin: top right;
+}
+
+.nav-exiting .nav-exit-desktop {
+  opacity: 0;
+  transform: translate3d(160px, 24px, 0) scale(0.85);
+  pointer-events: none;
+}
+
+.nav-exiting .nav-exit-mobile {
+  opacity: 0;
+  transform: translate3d(0, 140px, 0) scale(0.85);
+  pointer-events: none;
+}
+
 /* --- Navigation Label --- */
 .nav-label {
   text-shadow:

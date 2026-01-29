@@ -29,15 +29,15 @@ export const TRANSITION_DURATION = 3.0;
 /**
  * Exit animation types mapped to shader values
  * 0 = no exit animation (home/idle)
- * 1 = Rising Thoughts (Ethos) - particles float upward
- * 2 = Signal Pulse (Contact) - radial burst outward
- * 3 = Spiral Vortex (Gallery) - particles spiral inward
+ * 1 = Gust (Ethos)
+ * 2 = Sonic (Contact)
+ * 3 = Cosmic (Gallery)
  */
 export const EXIT_ANIMATION_TYPE: Record<SceneId, number> = {
   home: 0,
   ethos: 1,
   contact: 2,
-  gallery: 5,
+  gallery: 3,
 } as const;
 
 /**

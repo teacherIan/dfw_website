@@ -1,18 +1,24 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { PresentationControls } from '@react-three/drei';
 import { useMemo, useRef, useEffect, useCallback, useState } from 'react';
+import { Euler, Quaternion, Vector3 } from 'three';
 import type { SplatMesh as SparkSplatMesh } from '@sparkjsdev/spark';
 import { dyno } from '@sparkjsdev/spark';
-import { easeOutCubic, lerp } from '../../utils';
+import { easeOutCubic, easeInOutCubic, lerp } from '../../utils';
 import { useSceneControls } from '../../hooks';
-import { EXIT_ANIMATION_TYPE, ENTRANCE_ANIMATION_DURATION } from '../../constants';
+import { EXIT_ANIMATION_TYPE } from '../../constants';
 import type { SceneId, AnimationPhase } from '../../constants';
 import '../spark';
+
+type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
 interface SceneProps {
   activeScene: SceneId;
   targetScene: SceneId;
   animationPhase: AnimationPhase;
+  exitAnimationDuration: number;
+  returnAnimationDuration: number;
+  controlsStore?: LevaStore;
   overrideExitType?: number | null;
 }
 
@@ -20,7 +26,15 @@ interface SceneProps {
  * Scene component for the 3D splat visualization
  * Handles camera controls, splat mesh rendering, entrance and exit animations
  */
-const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: SceneProps) => {
+const Scene = ({
+  activeScene,
+  targetScene,
+  animationPhase,
+  exitAnimationDuration,
+  returnAnimationDuration,
+  controlsStore,
+  overrideExitType,
+}: SceneProps) => {
   const renderer = useThree((state) => state.gl);
   const camera = useThree((state) => state.camera);
   // Use state + callback ref pattern so we can properly react to mesh being ready
@@ -129,6 +143,19 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
   const sandFunnelWidthRef = useRef(dyno.dynoFloat(1.0));
   const sandSpreadRef = useRef(dyno.dynoFloat(3.0));
   const sandGrainSizeRef = useRef(dyno.dynoFloat(0.8));
+  const sandViewRightRef = useRef(dyno.dynoVec3(new Vector3(1, 0, 0)));
+  const sandViewUpRef = useRef(dyno.dynoVec3(new Vector3(0, 1, 0)));
+  const sandCameraPosRef = useRef(dyno.dynoVec3(new Vector3(0, 0, 0)));
+  const sandBasisRef = useRef({
+    cameraRight: new Vector3(),
+    cameraUp: new Vector3(),
+    localRight: new Vector3(),
+    localUp: new Vector3(),
+    cameraLocal: new Vector3(),
+    meshEuler: new Euler(),
+    meshQuat: new Quaternion(),
+  });
+  const splatOffsetRef = useRef(new Vector3(0, -0.5, 0));
 
   // Teleport/Beam controls
   const teleportSpeedRef = useRef(dyno.dynoFloat(2.0));
@@ -144,10 +171,12 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
   // Exit animation refs
   const exitTypeRef = useRef(dyno.dynoFloat(0.0));
   const exitProgressRef = useRef(dyno.dynoFloat(0.0));
+  const returnProgressRef = useRef(dyno.dynoFloat(0.0));
   const exitStartTimeRef = useRef<number | null>(null);
   const baseTimeRef = useRef(0);
   const effectSetupRef = useRef(false);
   const cameraAnimationComplete = useRef(false);
+  const cameraHoldRef = useRef<{ x: number; y: number; z: number } | null>(null);
 
   // Splat transition refs (for transitioning between main scene and logo)
   const transitionProgressRef = useRef(dyno.dynoFloat(0.0));
@@ -165,6 +194,18 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (animationPhase !== 'idle') {
+      cameraHoldRef.current = {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z,
+      };
+    } else {
+      cameraHoldRef.current = null;
+    }
+  }, [animationPhase, camera]);
 
   // Reset animation handler - passed to useSceneControls
   const handleResetAnimation = useCallback(() => {
@@ -301,9 +342,6 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
     teleportSparkle,
     teleportBandWidth,
     teleportDirection,
-
-    exitAnimationDuration,
-
     // Splat Transitions
     transitionType,
     transitionDuration,
@@ -328,6 +366,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
     onResetAnimation: handleResetAnimation,
     onTestTransition: handleTestTransition,
     onResetTransition: handleResetTransition,
+    store: controlsStore,
   });
 
   // Initialize camera to starting position if animation is enabled (runs once on mount)
@@ -460,6 +499,9 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
               sandFunnelWidth: 'float',
               sandSpread: 'float',
               sandGrainSize: 'float',
+              sandViewRight: 'vec3',
+              sandViewUp: 'vec3',
+              sandCameraPos: 'vec3',
               // Teleport controls
               teleportSpeed: 'float',
               teleportSparkle: 'float',
@@ -473,6 +515,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
               // Exit animation inputs
               exitType: 'float',
               exitProgress: 'float',
+              returnProgress: 'float',
             },
             outTypes: { gsplat: dyno.Gsplat },
             globals: () => [
@@ -592,7 +635,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                   vec3 dir = normalize(diff + vec3(0.001));
                   float radius = progress * 35.0;
                   float width = 3.0;
-                  float shock = smoothstep(width, 0.0, abs(dist - radius));
+                  float shock = 1.0 - smoothstep(0.0, width, abs(dist - radius));
                   vec3 newPos = pos;
                   newPos += dir * shock * 1.5;
                   if (dist < radius) {
@@ -648,7 +691,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
 
                   // Ripple envelope - how much this particle is affected
                   float rippleWidth = waveCount / freq;
-                  float envelope = smoothstep(rippleWidth, 0.0, distFromFront) * smoothstep(0.0, 2.0, distFromFront);
+                  float envelope = (1.0 - smoothstep(0.0, rippleWidth, distFromFront)) * smoothstep(0.0, 2.0, distFromFront);
 
                   // Gentle wave displacement
                   float rippleY = sin(phase) * amp * envelope * 0.5;
@@ -698,14 +741,18 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                   float rotZ = relPos.x * sinA + relPos.z * cosA;
                   newPos = center + vec3(rotX, relPos.y, rotZ);
                   
-                  // Use uniforms for fade timing
-                  float opacity = 1.0 - smoothstep(fadeStart, fadeEnd, progress);
+                  // Use uniforms for fade timing (guarded for ordering/degenerate ranges)
+                  float fadeMin = min(fadeStart, fadeEnd);
+                  float fadeRange = max(0.0001, abs(fadeEnd - fadeStart));
+                  float fadeMax = fadeMin + fadeRange;
+                  float scaleFadeEnd = fadeMin + fadeRange * 0.95;
+                  float opacity = 1.0 - smoothstep(fadeMin, fadeMax, progress);
                   
                   // Scale down completely to 0 to ensure tiny particles disappear (sync with opacity fade)
                   // Use a slightly more aggressive scale down to prevent single-pixel flickering
                   // The smoothstep end point should be slightly BEFORE the fade end to ensure
                   // they are scaled to 0 before they are fully transparent but still technically rendering
-                  float scaleMult = 1.0 - smoothstep(fadeStart, fadeEnd * 0.95, progress);
+                  float scaleMult = 1.0 - smoothstep(fadeMin, scaleFadeEnd, progress);
                   
                   return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
                 }
@@ -743,8 +790,9 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                   newPos.y += cos(turbTime * 1.5 + h.x * 6.28) * turbulence * 0.2 * adjustedProgress;
                   newPos.z += sin(turbTime * 1.0 + h.y * 6.28) * turbulence * 0.1 * adjustedProgress;
 
-                  // Graceful fade - both scale AND opacity go to 0
-                  float fadeProgress = smoothstep(0.3, 1.0, adjustedProgress);
+                  // Graceful fade - both scale AND opacity go to 0 (dissolveSpeed controls fade rate)
+                  float dissolveProgress = clamp(adjustedProgress * dissolveSpeed, 0.0, 1.0);
+                  float fadeProgress = smoothstep(0.3, 1.0, dissolveProgress);
                   float scaleMult = 1.0 - fadeProgress;
                   float opacity = 1.0 - fadeProgress;
 
@@ -756,6 +804,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                                    float strength, float gravity, float friction, float tumbleSpeed) {
                   float t = progress * 2.5; // Slightly longer time scale for bounces
                   if (t <= 0.0) return vec4(pos, 1000.0 + 0.999);
+                  float safeGravity = max(gravity, 0.001);
 
                   // Ground plane in local space (Local -Z = World Down)
                   // Position it below the scene
@@ -780,15 +829,13 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                   // Slight upward initial velocity so particles arc before falling
                   velocity.z += strength * 0.15 * (0.5 + h.z * 0.5);
 
-                  // Apply air friction (reduces horizontal velocity over time)
-                  float airFriction = exp(-friction * 0.5 * t);
-
                   // Simulate position with bouncing
                   vec3 newPos = pos;
                   float remainingTime = t;
-                  vec3 vel = velocity;
+                  vec2 xy = pos.xy;
+                  vec2 velXY = velocity.xy;
                   float currentZ = pos.z;
-                  float currentVelZ = vel.z;
+                  float currentVelZ = velocity.z;
 
                   // Simulate up to 4 bounces
                   for (int bounce = 0; bounce < 4; bounce++) {
@@ -802,7 +849,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                     if (heightAboveGround < 0.0 || remainingTime <= 0.0) break;
 
                     // Quadratic formula for time to impact
-                    float a = 0.5 * gravity;
+                    float a = 0.5 * safeGravity;
                     float b = -currentVelZ;
                     float c = -heightAboveGround;
                     float discriminant = b * b - 4.0 * a * c;
@@ -810,9 +857,9 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                     if (discriminant < 0.0) {
                       // No impact - particle stays in air
                       // Just apply normal physics for remaining time
-                      newPos.x = pos.x + vel.x * t * airFriction;
-                      newPos.y = pos.y + vel.y * t * airFriction;
-                      newPos.z = currentZ + currentVelZ * remainingTime - 0.5 * gravity * remainingTime * remainingTime;
+                      float segmentFriction = exp(-friction * 0.5 * remainingTime);
+                      xy += velXY * remainingTime * segmentFriction;
+                      newPos.z = currentZ + currentVelZ * remainingTime - 0.5 * safeGravity * remainingTime * remainingTime;
                       break;
                     }
 
@@ -825,28 +872,26 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
 
                     if (timeToImpact > remainingTime || timeToImpact < 0.001) {
                       // No impact within remaining time
-                      newPos.x = pos.x + vel.x * t * airFriction;
-                      newPos.y = pos.y + vel.y * t * airFriction;
-                      newPos.z = currentZ + currentVelZ * remainingTime - 0.5 * gravity * remainingTime * remainingTime;
+                      float segmentFriction = exp(-friction * 0.5 * remainingTime);
+                      xy += velXY * remainingTime * segmentFriction;
+                      newPos.z = currentZ + currentVelZ * remainingTime - 0.5 * safeGravity * remainingTime * remainingTime;
                       break;
                     }
 
                     // Move to impact point
-                    float impactFriction = exp(-friction * 0.5 * (t - remainingTime + timeToImpact));
-                    newPos.x = pos.x + vel.x * (t - remainingTime + timeToImpact) * airFriction;
-                    newPos.y = pos.y + vel.y * (t - remainingTime + timeToImpact) * airFriction;
+                    float segmentFriction = exp(-friction * 0.5 * timeToImpact);
+                    xy += velXY * timeToImpact * segmentFriction;
                     newPos.z = groundZ;
 
                     // Velocity at impact (v = v0 - g*t)
-                    float impactVelZ = currentVelZ - gravity * timeToImpact;
+                    float impactVelZ = currentVelZ - safeGravity * timeToImpact;
 
                     // Bounce! Reflect and dampen Z velocity
                     currentVelZ = -impactVelZ * bounceDamping;
                     currentZ = groundZ + 0.01; // Slightly above ground
 
-                    // Also dampen horizontal velocity on ground contact
-                    vel.x *= 0.85;
-                    vel.y *= 0.85;
+                    // Also dampen horizontal velocity on ground contact (use friction)
+                    velXY *= 0.85 * segmentFriction;
 
                     remainingTime -= timeToImpact;
 
@@ -858,11 +903,14 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
 
                     // Continue simulation from bounce point
                     if (remainingTime > 0.0) {
-                      newPos.z = currentZ + currentVelZ * remainingTime - 0.5 * gravity * remainingTime * remainingTime;
+                      newPos.z = currentZ + currentVelZ * remainingTime - 0.5 * safeGravity * remainingTime * remainingTime;
                       // Clamp to ground
                       newPos.z = max(newPos.z, groundZ);
                     }
                   }
+
+                  newPos.x = xy.x;
+                  newPos.y = xy.y;
 
                   // Final ground clamp (safety)
                   newPos.z = max(newPos.z, groundZ);
@@ -929,44 +977,36 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                   return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
                 }
 
-                // 9. Shatter/Glass Break (Graceful collapse inward then fall)
+                // 9. Shatter/Glass Break (Crack, burst, then fall)
                 vec4 exitShatter(vec3 pos, vec3 scale, float progress, vec3 h,
                                  float force, float grav, float spread, float rotation) {
-                  // Smooth eased time
-                  float t = progress * progress;
-
-                  // Center point for implosion
-                  vec3 center = vec3(0.0, 1.0, 0.0);
-                  vec3 toCenter = center - pos;
-                  float distFromCenter = length(toCenter);
-                  vec3 dirToCenter = normalize(toCenter + vec3(0.001));
-
-                  // Phase 1 (0-0.4): Gentle pull toward center (implosion feel)
-                  // Phase 2 (0.4-1.0): Fall away gracefully
-                  float implodePhase = smoothstep(0.0, 0.4, progress);
-                  float fallPhase = smoothstep(0.3, 1.0, progress);
+                  float crackPhase = smoothstep(0.0, 0.18, progress);
+                  float burstPhase = smoothstep(0.1, 0.35, progress);
+                  float fallPhase = smoothstep(0.25, 1.0, progress);
 
                   vec3 newPos = pos;
+                  vec3 center = vec3(0.0, 1.0, 0.0);
+                  vec3 fromCenter = normalize(pos - center + (h - 0.5) * spread + vec3(0.001));
 
-                  // Gentle implosion - particles drift toward center
-                  float implodeStrength = force * 0.15 * implodePhase * (1.0 - fallPhase * 0.5);
-                  newPos += dirToCenter * implodeStrength;
+                  // Subtle crack jitter
+                  newPos += (h - 0.5) * 0.06 * crackPhase;
 
-                  // Graceful outward drift with per-particle variation
-                  vec3 driftDir = -dirToCenter + (h - 0.5) * spread * 0.3;
-                  float driftAmount = force * 0.1 * fallPhase * (0.5 + h.x * 0.5);
-                  newPos += driftDir * driftAmount;
+                  // Shards separate outward
+                  float burstStrength = force * (0.12 + h.x * 0.08);
+                  newPos += fromCenter * burstStrength * burstPhase;
+                  newPos += (h - 0.5) * spread * 0.25 * burstPhase;
 
-                  // Smooth gravity fall (Local -Z = World Down)
-                  float fallAmount = grav * 0.5 * fallPhase * fallPhase;
+                  // Gravity fall (Local -Z = World Down)
+                  float fallAmount = grav * 0.7 * fallPhase * fallPhase;
                   newPos.z -= fallAmount;
 
-                  // Very subtle rotation - not jarring
-                  float rotAmount = rotation * 0.02 * fallPhase * (h.y - 0.5);
-                  newPos.x += sin(progress * 3.14159) * rotAmount;
+                  // Gentle swirl while falling
+                  float rotPhase = progress * rotation * 0.25;
+                  newPos.x += sin(rotPhase + h.y * 6.28) * 0.15 * fallPhase;
+                  newPos.y += cos(rotPhase * 1.1 + h.x * 6.28) * 0.15 * fallPhase;
 
-                  // Graceful fade
-                  float fadeProgress = smoothstep(0.4, 1.0, progress);
+                  // Fade out with fall
+                  float fadeProgress = smoothstep(0.35, 1.0, progress);
                   float scaleMult = 1.0 - fadeProgress;
                   float opacity = 1.0 - fadeProgress;
 
@@ -983,31 +1023,40 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                   float blockHash = fract(sin(dot(blockPos.xy, vec2(12.9898, 78.233))) * 43758.5453);
 
                   // Glitch timing - different blocks glitch at different times
-                  float glitchTime = blockHash * 0.5;
-                  float isGlitching = smoothstep(glitchTime, glitchTime + 0.3, t);
+                  float glitchStart = blockHash * 0.5;
+                  float glitchEnd = glitchStart + 0.25;
+                  if (t < glitchStart) return vec4(pos, 1000.0 + 0.999);
 
-                  if (isGlitching < 0.01) return vec4(pos, 1000.0 + 0.999);
+                  float glitchPhase = smoothstep(glitchStart, glitchEnd, t);
+                  float fallEnd = min(glitchEnd + 0.6, 1.0);
+                  float fallPhase = smoothstep(glitchEnd, fallEnd, t);
 
                   vec3 newPos = pos;
 
                   // Random block displacement
-                  float glitchPhase = floor(t * speed + blockHash * 10.0);
-                  float displacement = fract(sin(glitchPhase * 12.9898 + blockHash * 78.233) * 43758.5453);
+                  float glitchStep = floor(t * speed + blockHash * 10.0);
+                  float displacement = fract(sin(glitchStep * 12.9898 + blockHash * 78.233) * 43758.5453);
 
                   // Horizontal glitch bands
-                  newPos.x += (displacement - 0.5) * intensity * 2.0 * isGlitching;
+                  newPos.x += (displacement - 0.5) * intensity * 2.0 * glitchPhase;
 
                   // Vertical jitter
-                  newPos.z += (fract(displacement * 7.0) - 0.5) * intensity * 0.5 * isGlitching;
+                  newPos.z += (fract(displacement * 7.0) - 0.5) * intensity * 0.5 * glitchPhase;
 
                   // Chromatic aberration offset (position shift simulates color separation)
-                  float chromaOffset = chroma * sin(t * speed * 2.0 + blockHash * 20.0) * isGlitching;
+                  float chromaOffset = chroma * sin(t * speed * 2.0 + blockHash * 20.0) * glitchPhase;
                   newPos.x += chromaOffset * h.x;
 
+                  // After glitching, blocks drift down and fade
+                  float fallDistance = (3.5 + intensity * 2.0) * (0.6 + h.y * 0.4);
+                  newPos.z -= fallDistance * fallPhase * fallPhase;
+                  newPos.x += (h.x - 0.5) * intensity * 0.4 * fallPhase;
+                  newPos.y += (h.z - 0.5) * intensity * 0.3 * fallPhase;
+
                   // Scale pulsing
-                  float scalePulse = 1.0 + sin(t * speed * 3.0 + blockHash * 30.0) * 0.2 * isGlitching;
-                  float scaleMult = scalePulse * (1.0 - isGlitching * 0.8);
-                  float opacity = 1.0 - isGlitching;
+                  float scalePulse = 1.0 + sin(t * speed * 3.0 + blockHash * 30.0) * 0.2 * glitchPhase;
+                  float scaleMult = scalePulse * (1.0 - fallPhase * 0.85);
+                  float opacity = 1.0 - fallPhase;
 
                   return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
                 }
@@ -1087,15 +1136,16 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                   // Phase 1: Freeze (0 to shatterDelay)
                   // Phase 2: Shatter (shatterDelay to 1)
 
-                  float freezeProgress = smoothstep(0.0, shatterDelay, progress);
-                  float shatterProgress = smoothstep(shatterDelay, 1.0, progress);
+                  float adjustedProgress = clamp(progress * freezeSpd, 0.0, 1.0);
+                  float freezeProgress = smoothstep(0.0, shatterDelay, adjustedProgress);
+                  float shatterProgress = smoothstep(shatterDelay, 1.0, adjustedProgress);
 
                   vec3 newPos = pos;
 
                   // Freeze phase: slight contraction and jitter
-                  if (progress < shatterDelay) {
+                  if (adjustedProgress < shatterDelay) {
                     // Crystallization jitter
-                    float jitter = sin(progress * crackDensity * 50.0 + h.x * 100.0) * 0.02 * freezeProgress;
+                    float jitter = sin(adjustedProgress * crackDensity * 50.0 + h.x * 100.0) * 0.02 * freezeProgress;
                     newPos += vec3(jitter, jitter * 0.5, jitter * 0.7);
 
                     // Slight pull toward center (ice forming)
@@ -1134,17 +1184,27 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
 
                 // 14. Sand/Hourglass (Smooth flowing sand through a point)
                 vec4 exitSand(vec3 pos, vec3 scale, float progress, vec3 h,
-                              float fallSpd, float funnelWidth, float spread, float grainSize) {
+                              float fallSpd, float funnelWidth, float spread, float grainSize,
+                              vec3 viewRight, vec3 viewUp, vec3 cameraPos) {
+                  vec3 rightDir = normalize(viewRight);
+                  vec3 upDir = normalize(viewUp);
+                  vec3 forwardDir = normalize(cross(rightDir, upDir));
+
                   // Funnel center point
                   vec3 funnel = vec3(0.0, 1.0, 0.0);
 
-                  // Distance from funnel axis
-                  float distFromAxis = length(pos.xy - funnel.xy);
+                  // Distance from funnel axis (view-aligned plane)
+                  vec3 relPos = pos - cameraPos;
+                  vec3 relFunnel = funnel - cameraPos;
+                  vec2 posPlane = vec2(dot(relPos, rightDir), dot(relPos, forwardDir));
+                  vec2 funnelPlane = vec2(dot(relFunnel, rightDir), dot(relFunnel, forwardDir));
+                  float distFromAxis = length(posPlane - funnelPlane);
 
                   // Smooth staggered start - center particles move first, then outward
                   float particleDelay = distFromAxis * 0.08 + h.y * 0.15;
-                  float adjustedProgress = max(0.0, (progress - particleDelay) / (1.0 - particleDelay * 0.5));
-                  adjustedProgress = min(adjustedProgress, 1.0);
+                  float clampedDelay = min(particleDelay, 0.95);
+                  float adjustedProgress = (progress - clampedDelay) / max(0.001, 1.0 - clampedDelay);
+                  adjustedProgress = clamp(adjustedProgress, 0.0, 1.0);
 
                   // Smooth easing for graceful motion
                   float t = adjustedProgress * adjustedProgress;
@@ -1152,27 +1212,34 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                   vec3 newPos = pos;
 
                   // Gentle pull toward funnel axis
-                  vec2 toAxis = funnel.xy - pos.xy;
-                  float pullStrength = smoothstep(funnelWidth * 3.0, 0.0, distFromAxis);
-                  newPos.xy += toAxis * pullStrength * t * 0.4;
+                  vec2 toAxis = funnelPlane - posPlane;
+                  float pullStrength = 1.0 - smoothstep(0.0, funnelWidth * 3.0, distFromAxis);
+                  newPos += rightDir * toAxis.x * pullStrength * t * 0.4;
+                  newPos += forwardDir * toAxis.y * pullStrength * t * 0.4;
 
-                  // Smooth gravity fall (Local -Z = World Down)
+                  // Smooth gravity fall (view-aligned down)
                   float fallAmount = fallSpd * t * t * (0.6 + h.x * 0.4);
-                  newPos.z -= fallAmount;
+                  float fallBoost = 1.0 + smoothstep(0.65, 1.0, progress) * 1.2;
+                  newPos += -upDir * fallAmount * fallBoost;
 
                   // Gentle spread after falling past funnel
-                  float belowFunnel = smoothstep(funnel.z, funnel.z - 4.0, newPos.z);
-                  newPos.x += (h.x - 0.5) * spread * belowFunnel * 0.5;
-                  newPos.y += (h.z - 0.5) * spread * belowFunnel * 0.3;
+                  float height = dot(newPos - funnel, upDir);
+                  float belowFunnel = 1.0 - smoothstep(-4.0, 0.0, height);
+                  newPos += rightDir * (h.x - 0.5) * spread * belowFunnel * 0.5;
+                  newPos += forwardDir * (h.z - 0.5) * spread * belowFunnel * 0.3;
 
                   // Very subtle grain tumble (not jarring)
                   float tumble = sin(adjustedProgress * 4.0 + h.y * 6.28) * 0.03 * adjustedProgress;
-                  newPos.x += tumble;
+                  newPos += rightDir * tumble;
 
                   // Graceful fade - both scale and opacity
                   float fadeProgress = smoothstep(0.5, 1.0, adjustedProgress);
                   float scaleMult = grainSize * (1.0 - fadeProgress);
                   float opacity = 1.0 - fadeProgress;
+
+                  float endFade = smoothstep(0.85, 1.0, progress);
+                  scaleMult *= (1.0 - endFade);
+                  opacity *= (1.0 - endFade);
 
                   return vec4(newPos, floor(scaleMult * 1000.0) + min(opacity, 0.999));
                 }
@@ -1181,19 +1248,16 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                 vec4 exitTeleport(vec3 pos, vec3 scale, float progress, vec3 h,
                                   float speed, float sparkle, float bandWidth, float direction) {
                   // Dissolve band moves vertically
-                  // direction: 1.0 = up, -1.0 = down
-                  float bandCenter = mix(-6.0, 8.0, progress) * direction;
-                  float distFromBand = abs(pos.z - bandCenter);
+                  // direction: >= 0.0 = up
+                  float dir = direction >= 0.0 ? 1.0 : -1.0;
+                  float bandCenter = mix(-12.0, 12.0, progress);
+                  float signedDist = (pos.z - bandCenter) * dir;
+                  float distFromBand = abs(signedDist);
 
                   // Particles dissolve when band passes
-                  float inBand = smoothstep(bandWidth, 0.0, distFromBand);
-                  float dissolved = smoothstep(bandCenter - bandWidth * direction, bandCenter, pos.z * direction);
-
-                  if (direction > 0.0) {
-                    dissolved = pos.z < bandCenter - bandWidth ? 1.0 : dissolved;
-                  } else {
-                    dissolved = pos.z > bandCenter + bandWidth ? 1.0 : dissolved;
-                  }
+                  float inBand = 1.0 - smoothstep(0.0, bandWidth, distFromBand);
+                  float trail = bandWidth * 2.5;
+                  float dissolved = 1.0 - smoothstep(-trail, 0.0, signedDist);
 
                   if (dissolved > 0.99) return vec4(pos, 0.0 + 0.0);
 
@@ -1233,6 +1297,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                                        float pollenDrift, float pollenSpread, float pollenWave, float pollenRise,
                                        float freezeSpd, float freezeCrack, float freezeDelay, float freezeShard,
                                        float sandFall, float sandFunnel, float sandSpread, float sandGrain,
+                                       vec3 sandViewRight, vec3 sandViewUp, vec3 sandCameraPos,
                                        float teleSpd, float teleSparkle, float teleBand, float teleDir) {
                   if (exitProgress <= 0.001 || exitType < 0.5) {
                     return vec4(pos, 1000.0 + 0.999);
@@ -1251,7 +1316,8 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                   if (exitType < 11.5) return exitBlackHole(pos, scale, exitProgress, h, bhStrength, bhSpin, bhRadius, bhStretch);
                   if (exitType < 12.5) return exitPollen(pos, scale, exitProgress, h, pollenDrift, pollenSpread, pollenWave, pollenRise);
                   if (exitType < 13.5) return exitFreeze(pos, scale, exitProgress, h, freezeSpd, freezeCrack, freezeDelay, freezeShard);
-                  if (exitType < 14.5) return exitSand(pos, scale, exitProgress, h, sandFall, sandFunnel, sandSpread, sandGrain);
+                  if (exitType < 14.5) return exitSand(pos, scale, exitProgress, h, sandFall, sandFunnel, sandSpread, sandGrain,
+                                                      sandViewRight, sandViewUp, sandCameraPos);
                   return exitTeleport(pos, scale, exitProgress, h, teleSpd, teleSparkle, teleBand, teleDir);
                 }
               `),
@@ -1288,6 +1354,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
               float smallSpeed = ${inputs.smallSpeed};
               float exitType = ${inputs.exitType};
               float exitProgress = ${inputs.exitProgress};
+              float returnProgress = ${inputs.returnProgress};
               
               // Exploded view controls
               float expStrength = ${inputs.explodedExpansionStrength};
@@ -1354,6 +1421,9 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
               float sandFunnel = ${inputs.sandFunnelWidth};
               float sandSpread = ${inputs.sandSpread};
               float sandGrain = ${inputs.sandGrainSize};
+              vec3 sandViewRight = ${inputs.sandViewRight};
+              vec3 sandViewUp = ${inputs.sandViewUp};
+              vec3 sandCameraPos = ${inputs.sandCameraPos};
 
               // Teleport controls
               float teleSpd = ${inputs.teleportSpeed};
@@ -1395,6 +1465,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
                                                       pollenDrift, pollenSpread, pollenWave, pollenRise,
                                                       freezeSpd, freezeCrack, freezeDelay, freezeShard,
                                                       sandFall, sandFunnel, sandSpread, sandGrain,
+                                                      sandViewRight, sandViewUp, sandCameraPos,
                                                       teleSpd, teleSparkle, teleBand, teleDir);
                   ${outputs.gsplat}.center = exitResult.xyz;
 
@@ -1412,24 +1483,27 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
 
               // Darken the area under the text for better legibility
               // We target points that are in the foreground-left area (Negative X, Negative Y in local space)
-              float darkenArea = smoothstep(1.0, -4.0, localPos.x) * smoothstep(2.0, -6.0, localPos.y);
+              float darkenArea = (1.0 - smoothstep(-4.0, 1.0, localPos.x)) * (1.0 - smoothstep(-6.0, 2.0, localPos.y));
               ${outputs.gsplat}.rgba.rgb *= (1.0 - darkenArea * 0.7);
               
               // Scale up splats in bottom areas to provide better coverage and hide white background
               // Due to rotation, we target low Z values (bottom in screen space)
               
               // Bottom left area
-              float scaleAreaBottomLeft = smoothstep(3.0, -2.0, localPos.z) * smoothstep(1.5, -1.5, localPos.x);
+              float scaleAreaBottomLeft = (1.0 - smoothstep(-2.0, 3.0, localPos.z)) * (1.0 - smoothstep(-1.5, 1.5, localPos.x));
               ${outputs.gsplat}.scales *= (1.0 + scaleAreaBottomLeft * bottomLeftMultiplier);
               
               // Bottom right area (where main title appears)
-              float scaleAreaBottomRight = smoothstep(3.0, -2.0, localPos.z) * smoothstep(-1.5, 1.5, localPos.x);
+              float scaleAreaBottomRight = (1.0 - smoothstep(-2.0, 3.0, localPos.z)) * smoothstep(-1.5, 1.5, localPos.x);
               ${outputs.gsplat}.scales *= (1.0 + scaleAreaBottomRight * bottomRightMultiplier);
               
               // Fill the white hole - adjustable bounds via sliders
-              float holeAreaX = smoothstep(holeXMin - 1.0, holeXMin, localPos.x) * smoothstep(holeXMax + 1.0, holeXMax, localPos.x);
-              float holeAreaY = smoothstep(holeYMin - 1.0, holeYMin, localPos.y) * smoothstep(holeYMax + 1.0, holeYMax, localPos.y);
-              float holeAreaZ = smoothstep(holeZMin - 1.0, holeZMin, localPos.z) * smoothstep(holeZMax + 1.0, holeZMax, localPos.z);
+              float holeAreaX = smoothstep(holeXMin - 1.0, holeXMin, localPos.x) *
+                               (1.0 - smoothstep(holeXMax, holeXMax + 1.0, localPos.x));
+              float holeAreaY = smoothstep(holeYMin - 1.0, holeYMin, localPos.y) *
+                               (1.0 - smoothstep(holeYMax, holeYMax + 1.0, localPos.y));
+              float holeAreaZ = smoothstep(holeZMin - 1.0, holeZMin, localPos.z) *
+                               (1.0 - smoothstep(holeZMax, holeZMax + 1.0, localPos.z));
               float holeFillArea = holeAreaX * holeAreaY * holeAreaZ;
               ${outputs.gsplat}.scales *= (1.0 + holeFillArea * holeFillMultiplier);
               
@@ -1441,13 +1515,13 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
               
               // Also check that it's actually a greenish color (not too dark/light)
               float brightness = (color.r + color.g + color.b) / 3.0;
-              float isGrassColor = smoothstep(0.2, 0.4, brightness) * smoothstep(0.9, 0.7, brightness);
+              float isGrassColor = smoothstep(0.2, 0.4, brightness) * (1.0 - smoothstep(0.7, 0.9, brightness));
               
               // Target right side area where menu items appear (expanded coverage)
               // Right side: positive X (expanded to cover more area)
               float isRight = smoothstep(-2.0, 4.0, localPos.x);
               // Lower-middle area: negative Y (where menu sits)
-              float isInMenuArea = smoothstep(2.0, -6.0, localPos.y);
+              float isInMenuArea = 1.0 - smoothstep(-6.0, 2.0, localPos.y);
               
               // Combine all factors with gradient falloff
               float grassDarkenFactor = isGreen * isGrassColor * isRight * isInMenuArea * grassDarken;
@@ -1455,10 +1529,10 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
               
               // Detect synthetic data region based on position
               // Smooth transitions at boundaries
-              float inZRange = smoothstep(syntheticZMin - 1.0, syntheticZMin, localPos.z) * 
-                               smoothstep(syntheticZMax + 1.0, syntheticZMax, localPos.z);
-              float inYRange = smoothstep(syntheticYMin - 1.0, syntheticYMin, localPos.y) * 
-                               smoothstep(syntheticYMax + 1.0, syntheticYMax, localPos.y);
+              float inZRange = smoothstep(syntheticZMin - 1.0, syntheticZMin, localPos.z) *
+                               (1.0 - smoothstep(syntheticZMax, syntheticZMax + 1.0, localPos.z));
+              float inYRange = smoothstep(syntheticYMin - 1.0, syntheticYMin, localPos.y) *
+                               (1.0 - smoothstep(syntheticYMax, syntheticYMax + 1.0, localPos.y));
               float isSynthetic = inZRange * inYRange;
               
               // Apply brightness adjustment to synthetic region
@@ -1472,6 +1546,13 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
               
               // Apply opacity adjustment to synthetic region
               ${outputs.gsplat}.rgba.a *= mix(1.0, syntheticOpacity, isSynthetic);
+
+              // Return-to-home fade/scale (uses returnProgress: 1 -> 0)
+              float returnAlpha = clamp(1.0 - returnProgress, 0.0, 1.0);
+              float returnEase = smoothstep(0.0, 1.0, returnAlpha);
+              float returnScale = mix(0.86, 1.0, returnEase);
+              ${outputs.gsplat}.scales *= returnScale;
+              ${outputs.gsplat}.rgba.a *= returnEase;
             `),
           });
 
@@ -1549,6 +1630,9 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
             sandFunnelWidth: sandFunnelWidthRef.current,
             sandSpread: sandSpreadRef.current,
             sandGrainSize: sandGrainSizeRef.current,
+            sandViewRight: sandViewRightRef.current,
+            sandViewUp: sandViewUpRef.current,
+            sandCameraPos: sandCameraPosRef.current,
             // Teleport
             teleportSpeed: teleportSpeedRef.current,
             teleportSparkle: teleportSparkleRef.current,
@@ -1560,6 +1644,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
             smallSpeed: smallSpeedMultiplierRef.current,
             exitType: exitTypeRef.current,
             exitProgress: exitProgressRef.current,
+            returnProgress: returnProgressRef.current,
           }).gsplat;
 
           return { gsplat };
@@ -1625,37 +1710,47 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
       exitTypeRef.current.value = type;
       exitStartTimeRef.current = performance.now();
       exitProgressRef.current.value = 0;
+      returnProgressRef.current.value = 0;
     } else if (animationPhase === 'transitioning') {
       // Start transition to logo (for Contact)
       transitionStartTimeRef.current = performance.now();
       transitionProgressRef.current.value = 0;
       logoOpacityRef.current.value = 0;
+      exitProgressRef.current.value = 0;
+      returnProgressRef.current.value = 0;
     } else if (animationPhase === 'transitioningBack') {
       // Start transition back from logo to main scene
       transitionStartTimeRef.current = performance.now();
       transitionProgressRef.current.value = 1;
       logoOpacityRef.current.value = 1;
+      exitProgressRef.current.value = 1;
+      returnProgressRef.current.value = 0;
     } else if (animationPhase === 'idle' && activeScene === 'home') {
       // Only reset exit animation when back on home
       exitTypeRef.current.value = 0;
       exitProgressRef.current.value = 0;
       exitStartTimeRef.current = null;
+      returnProgressRef.current.value = 0;
       // Reset transition state
       transitionProgressRef.current.value = 0;
       logoOpacityRef.current.value = 0;
+      returnProgressRef.current.value = 0;
     } else if (animationPhase === 'idle' && activeScene === 'contact') {
       // Keep logo visible on contact scene
       transitionProgressRef.current.value = 1;
       logoOpacityRef.current.value = 1;
+      exitProgressRef.current.value = 1;
+      returnProgressRef.current.value = 0;
     } else if (animationPhase === 'idle' && activeScene !== 'home') {
       // Keep splat hidden when on other scenes
       exitProgressRef.current.value = 1;
+      returnProgressRef.current.value = 0;
     } else if (animationPhase === 'entering') {
-      // Start entrance animation (reverse of exit)
-      // Keep exitType the same so we animate back using the same effect
+      // Start return animation back to home
       exitStartTimeRef.current = performance.now();
-      // Explicitly set progress to 1 - will animate to 0 in useFrame
-      exitProgressRef.current.value = 1;
+      exitTypeRef.current.value = 0;
+      exitProgressRef.current.value = 0;
+      returnProgressRef.current.value = 1;
     }
   }, [animationPhase, targetScene, activeScene, overrideExitType]);
 
@@ -1665,24 +1760,34 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
     animateT.current.value = baseTimeRef.current;
     depthOffsetRef.current.value = depthOffset;
     animationSpeedRef.current.value = animationSpeed;
+    if (animationPhase !== 'idle' && !cameraHoldRef.current) {
+      cameraHoldRef.current = {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z,
+      };
+    } else if (animationPhase === 'idle' && cameraHoldRef.current) {
+      cameraHoldRef.current = null;
+    }
 
     // Update exit animation progress with easing
     if (animationPhase === 'exiting' && exitStartTimeRef.current !== null) {
       const elapsed = (performance.now() - exitStartTimeRef.current) / 1000;
       // Use dynamic animation duration from controls
-      const linearProgress = Math.min(elapsed / exitAnimationDuration, 1);
+      const duration = Math.max(exitAnimationDuration, 0.001);
+      const linearProgress = Math.min(elapsed / duration, 1);
       // Use easeOutCubic for smooth deceleration at the end
       const easedProgress = easeOutCubic(linearProgress);
       exitProgressRef.current.value = easedProgress;
     }
 
-    // Update entrance animation progress (reverse - from 1 to 0) with easing
+    // Update return-to-home animation progress (1 -> 0) with easing
     if (animationPhase === 'entering' && exitStartTimeRef.current !== null) {
       const elapsed = (performance.now() - exitStartTimeRef.current) / 1000;
-      const linearProgress = Math.min(elapsed / ENTRANCE_ANIMATION_DURATION, 1);
-      // Use easeOutCubic for smooth arrival
-      const easedProgress = 1 - easeOutCubic(linearProgress);
-      exitProgressRef.current.value = easedProgress;
+      const duration = Math.max(returnAnimationDuration, 0.001);
+      const linearProgress = Math.min(elapsed / duration, 1);
+      const easedProgress = 1 - easeInOutCubic(linearProgress);
+      returnProgressRef.current.value = easedProgress;
     }
 
     // Update transition progress (main scene -> logo)
@@ -1800,7 +1905,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
     teleportSpeedRef.current.value = teleportSpeed;
     teleportSparkleRef.current.value = teleportSparkle;
     teleportBandWidthRef.current.value = teleportBandWidth;
-    teleportDirectionRef.current.value = teleportDirection;
+    teleportDirectionRef.current.value = Math.max(0.0, teleportDirection);
 
     // Mobile simplification - reduce small particle chaos
     smallParticleThresholdRef.current.value = smallParticleThreshold;
@@ -1846,6 +1951,23 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
       );
     }
 
+    if (cameraHoldRef.current) {
+      const hold = cameraHoldRef.current;
+      camera.position.set(hold.x, hold.y, hold.z);
+    }
+
+    const sandBasis = sandBasisRef.current;
+    sandBasis.cameraRight.set(1, 0, 0).applyQuaternion(camera.quaternion);
+    sandBasis.cameraUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+    sandBasis.meshEuler.set(rotationX, rotationY, rotationZ);
+    sandBasis.meshQuat.setFromEuler(sandBasis.meshEuler).invert();
+    sandBasis.localRight.copy(sandBasis.cameraRight).applyQuaternion(sandBasis.meshQuat).normalize();
+    sandBasis.localUp.copy(sandBasis.cameraUp).applyQuaternion(sandBasis.meshQuat).normalize();
+    sandBasis.cameraLocal.copy(camera.position).sub(splatOffsetRef.current).applyQuaternion(sandBasis.meshQuat);
+    sandViewRightRef.current.value.copy(sandBasis.localRight);
+    sandViewUpRef.current.value.copy(sandBasis.localUp);
+    sandCameraPosRef.current.value.copy(sandBasis.cameraLocal);
+
     // Update current camera position refs for Leva monitoring
     currentCameraX.current = Math.round(camera.position.x * 100) / 100;
     currentCameraY.current = Math.round(camera.position.y * 100) / 100;
@@ -1869,7 +1991,7 @@ const Scene = ({ activeScene, targetScene, animationPhase, overrideExitType }: S
           <splatMesh
             ref={meshCallbackRef}
             args={[splatMeshArgs]}
-            position={[0, -0.5, 0]}
+            position={[splatOffsetRef.current.x, splatOffsetRef.current.y, splatOffsetRef.current.z]}
             rotation={[rotationX, rotationY, rotationZ]}
           />
           <splatMesh

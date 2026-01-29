@@ -8,9 +8,13 @@ import { ANIMATION_TIMING, navItems, fontOptions, fontFamilyMap } from '../../co
 import type { ArrowType, SceneId } from '../../constants';
 import { useWindowWidth } from '../../hooks';
 
+type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
+
 interface MenuOverlayProps {
   onNavigate: (scene: SceneId) => void;
   skipDelay?: boolean;
+  isExiting?: boolean;
+  controlsStore?: LevaStore;
 }
 
 // Arrow component mapping for desktop navigation
@@ -19,6 +23,8 @@ const ArrowComponents: Record<ArrowType, typeof LoopArrow> = {
   spiral: SpiralArrow,
   wave: WaveArrow,
 };
+
+const MENU_RETURN_DELAY = 160;
 
 // Small circular blueprint button component
 const BlueprintButton = ({
@@ -95,38 +101,47 @@ const BlueprintButton = ({
   );
 };
 
-const MenuOverlay = ({ onNavigate, skipDelay = false }: MenuOverlayProps) => {
-  const [isVisible, setIsVisible] = useState(skipDelay);
+const MenuOverlay = ({
+  onNavigate,
+  skipDelay = false,
+  isExiting = false,
+  controlsStore,
+}: MenuOverlayProps) => {
+  const [isVisible, setIsVisible] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
   const { isSmallLandscape } = useWindowWidth();
 
-  const { menuFont } = useControls('🏠 Base.🎨 Menu Style', {
-    menuFont: {
-      value: 'Caveat',
-      options: [...fontOptions],
-      label: 'Font Family',
-    },
-  }, { collapsed: true });
+  const { menuFont } = useControls({
+    '🏠 Base.🎨 Menu Style': folder({
+      menuFont: {
+        value: 'Caveat',
+        options: [...fontOptions],
+        label: 'Font Family',
+      },
+    }, { collapsed: true }),
+  }, { store: controlsStore });
 
   const currentFont = fontFamilyMap[menuFont];
 
   // Responsive navigation controls organized in folders
-  const layout = useControls('🏠 Base.🖥️ Desktop/Landscape Nav', {
-    'Desktop (1200px+)': folder({
-      desktopTop: { value: 45, min: 0, max: 100, step: 1, label: 'Top (%)' },
-      desktopRight: { value: 1.25, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
-      desktopGap: { value: 1.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
-      desktopScale: { value: 1, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
-      desktopFontSize: { value: 3.6, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
+  const layout = useControls({
+    '🏠 Base.🖥️ Desktop/Landscape Nav': folder({
+      'Desktop (1200px+)': folder({
+        desktopTop: { value: 45, min: 0, max: 100, step: 1, label: 'Top (%)' },
+        desktopRight: { value: 1.25, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
+        desktopGap: { value: 1.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
+        desktopScale: { value: 1, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
+        desktopFontSize: { value: 3.6, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
+      }, { collapsed: true }),
+      'Small Landscape': folder({
+        smallTop: { value: 30, min: 0, max: 100, step: 1, label: 'Top (%)' },
+        smallRight: { value: 0.75, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
+        smallGap: { value: 0.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
+        smallScale: { value: 0.7, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
+        smallFontSize: { value: 1.2, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
+      }, { collapsed: true }),
     }, { collapsed: true }),
-    'Small Landscape': folder({
-      smallTop: { value: 30, min: 0, max: 100, step: 1, label: 'Top (%)' },
-      smallRight: { value: 0.75, min: 0, max: 10, step: 0.25, label: 'Right (rem)' },
-      smallGap: { value: 0.25, min: 0, max: 3, step: 0.25, label: 'Gap (rem)' },
-      smallScale: { value: 0.7, min: 0.3, max: 1.5, step: 0.05, label: 'Scale' },
-      smallFontSize: { value: 1.2, min: 0.5, max: 10, step: 0.1, label: 'Text Size' },
-    }, { collapsed: true }),
-  }, { collapsed: true });
+  }, { store: controlsStore });
 
   // Select which position config to use based on screen width
   const navPos = isSmallLandscape
@@ -135,16 +150,23 @@ const MenuOverlay = ({ onNavigate, skipDelay = false }: MenuOverlayProps) => {
 
   useEffect(() => {
     // Animate in after the main content has loaded (skip delay when returning home)
-    if (skipDelay) {
-      setIsVisible(true);
+    if (isExiting) {
+      setIsVisible(false);
       return;
+    }
+    if (skipDelay) {
+      setIsVisible(false);
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, MENU_RETURN_DELAY);
+      return () => clearTimeout(timer);
     }
     setIsVisible(false);
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, ANIMATION_TIMING.MENU_APPEAR);
     return () => clearTimeout(timer);
-  }, [animationKey, skipDelay]);
+  }, [animationKey, skipDelay, isExiting]);
 
   useEffect(() => {
     const handleReset = () => {
@@ -156,38 +178,47 @@ const MenuOverlay = ({ onNavigate, skipDelay = false }: MenuOverlayProps) => {
   }, []);
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-30">
+    <div className={clsx('pointer-events-none absolute inset-0 z-30', isExiting && 'nav-exiting')}>
       {/* ============================================
           MOBILE NAVIGATION
           ============================================ */}
-      <MobileNavLayout font={currentFont} isVisible={isVisible} onNavigate={onNavigate} />
+      <div className="nav-exit-mobile">
+        <MobileNavLayout
+          font={currentFont}
+          isVisible={isVisible}
+          onNavigate={onNavigate}
+          controlsStore={controlsStore}
+        />
+      </div>
 
       {/* ============================================
           DESKTOP NAVIGATION
           ============================================ */}
-      <div
-        className="desktop-nav-only"
-        style={{
-          top: `${navPos.top}%`,
-          right: `${navPos.right}rem`,
-          gap: `${navPos.gap}rem`,
-          transform: `scale(${navPos.scale})`,
-          transformOrigin: 'top right',
-        }}
-      >
-        {navItems.map((item) => (
-          <BlueprintButton
-            key={item.id}
-            label={item.label}
-            sceneId={item.id as SceneId}
-            isVisible={isVisible}
-            delay={item.delay}
-            arrowType={item.arrowType as keyof typeof ArrowComponents}
-            currentFont={currentFont}
-            fontSize={navPos.fontSize}
-            onNavigate={onNavigate}
-          />
-        ))}
+      <div className="nav-exit-desktop">
+        <div
+          className="desktop-nav-only"
+          style={{
+            top: `${navPos.top}%`,
+            right: `${navPos.right}rem`,
+            gap: `${navPos.gap}rem`,
+            transform: `scale(${navPos.scale})`,
+            transformOrigin: 'top right',
+          }}
+        >
+          {navItems.map((item) => (
+            <BlueprintButton
+              key={item.id}
+              label={item.label}
+              sceneId={item.id as SceneId}
+              isVisible={isVisible}
+              delay={item.delay}
+              arrowType={item.arrowType as keyof typeof ArrowComponents}
+              currentFont={currentFont}
+              fontSize={navPos.fontSize}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
