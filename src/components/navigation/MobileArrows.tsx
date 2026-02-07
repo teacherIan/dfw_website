@@ -5,6 +5,8 @@ interface ArrowProps {
   delay?: number;
 }
 
+type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
+
 // Helper to calculate arrowhead rotation angle for quadratic bezier
 // At t=1, tangent direction is from control point to end point
 const getArrowAngle = (controlX: number, controlY: number, endX: number, endY: number) => {
@@ -77,7 +79,7 @@ const AnimatedDot = ({
   />
 );
 
-export const EthosArrow = ({ isVisible, delay = 300 }: ArrowProps) => {
+export const EthosArrow = ({ isVisible, delay = 300, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
   const ethosSmall = useControls('🏠 Base.📱 Mobile Arrows.Ethos Small (<400px)', {
     startX: { value: 100, min: 0, max: 120, step: 1, label: 'Start X' },
     startY: { value: 135, min: 0, max: 160, step: 1, label: 'Start Y' },
@@ -85,7 +87,7 @@ export const EthosArrow = ({ isVisible, delay = 300 }: ArrowProps) => {
     controlY: { value: 70, min: 0, max: 160, step: 1, label: 'Control Y' },
     endX: { value: 30, min: 0, max: 120, step: 1, label: 'End X' },
     endY: { value: 0, min: -50, max: 160, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const ethosMid = useControls('🏠 Base.📱 Mobile Arrows.Ethos Mid (400-699px)', {
     startX: { value: 100, min: 0, max: 120, step: 1, label: 'Start X' },
@@ -94,7 +96,7 @@ export const EthosArrow = ({ isVisible, delay = 300 }: ArrowProps) => {
     controlY: { value: 70, min: 0, max: 160, step: 1, label: 'Control Y' },
     endX: { value: 30, min: 0, max: 120, step: 1, label: 'End X' },
     endY: { value: -35, min: -50, max: 160, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const ethosTablet = useControls('🏠 Base.📱 Mobile Arrows.Ethos Tablet (700-999px)', {
     startX: { value: 113, min: 0, max: 120, step: 1, label: 'Start X' },
@@ -103,7 +105,7 @@ export const EthosArrow = ({ isVisible, delay = 300 }: ArrowProps) => {
     controlY: { value: 98, min: 0, max: 160, step: 1, label: 'Control Y' },
     endX: { value: 55, min: 0, max: 120, step: 1, label: 'End X' },
     endY: { value: -30, min: -100, max: 160, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const ethosIpadPro = useControls('🏠 Base.📱 Mobile Arrows.Ethos iPad Pro (1000-1199px)', {
     startX: { value: 130, min: -100, max: 300, step: 1, label: 'Start X' },
@@ -112,7 +114,7 @@ export const EthosArrow = ({ isVisible, delay = 300 }: ArrowProps) => {
     controlY: { value: 98, min: -100, max: 300, step: 1, label: 'Control Y' },
     endX: { value: 75, min: -100, max: 300, step: 1, label: 'End X' },
     endY: { value: -80, min: -100, max: 300, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const smallPathD = `M ${ethosSmall.startX} ${ethosSmall.startY} Q ${ethosSmall.controlX} ${ethosSmall.controlY}, ${ethosSmall.endX} ${ethosSmall.endY}`;
   const midPathD = `M ${ethosMid.startX} ${ethosMid.startY} Q ${ethosMid.controlX} ${ethosMid.controlY}, ${ethosMid.endX} ${ethosMid.endY}`;
@@ -239,7 +241,7 @@ export const EthosArrow = ({ isVisible, delay = 300 }: ArrowProps) => {
   );
 };
 
-export const ContactArrow = ({ isVisible, delay = 400 }: ArrowProps) => {
+export const ContactArrow = ({ isVisible, delay = 400, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
   const contactSmall = useControls('🏠 Base.📱 Mobile Arrows.Contact Small (<400px)', {
     startX: { value: 93, min: 0, max: 150, step: 1, label: 'Start X' },
     startY: { value: 37, min: 0, max: 200, step: 1, label: 'Start Y' },
@@ -247,7 +249,7 @@ export const ContactArrow = ({ isVisible, delay = 400 }: ArrowProps) => {
     controlY: { value: 120, min: 0, max: 200, step: 1, label: 'Control Y' },
     endX: { value: 15, min: 0, max: 150, step: 1, label: 'End X' },
     endY: { value: 124, min: -50, max: 200, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const contactMid = useControls('🏠 Base.📱 Mobile Arrows.Contact Mid (400-699px)', {
     startX: { value: 100, min: 0, max: 150, step: 1, label: 'Start X' },
@@ -256,7 +258,7 @@ export const ContactArrow = ({ isVisible, delay = 400 }: ArrowProps) => {
     controlY: { value: 200, min: 0, max: 200, step: 1, label: 'Control Y' },
     endX: { value: 15, min: 0, max: 150, step: 1, label: 'End X' },
     endY: { value: 111, min: -50, max: 200, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const contactTablet = useControls('🏠 Base.📱 Mobile Arrows.Contact Tablet (700-999px)', {
     startX: { value: 150, min: -100, max: 300, step: 1, label: 'Start X' },
@@ -265,7 +267,7 @@ export const ContactArrow = ({ isVisible, delay = 400 }: ArrowProps) => {
     controlY: { value: -44, min: -100, max: 300, step: 1, label: 'Control Y' },
     endX: { value: -17, min: -100, max: 300, step: 1, label: 'End X' },
     endY: { value: 105, min: -100, max: 300, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const contactIpadPro = useControls('🏠 Base.📱 Mobile Arrows.Contact iPad Pro (1000-1199px)', {
     startX: { value: 150, min: -100, max: 300, step: 1, label: 'Start X' },
@@ -274,7 +276,7 @@ export const ContactArrow = ({ isVisible, delay = 400 }: ArrowProps) => {
     controlY: { value: -60, min: -100, max: 300, step: 1, label: 'Control Y' },
     endX: { value: -22, min: -100, max: 300, step: 1, label: 'End X' },
     endY: { value: 105, min: -100, max: 300, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const smallPathD = `M ${contactSmall.startX} ${contactSmall.startY} Q ${contactSmall.controlX} ${contactSmall.controlY}, ${contactSmall.endX} ${contactSmall.endY}`;
   const midPathD = `M ${contactMid.startX} ${contactMid.startY} Q ${contactMid.controlX} ${contactMid.controlY}, ${contactMid.endX} ${contactMid.endY}`;
@@ -397,7 +399,7 @@ export const ContactArrow = ({ isVisible, delay = 400 }: ArrowProps) => {
   );
 };
 
-export const GalleryArrow = ({ isVisible, delay = 500 }: ArrowProps) => {
+export const GalleryArrow = ({ isVisible, delay = 500, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
   const gallerySmall = useControls('🏠 Base.📱 Mobile Arrows.Gallery Small (<400px)', {
     startX: { value: 92, min: 0, max: 250, step: 1, label: 'Start X' },
     startY: { value: 100, min: 0, max: 200, step: 1, label: 'Start Y' },
@@ -405,7 +407,7 @@ export const GalleryArrow = ({ isVisible, delay = 500 }: ArrowProps) => {
     controlY: { value: 110, min: 0, max: 200, step: 1, label: 'Control Y' },
     endX: { value: 145, min: 0, max: 250, step: 1, label: 'End X' },
     endY: { value: 15, min: 0, max: 200, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const galleryMid = useControls('🏠 Base.📱 Mobile Arrows.Gallery Mid (400-699px)', {
     startX: { value: 92, min: 0, max: 250, step: 1, label: 'Start X' },
@@ -414,7 +416,7 @@ export const GalleryArrow = ({ isVisible, delay = 500 }: ArrowProps) => {
     controlY: { value: 110, min: 0, max: 200, step: 1, label: 'Control Y' },
     endX: { value: 145, min: 0, max: 250, step: 1, label: 'End X' },
     endY: { value: 15, min: 0, max: 200, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const galleryTablet = useControls('🏠 Base.📱 Mobile Arrows.Gallery Tablet (700-999px)', {
     startX: { value: -68, min: -100, max: 300, step: 1, label: 'Start X' },
@@ -423,7 +425,7 @@ export const GalleryArrow = ({ isVisible, delay = 500 }: ArrowProps) => {
     controlY: { value: 137, min: -100, max: 300, step: 1, label: 'Control Y' },
     endX: { value: 150, min: -100, max: 300, step: 1, label: 'End X' },
     endY: { value: 15, min: -100, max: 300, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const galleryIpadPro = useControls('🏠 Base.📱 Mobile Arrows.Gallery iPad Pro (1000-1199px)', {
     startX: { value: -68, min: -100, max: 300, step: 1, label: 'Start X' },
@@ -432,7 +434,7 @@ export const GalleryArrow = ({ isVisible, delay = 500 }: ArrowProps) => {
     controlY: { value: 137, min: -100, max: 300, step: 1, label: 'Control Y' },
     endX: { value: 140, min: -100, max: 300, step: 1, label: 'End X' },
     endY: { value: 0, min: -100, max: 300, step: 1, label: 'End Y' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const smallPathD = `M ${gallerySmall.startX} ${gallerySmall.startY} Q ${gallerySmall.controlX} ${gallerySmall.controlY}, ${gallerySmall.endX} ${gallerySmall.endY}`;
   const midPathD = `M ${galleryMid.startX} ${galleryMid.startY} Q ${galleryMid.controlX} ${galleryMid.controlY}, ${galleryMid.endX} ${galleryMid.endY}`;

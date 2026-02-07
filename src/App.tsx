@@ -1,9 +1,10 @@
 import { Canvas } from '@react-three/fiber';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useControls, useCreateStore, Leva, folder } from 'leva';
+import { useControls, useCreateStore, LevaPanel, folder } from 'leva';
 import Scene from './components/scene/Scene';
 import TextOverlay from './components/scene/TextOverlay';
 import HandDrawnText from './components/scene/HandDrawnText';
+import Gallery3D from './components/gallery/Gallery3D';
 import MenuOverlay from './components/navigation/MenuOverlay';
 import BackButton from './components/navigation/BackButton';
 import {
@@ -162,7 +163,7 @@ function App() {
 
   return (
     <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
-      {showLeva && <Leva store={controlsStore} />}
+      {showLeva && <LevaPanel store={controlsStore} />}
 
       {/* Main 3D Canvas */}
       <div className="relative z-0 h-full w-full" style={{ touchAction: 'none' }}>
@@ -176,6 +177,7 @@ function App() {
             controlsStore={controlsStore}
             overrideExitType={overrideExitType}
           />
+          <Gallery3D visible={activeScene === 'gallery' && animationPhase === 'idle'} />
         </Canvas>
       </div>
 
@@ -192,7 +194,7 @@ function App() {
         <TextOverlay key={animationKey} show={showText} />
       )}
       {showOverlays && activeScene === 'home' && useHandDrawn && (
-        <HandDrawnText key={animationKey} show={showText} />
+        <HandDrawnText key={animationKey} show={showText} controlsStore={controlsStore} />
       )}
 
       {/* Contact overlay - show on contact scene */}

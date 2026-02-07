@@ -4,8 +4,11 @@ import { useControls } from 'leva';
 import { LETTER_PATHS, LETTER_COUNT } from '../../constants/letterPaths';
 import { useWindowWidth } from '../../hooks';
 
+ type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
+
 interface HandDrawnTextProps {
   show: boolean;
+  controlsStore?: LevaStore;
 }
 
 // ============================================================================
@@ -47,29 +50,29 @@ const FILL_EASE = [0.22, 1, 0.36, 1] as const; // Quick start, gentle finish
  * Each letter emerges, gets drawn, then fills - creating the feeling
  * of watching someone hand-letter the title in real-time.
  */
-const HandDrawnText = ({ show }: HandDrawnTextProps) => {
+const HandDrawnText = ({ show, controlsStore }: HandDrawnTextProps) => {
   const { isPortrait, isSmallLandscape, isTablet, isIpadPro } = useWindowWidth();
 
   // Title size controls organized by breakpoint
   const titleDesktop = useControls('🏠 Base.✏️ Title.Desktop (1200px+)', {
     desktopTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const titleIpadPro = useControls('🏠 Base.✏️ Title.iPad Pro (1000-1199px)', {
     ipadProTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const titleTablet = useControls('🏠 Base.✏️ Title.Tablet (700-999px)', {
     tabletTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const titleSmall = useControls('🏠 Base.✏️ Title.Small Landscape (400-699px)', {
     smallTitleScale: { value: 1.1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const titlePortrait = useControls('🏠 Base.✏️ Title.Portrait (<400px)', {
     portraitTitleScale: { value: 1, min: 0.5, max: 2, step: 0.05, label: 'Scale' },
-  }, { collapsed: true });
+  }, { collapsed: true }, { store: controlsStore });
 
   const titleScale = isPortrait
     ? titlePortrait.portraitTitleScale

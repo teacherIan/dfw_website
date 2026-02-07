@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { LOGO_PATH } from '../../constants/logoPath';
 
 interface TextOverlayProps {
@@ -14,7 +14,7 @@ interface TextOverlayProps {
 const TextOverlay = ({ show }: TextOverlayProps) => {
   if (!show) return null;
 
-  const pathVariants = {
+  const pathVariants: Variants = {
     hidden: { pathLength: 0, opacity: 0, fillOpacity: 0 },
     visible: {
       pathLength: 1,

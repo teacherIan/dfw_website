@@ -247,7 +247,7 @@ const MobileNavLayout = ({
       </div>
 
       {/* Ethos Arrow */}
-      <EthosArrow isVisible={isVisible} delay={MOBILE_NAV_DELAYS.ETHOS_ARROW} />
+      <EthosArrow isVisible={isVisible} delay={MOBILE_NAV_DELAYS.ETHOS_ARROW} controlsStore={controlsStore} />
 
       {/* ============================================
           CONTACT - Center Bottom
@@ -382,7 +382,7 @@ const MobileNavLayout = ({
       </div>
 
       {/* Contact Arrow */}
-      <ContactArrow isVisible={isVisible} delay={MOBILE_NAV_DELAYS.CONTACT_ARROW} />
+      <ContactArrow isVisible={isVisible} delay={MOBILE_NAV_DELAYS.CONTACT_ARROW} controlsStore={controlsStore} />
 
       {/* ============================================
           GALLERY - Bottom Right Corner
@@ -517,7 +517,7 @@ const MobileNavLayout = ({
       </div>
 
       {/* Gallery Arrow */}
-      <GalleryArrow isVisible={isVisible} delay={MOBILE_NAV_DELAYS.GALLERY_ARROW} />
+      <GalleryArrow isVisible={isVisible} delay={MOBILE_NAV_DELAYS.GALLERY_ARROW} controlsStore={controlsStore} />
     </div>
   );
 };

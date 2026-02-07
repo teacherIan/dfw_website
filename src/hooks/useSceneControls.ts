@@ -748,9 +748,9 @@ export const useSceneControls = ({
   useControls({
     '🏠 Base.📊 Monitor': folder(
       {
-        cameraX: monitor(() => currentCameraX.current, { graph: false, label: 'Camera X' }),
-        cameraY: monitor(() => currentCameraY.current, { graph: false, label: 'Camera Y' }),
-        cameraZ: monitor(() => currentCameraZ.current, { graph: false, label: 'Camera Z' }),
+        cameraX: monitor(() => currentCameraX.current, { graph: false }),
+        cameraY: monitor(() => currentCameraY.current, { graph: false }),
+        cameraZ: monitor(() => currentCameraZ.current, { graph: false }),
       },
       { collapsed: true }
     ),

@@ -1978,31 +1978,39 @@ const Scene = ({
     }
   });
 
+  const splatContent = (
+    <sparkRenderer args={[sparkRendererArgs]}>
+      <splatMesh
+        ref={meshCallbackRef}
+        args={[splatMeshArgs]}
+        position={[splatOffsetRef.current.x, splatOffsetRef.current.y, splatOffsetRef.current.z]}
+        rotation={[rotationX, rotationY, rotationZ]}
+      />
+      <splatMesh
+        ref={logoMeshCallbackRef}
+        args={[logoSplatMeshArgs]}
+        position={[logoPositionX, logoPositionY, logoPositionZ]}
+        rotation={[logoRotationX, logoRotationY, logoRotationZ]}
+        scale={logoScale}
+      />
+    </sparkRenderer>
+  );
+
   return (
     <>
-      <PresentationControls
-        global
-        snap
-        rotation={[0, 0, 0]}
-        polar={[-Math.PI / 3, Math.PI / 3]}
-        azimuth={[-Math.PI / 1.4, Math.PI / 1.4]}
-      >
-        <sparkRenderer args={[sparkRendererArgs]}>
-          <splatMesh
-            ref={meshCallbackRef}
-            args={[splatMeshArgs]}
-            position={[splatOffsetRef.current.x, splatOffsetRef.current.y, splatOffsetRef.current.z]}
-            rotation={[rotationX, rotationY, rotationZ]}
-          />
-          <splatMesh
-            ref={logoMeshCallbackRef}
-            args={[logoSplatMeshArgs]}
-            position={[logoPositionX, logoPositionY, logoPositionZ]}
-            rotation={[logoRotationX, logoRotationY, logoRotationZ]}
-            scale={logoScale}
-          />
-        </sparkRenderer>
-      </PresentationControls>
+      {activeScene === 'gallery' ? null : activeScene === 'home' ? (
+        <PresentationControls
+          global
+          snap
+          rotation={[0, 0, 0]}
+          polar={[-Math.PI / 3, Math.PI / 3]}
+          azimuth={[-Math.PI / 1.4, Math.PI / 1.4]}
+        >
+          {splatContent}
+        </PresentationControls>
+      ) : (
+        splatContent
+      )}
     </>
   );
 };
