@@ -681,6 +681,636 @@ body {
 }
 
 /* ========================================
+   GALLERY PICKER OVERLAY
+   Category selection with buttons and arrows
+   ======================================== */
+
+.gallery-picker-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+/* Button positioning at corners */
+.gallery-picker-button {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: auto;
+}
+
+.gallery-picker-button--top-left {
+  top: 10%;
+  left: 6%;
+}
+
+.gallery-picker-button--top-right {
+  top: 10%;
+  right: 6%;
+}
+
+.gallery-picker-button--bottom-left {
+  bottom: 12%;
+  left: 6%;
+}
+
+.gallery-picker-button--bottom-right {
+  bottom: 12%;
+  right: 6%;
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) {
+  .gallery-picker-button--top-left {
+    top: 12%;
+    left: 8%;
+  }
+
+  .gallery-picker-button--top-right {
+    top: 12%;
+    right: 8%;
+  }
+
+  .gallery-picker-button--bottom-left {
+    bottom: 14%;
+    left: 8%;
+  }
+
+  .gallery-picker-button--bottom-right {
+    bottom: 14%;
+    right: 8%;
+  }
+}
+
+/* Desktop adjustments */
+@media (min-width: 1280px) {
+  .gallery-picker-button--top-left {
+    top: 15%;
+    left: 10%;
+  }
+
+  .gallery-picker-button--top-right {
+    top: 15%;
+    right: 10%;
+  }
+
+  .gallery-picker-button--bottom-left {
+    bottom: 18%;
+    left: 10%;
+  }
+
+  .gallery-picker-button--bottom-right {
+    bottom: 18%;
+    right: 10%;
+  }
+}
+
+/* Label styling */
+.gallery-picker-label {
+  font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+  color: rgba(245, 235, 220, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+/* Arrow container */
+.gallery-picker-arrows {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Individual arrow positioning */
+.gallery-picker-arrow {
+  position: absolute;
+  width: clamp(60px, 8vw, 100px);
+  height: auto;
+}
+
+/* Arrow positions - pointing from center toward buttons */
+.gallery-picker-arrow--top-left {
+  top: 22%;
+  left: 18%;
+  transform: rotate(200deg);
+}
+
+.gallery-picker-arrow--top-right {
+  top: 22%;
+  right: 18%;
+  transform: rotate(-20deg) scaleX(-1);
+}
+
+.gallery-picker-arrow--bottom-left {
+  bottom: 24%;
+  left: 18%;
+  transform: rotate(160deg);
+}
+
+.gallery-picker-arrow--bottom-right {
+  bottom: 24%;
+  right: 18%;
+  transform: rotate(20deg) scaleX(-1);
+}
+
+/* Tablet arrow adjustments */
+@media (min-width: 768px) {
+  .gallery-picker-arrow--top-left {
+    top: 24%;
+    left: 20%;
+  }
+
+  .gallery-picker-arrow--top-right {
+    top: 24%;
+    right: 20%;
+  }
+
+  .gallery-picker-arrow--bottom-left {
+    bottom: 26%;
+    left: 20%;
+  }
+
+  .gallery-picker-arrow--bottom-right {
+    bottom: 26%;
+    right: 20%;
+  }
+}
+
+/* Desktop arrow adjustments */
+@media (min-width: 1280px) {
+  .gallery-picker-arrow--top-left {
+    top: 28%;
+    left: 22%;
+  }
+
+  .gallery-picker-arrow--top-right {
+    top: 28%;
+    right: 22%;
+  }
+
+  .gallery-picker-arrow--bottom-left {
+    bottom: 30%;
+    left: 22%;
+  }
+
+  .gallery-picker-arrow--bottom-right {
+    bottom: 30%;
+    right: 22%;
+  }
+}
+
+/* Hovered button state (synced with 3D) */
+.nav-button-circle--hovered {
+  transform: rotate(15deg) scale(1.05);
+  box-shadow:
+    0 0 20px rgba(0, 0, 0, 0.45),
+    0 0 8px rgba(0, 0, 0, 0.3),
+    0 0 28px rgba(41, 94, 65, 0.4),
+    0 0 20px rgba(139, 169, 139, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* ========================================
+   GALLERY TRANSITION OVERLAY
+   Fades from transparent to blue during exit animation
+   ======================================== */
+
+/* Keyframes for gallery transition - transparent to blueprint blue */
+/* Simple 3-point fade for smooth continuous transition */
+@keyframes galleryTransitionFade {
+  0% {
+    background-color: rgba(255, 255, 255, 0);
+  }
+  50% {
+    background-color: rgba(60, 100, 140, 0.6);
+  }
+  100% {
+    background-color: #0a1525;
+  }
+}
+
+.gallery-transition-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  /* Animate during exit - starts slow, speeds up (ease-in curve) */
+  animation: galleryTransitionFade 5.5s cubic-bezier(0.3, 0, 0.8, 0.3) forwards;
+}
+
+/* Keyframes for returning from gallery - blue to transparent */
+@keyframes galleryReturnFade {
+  0% {
+    background-color: #0a1525;
+  }
+  15% {
+    background-color: rgba(30, 70, 110, 0.85);
+  }
+  35% {
+    background-color: rgba(80, 140, 180, 0.6);
+  }
+  60% {
+    background-color: rgba(180, 210, 235, 0.35);
+  }
+  85% {
+    background-color: rgba(240, 248, 255, 0.1);
+  }
+  100% {
+    background-color: rgba(255, 255, 255, 0);
+  }
+}
+
+.gallery-return-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  /* Animate during return - ease-out curve (fast start, slows down) */
+  animation: galleryReturnFade 1.8s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+}
+
+/* ========================================
+   BLUEPRINT PICKER
+   Architectural drawing style category picker
+   ======================================== */
+
+.blueprint-picker {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  /* Solid background - transition overlay handles the fade */
+  background-color: #0a1525;
+}
+
+/* Rolling edge effect - the "tube" of rolled paper */
+.blueprint-picker__roll-edge {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 80%;
+  background: linear-gradient(
+    90deg,
+    #0a1a2e 0%,
+    #1a3a5c 30%,
+    #2a5070 50%,
+    #1a3a5c 70%,
+    #0a1a2e 100%
+  );
+  border-radius: 0 15px 15px 0;
+  box-shadow:
+    inset 3px 0 8px rgba(255, 255, 255, 0.15),
+    inset -2px 0 6px rgba(0, 0, 0, 0.4),
+    4px 0 15px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  transition:
+    opacity 0.4s ease-out 0.8s,
+    transform 0.4s ease-out 0.8s;
+}
+
+.blueprint-picker__roll-edge--hidden {
+  opacity: 0;
+  transform: translateY(-50%) translateX(-50px);
+}
+
+/* The main blueprint paper - FULL SCREEN */
+.blueprint-picker__paper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+
+  /* Classic blueprint blue background */
+  background: linear-gradient(
+    135deg,
+    #0d2847 0%,
+    #1a3a5c 25%,
+    #1e4165 50%,
+    #1a3a5c 75%,
+    #0d2847 100%
+  );
+
+  /* Paper texture overlay */
+  box-shadow:
+    inset 0 0 150px rgba(0, 0, 0, 0.3),
+    inset 0 0 40px rgba(0, 0, 0, 0.2);
+
+  overflow: hidden;
+
+  /* Roll-out animation - starts clipped from left, expands right */
+  clip-path: inset(0 100% 0 0);
+  transform-origin: left center;
+  transition: clip-path 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.blueprint-picker__paper--rolled-out {
+  clip-path: inset(0 0 0 0);
+}
+
+/* Fine grid pattern */
+.blueprint-picker__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    /* Fine grid */
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 20px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 20px
+    );
+  pointer-events: none;
+}
+
+/* Major grid lines */
+.blueprint-picker__major-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    /* Major grid - every 5th line */
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.08) 0px,
+      rgba(255, 255, 255, 0.08) 1px,
+      transparent 1px,
+      transparent 100px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.08) 0px,
+      rgba(255, 255, 255, 0.08) 1px,
+      transparent 1px,
+      transparent 100px
+    );
+  pointer-events: none;
+}
+
+/* Content fade-in animation (for elements that appear after roll) */
+.blueprint-picker__title-block,
+.blueprint-picker__compass {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out;
+}
+
+.blueprint-picker__content--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Title block - bottom right like architectural drawings */
+.blueprint-picker__title-block {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 20, 40, 0.6);
+  text-align: right;
+}
+
+.blueprint-picker__title {
+  font-family: 'Courier New', monospace;
+  font-size: clamp(14px, 2vw, 20px);
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+
+.blueprint-picker__subtitle {
+  font-family: 'Courier New', monospace;
+  font-size: clamp(8px, 1vw, 11px);
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.blueprint-picker__meta {
+  display: flex;
+  gap: 20px;
+  justify-content: flex-end;
+  font-family: 'Courier New', monospace;
+  font-size: clamp(7px, 0.8vw, 9px);
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.05em;
+}
+
+/* Compass rose - top right */
+.blueprint-picker__compass {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  opacity: 0.8;
+}
+
+/* Dimension lines */
+.blueprint-picker__dimension {
+  position: absolute;
+  pointer-events: none;
+}
+
+.blueprint-picker__dimension--top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 25px;
+}
+
+.blueprint-picker__dimension--left {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 25px;
+}
+
+/* Center crosshair */
+.blueprint-picker__crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.5;
+}
+
+/* Fold marks on paper */
+.blueprint-picker__fold-mark {
+  position: absolute;
+  left: 50%;
+  width: 2px;
+  height: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(-50%);
+}
+
+.blueprint-picker__fold-mark--top {
+  top: 0;
+}
+
+.blueprint-picker__fold-mark--bottom {
+  bottom: 0;
+}
+
+/* Category image styling */
+.blueprint-image {
+  cursor: pointer;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.9);
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out;
+}
+
+.blueprint-image--visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.blueprint-image--visible:hover {
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+.blueprint-image__frame {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px;
+  background: rgba(0, 20, 40, 0.4);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Corner registration marks */
+.blueprint-image__corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: rgba(255, 255, 255, 0.4);
+  border-style: solid;
+  border-width: 0;
+}
+
+.blueprint-image__corner--tl {
+  top: -2px;
+  left: -2px;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+.blueprint-image__corner--tr {
+  top: -2px;
+  right: -2px;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+.blueprint-image__corner--bl {
+  bottom: -2px;
+  left: -2px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+
+.blueprint-image__corner--br {
+  bottom: -2px;
+  right: -2px;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+.blueprint-image__label {
+  margin-top: 8px;
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Exit button styling */
+.blueprint-picker__exit {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out;
+  z-index: 20;
+}
+
+.blueprint-picker__exit.blueprint-picker__content--visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.blueprint-picker__exit-label {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.5);
+  paint-order: stroke fill;
+}
+
+.blueprint-picker__exit-arrow {
+  display: flex;
+  align-items: center;
+  width: clamp(50px, 8vw, 80px);
+  /* Flip arrow to point left toward the button */
+  transform: scaleX(-1);
+}
+
+.blueprint-picker__exit-arrow svg {
+  width: 100%;
+  height: auto;
+}
+
+.blueprint-picker__exit-button {
+  transform: scale(0.8);
+}
+
+.blueprint-picker__exit-button:hover {
+  transform: scale(0.85) rotate(15deg);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .blueprint-picker__title-block {
+    bottom: 10px;
+    right: 10px;
+    padding: 8px 12px;
+  }
+
+  .blueprint-picker__compass {
+    top: 10px;
+    right: 10px;
+  }
+
+  .blueprint-picker__compass svg {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* ========================================
    LEVA CONTROLS CUSTOMIZATION
    Smaller font size for better readability
    ======================================== */

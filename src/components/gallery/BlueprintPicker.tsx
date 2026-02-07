@@ -1,0 +1,253 @@
+import { useMemo, useState, useEffect } from 'react';
+import { useControls } from 'leva';
+import { getCategoriesWithPreview } from '../../utils/gallery';
+import BlueprintButtonSVG from '../navigation/BlueprintButtonSVG';
+import { WaveArrow } from '../navigation/DesktopArrows';
+import { fontFamilyMap } from '../../constants';
+
+interface CategoryImageProps {
+  label: string;
+  imageSrc: string;
+  position: { x: number; y: number };
+  size: number;
+  rotation: number;
+  onClick?: () => void;
+  isVisible?: boolean;
+  index?: number;
+}
+
+const CategoryImage = ({
+  label,
+  imageSrc,
+  position,
+  size,
+  rotation,
+  onClick,
+  isVisible = true,
+  index = 0,
+}: CategoryImageProps) => {
+  return (
+    <div
+      className={`blueprint-image ${isVisible ? 'blueprint-image--visible' : ''}`}
+      onClick={onClick}
+      style={{
+        position: 'absolute',
+        left: `${position.x}%`,
+        top: `${position.y}%`,
+        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+        width: `${size}%`,
+        maxWidth: '300px',
+        transitionDelay: `${index * 150}ms`,
+      }}
+    >
+      {/* Image frame with blueprint styling */}
+      <div className="blueprint-image__frame">
+        <img
+          src={imageSrc}
+          alt={label}
+          style={{
+            width: '100%',
+            height: 'auto',
+            display: 'block',
+            filter: 'grayscale(30%) contrast(1.1)',
+            opacity: 0.9,
+          }}
+        />
+        {/* Corner marks */}
+        <div className="blueprint-image__corner blueprint-image__corner--tl" />
+        <div className="blueprint-image__corner blueprint-image__corner--tr" />
+        <div className="blueprint-image__corner blueprint-image__corner--bl" />
+        <div className="blueprint-image__corner blueprint-image__corner--br" />
+      </div>
+
+      {/* Label below image */}
+      <div
+        className="blueprint-image__label"
+        style={{ fontFamily: fontFamilyMap['Caveat'] }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+};
+
+interface BlueprintPickerProps {
+  onSelectCategory?: (category: string) => void;
+  onBack?: () => void;
+}
+
+export const BlueprintPicker = ({ onSelectCategory, onBack }: BlueprintPickerProps) => {
+  const categories = useMemo(() => getCategoriesWithPreview(), []);
+  const [isRolledOut, setIsRolledOut] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+
+  // Trigger roll-out animation on mount
+  useEffect(() => {
+    // Small delay before starting roll animation
+    const rollTimer = setTimeout(() => setIsRolledOut(true), 100);
+    // Show content after roll completes
+    const contentTimer = setTimeout(() => setShowContent(true), 1200);
+    return () => {
+      clearTimeout(rollTimer);
+      clearTimeout(contentTimer);
+    };
+  }, []);
+
+  // Leva controls for each category image
+  const chairsControls = useControls('Chairs', {
+    x: { value: 25, min: 5, max: 95, step: 1, label: 'X Position' },
+    y: { value: 30, min: 5, max: 95, step: 1, label: 'Y Position' },
+    size: { value: 22, min: 10, max: 40, step: 1, label: 'Size' },
+    rotation: { value: -3, min: -15, max: 15, step: 0.5, label: 'Rotation' },
+  });
+
+  const largeTablesControls = useControls('Large Tables', {
+    x: { value: 75, min: 5, max: 95, step: 1, label: 'X Position' },
+    y: { value: 30, min: 5, max: 95, step: 1, label: 'Y Position' },
+    size: { value: 22, min: 10, max: 40, step: 1, label: 'Size' },
+    rotation: { value: 2, min: -15, max: 15, step: 0.5, label: 'Rotation' },
+  });
+
+  const smallTablesControls = useControls('Small Tables', {
+    x: { value: 25, min: 5, max: 95, step: 1, label: 'X Position' },
+    y: { value: 70, min: 5, max: 95, step: 1, label: 'Y Position' },
+    size: { value: 22, min: 10, max: 40, step: 1, label: 'Size' },
+    rotation: { value: 1, min: -15, max: 15, step: 0.5, label: 'Rotation' },
+  });
+
+  const structuresControls = useControls('Structures', {
+    x: { value: 75, min: 5, max: 95, step: 1, label: 'X Position' },
+    y: { value: 70, min: 5, max: 95, step: 1, label: 'Y Position' },
+    size: { value: 22, min: 10, max: 40, step: 1, label: 'Size' },
+    rotation: { value: -2, min: -15, max: 15, step: 0.5, label: 'Rotation' },
+  });
+
+  // Map controls to categories (convert flat structure to expected format)
+  const categoryControls: Record<string, { position: { x: number; y: number }; size: number; rotation: number }> = {
+    chairs: { position: { x: chairsControls.x, y: chairsControls.y }, size: chairsControls.size, rotation: chairsControls.rotation },
+    large_tables: { position: { x: largeTablesControls.x, y: largeTablesControls.y }, size: largeTablesControls.size, rotation: largeTablesControls.rotation },
+    small_tables: { position: { x: smallTablesControls.x, y: smallTablesControls.y }, size: smallTablesControls.size, rotation: smallTablesControls.rotation },
+    structures: { position: { x: structuresControls.x, y: structuresControls.y }, size: structuresControls.size, rotation: structuresControls.rotation },
+  };
+
+  return (
+    <div className="blueprint-picker">
+      {/* Rolling paper edge effect */}
+      <div className={`blueprint-picker__roll-edge ${isRolledOut ? 'blueprint-picker__roll-edge--hidden' : ''}`} />
+
+      {/* Blueprint paper background */}
+      <div className={`blueprint-picker__paper ${isRolledOut ? 'blueprint-picker__paper--rolled-out' : ''}`}>
+        {/* Grid pattern overlay */}
+        <div className="blueprint-picker__grid" />
+
+        {/* Major grid lines */}
+        <div className="blueprint-picker__major-grid" />
+
+        {/* Title block (like architectural drawings) */}
+        <div className={`blueprint-picker__title-block ${showContent ? 'blueprint-picker__content--visible' : ''}`}>
+          <div className="blueprint-picker__title">GALLERY INDEX</div>
+          <div className="blueprint-picker__subtitle">DOUG'S FOUND WOOD - FURNITURE COLLECTION</div>
+          <div className="blueprint-picker__meta">
+            <span>SCALE: NOT TO SCALE</span>
+            <span>SHEET: 1 OF 1</span>
+          </div>
+        </div>
+
+        {/* Compass rose / North arrow */}
+        <div className={`blueprint-picker__compass ${showContent ? 'blueprint-picker__content--visible' : ''}`}>
+          <svg viewBox="0 0 40 40" width="60" height="60">
+            <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+            <circle cx="20" cy="20" r="12" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" strokeDasharray="2 2" />
+            <path d="M20 4 L23 16 L20 14 L17 16 Z" fill="rgba(255,255,255,0.5)" />
+            <path d="M20 36 L23 24 L20 26 L17 24 Z" fill="rgba(255,255,255,0.25)" />
+            <text x="20" y="8" textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="6" fontFamily="monospace">N</text>
+          </svg>
+        </div>
+
+        {/* Dimension lines on edges */}
+        <div className="blueprint-picker__dimension blueprint-picker__dimension--top">
+          <svg width="100%" height="20" preserveAspectRatio="none">
+            <line x1="5%" y1="15" x2="95%" y2="15" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+            <line x1="5%" y1="10" x2="5%" y2="20" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+            <line x1="95%" y1="10" x2="95%" y2="20" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+            <line x1="50%" y1="12" x2="50%" y2="18" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+          </svg>
+        </div>
+
+        <div className="blueprint-picker__dimension blueprint-picker__dimension--left">
+          <svg width="20" height="100%" preserveAspectRatio="none">
+            <line x1="15" y1="5%" x2="15" y2="95%" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+            <line x1="10" y1="5%" x2="20" y2="5%" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+            <line x1="10" y1="95%" x2="20" y2="95%" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+          </svg>
+        </div>
+
+        {/* Category images */}
+        {categories.map((cat, index) => {
+          const controls = categoryControls[cat.category];
+          if (!controls) return null;
+
+          return (
+            <CategoryImage
+              key={cat.category}
+              label={cat.label}
+              imageSrc={cat.preview.src}
+              position={controls.position}
+              size={controls.size}
+              rotation={controls.rotation}
+              onClick={() => onSelectCategory?.(cat.category)}
+              isVisible={showContent}
+              index={index}
+            />
+          );
+        })}
+
+        {/* Center crosshair */}
+        <div className="blueprint-picker__crosshair">
+          <svg viewBox="0 0 40 40" width="40" height="40">
+            <circle cx="20" cy="20" r="8" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+            <line x1="20" y1="5" x2="20" y2="15" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+            <line x1="20" y1="25" x2="20" y2="35" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+            <line x1="5" y1="20" x2="15" y2="20" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+            <line x1="25" y1="20" x2="35" y2="20" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+          </svg>
+        </div>
+
+        {/* Paper edge / fold marks */}
+        <div className="blueprint-picker__fold-mark blueprint-picker__fold-mark--top" />
+        <div className="blueprint-picker__fold-mark blueprint-picker__fold-mark--bottom" />
+
+        {/* Exit button with arrow and label - button on left, arrow and text on right */}
+        <div
+          className={`blueprint-picker__exit ${showContent ? 'blueprint-picker__content--visible' : ''}`}
+          style={{ transitionDelay: '600ms' }}
+        >
+          {/* Blueprint button */}
+          <button
+            type="button"
+            className="nav-button-circle blueprint-picker__exit-button"
+            aria-label="Exit gallery"
+            onClick={onBack}
+          >
+            <BlueprintButtonSVG />
+          </button>
+
+          {/* Animated arrow pointing toward button (reversed) */}
+          <span className="blueprint-picker__exit-arrow">
+            <WaveArrow isVisible={showContent} delay={800} />
+          </span>
+
+          {/* Exit label */}
+          <span
+            className="blueprint-picker__exit-label"
+            style={{ fontFamily: fontFamilyMap['Caveat'] }}
+          >
+            Exit
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BlueprintPicker;

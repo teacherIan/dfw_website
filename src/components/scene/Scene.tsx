@@ -1,6 +1,6 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { PresentationControls } from '@react-three/drei';
-import { useMemo, useRef, useEffect, useCallback, useState } from 'react';
+import { useMemo, useRef, useEffect, useLayoutEffect, useCallback, useState } from 'react';
 import { Euler, Quaternion, Vector3 } from 'three';
 import type { SplatMesh as SparkSplatMesh } from '@sparkjsdev/spark';
 import { dyno } from '@sparkjsdev/spark';
@@ -172,6 +172,9 @@ const Scene = ({
   const exitTypeRef = useRef(dyno.dynoFloat(0.0));
   const exitProgressRef = useRef(dyno.dynoFloat(0.0));
   const returnProgressRef = useRef(dyno.dynoFloat(0.0));
+  // Entrance animation type (for returning from non-home scenes)
+  // Uses same animation types as exit but runs them in reverse
+  const entranceTypeRef = useRef(dyno.dynoFloat(0.0));
   const exitStartTimeRef = useRef<number | null>(null);
   const baseTimeRef = useRef(0);
   const effectSetupRef = useRef(false);
@@ -206,6 +209,23 @@ const Scene = ({
       cameraHoldRef.current = null;
     }
   }, [animationPhase, camera]);
+
+  // Reset effect setup refs when gallery is active (mesh is unmounted)
+  // This ensures shader modifiers are reapplied when returning from gallery
+  useEffect(() => {
+    if (activeScene === 'gallery') {
+      effectSetupRef.current = false;
+      logoEffectSetupRef.current = false;
+      setMeshReady(null);
+      setLogoMeshReady(null);
+      // Reset entrance type but NOT baseTimeRef/cameraAnimationComplete
+      // (those control the initial page load animation which shouldn't replay)
+      entranceTypeRef.current.value = 0;
+      // Ensure logo is hidden
+      logoOpacityRef.current.value = 0;
+      transitionProgressRef.current.value = 0;
+    }
+  }, [activeScene]);
 
   // Reset animation handler - passed to useSceneControls
   const handleResetAnimation = useCallback(() => {
@@ -516,6 +536,7 @@ const Scene = ({
               exitType: 'float',
               exitProgress: 'float',
               returnProgress: 'float',
+              entranceType: 'float',
             },
             outTypes: { gsplat: dyno.Gsplat },
             globals: () => [
@@ -1355,7 +1376,8 @@ const Scene = ({
               float exitType = ${inputs.exitType};
               float exitProgress = ${inputs.exitProgress};
               float returnProgress = ${inputs.returnProgress};
-              
+              float entranceType = ${inputs.entranceType};
+
               // Exploded view controls
               float expStrength = ${inputs.explodedExpansionStrength};
               float expRotSpeed = ${inputs.explodedRotationSpeed};
@@ -1547,12 +1569,41 @@ const Scene = ({
               // Apply opacity adjustment to synthetic region
               ${outputs.gsplat}.rgba.a *= mix(1.0, syntheticOpacity, isSynthetic);
 
-              // Return-to-home fade/scale (uses returnProgress: 1 -> 0)
-              float returnAlpha = clamp(1.0 - returnProgress, 0.0, 1.0);
-              float returnEase = smoothstep(0.0, 1.0, returnAlpha);
-              float returnScale = mix(0.86, 1.0, returnEase);
-              ${outputs.gsplat}.scales *= returnScale;
-              ${outputs.gsplat}.rgba.a *= returnEase;
+              // Return-to-home animation (uses returnProgress: 1 -> 0)
+              // When entranceType > 0, use a reversed exit animation for a more interesting entrance
+              if (returnProgress > 0.001 && entranceType > 0.5) {
+                // Use exit animation functions with returnProgress to run them in reverse
+                // returnProgress goes 1->0, so the animation reverses (particles come together)
+                vec4 entranceResult = applyExitAnimation(
+                  ${outputs.gsplat}.center, ${outputs.gsplat}.scales, entranceType, returnProgress, h,
+                  expStrength, expRotSpeed, expFadeStart, expFadeEnd,
+                  pondSpeed, pondFreq, pondAmp, pondCount,
+                  physStrength, physGravity, physFriction, physTumble,
+                  sawFall, sawWind, sawTurb, sawDissolve,
+                  ashRise, ashSpread, ashEmber, ashBurn,
+                  shatterForce, shatterGrav, shatterSpread, shatterRot,
+                  glitchInt, glitchBlock, glitchSpd, glitchChroma,
+                  bhStrength, bhSpin, bhRadius, bhStretch,
+                  pollenDrift, pollenSpread, pollenWave, pollenRise,
+                  freezeSpd, freezeCrack, freezeDelay, freezeShard,
+                  sandFall, sandFunnel, sandSpread, sandGrain,
+                  sandViewRight, sandViewUp, sandCameraPos,
+                  teleSpd, teleSparkle, teleBand, teleDir
+                );
+                ${outputs.gsplat}.center = entranceResult.xyz;
+                float entrancePacked = entranceResult.w;
+                float entranceScaleMult = floor(entrancePacked) / 1000.0;
+                float entranceOpacity = fract(entrancePacked);
+                ${outputs.gsplat}.scales *= entranceScaleMult;
+                ${outputs.gsplat}.rgba.a *= entranceOpacity;
+              } else if (returnProgress > 0.001) {
+                // Simple fade/scale for default entrance
+                float returnAlpha = clamp(1.0 - returnProgress, 0.0, 1.0);
+                float returnEase = smoothstep(0.0, 1.0, returnAlpha);
+                float returnScale = mix(0.86, 1.0, returnEase);
+                ${outputs.gsplat}.scales *= returnScale;
+                ${outputs.gsplat}.rgba.a *= returnEase;
+              }
             `),
           });
 
@@ -1645,6 +1696,7 @@ const Scene = ({
             exitType: exitTypeRef.current,
             exitProgress: exitProgressRef.current,
             returnProgress: returnProgressRef.current,
+            entranceType: entranceTypeRef.current,
           }).gsplat;
 
           return { gsplat };
@@ -1699,7 +1751,8 @@ const Scene = ({
   }, [logoMeshReady]);
 
   // Update exit animation when phase changes
-  useEffect(() => {
+  // Use useLayoutEffect to ensure animation state is set BEFORE paint (prevents flash)
+  useLayoutEffect(() => {
     if (animationPhase === 'exiting') {
       // Set the exit animation type based on target scene or override
       // Use override if present, otherwise fallback to scene default
@@ -1711,6 +1764,9 @@ const Scene = ({
       exitStartTimeRef.current = performance.now();
       exitProgressRef.current.value = 0;
       returnProgressRef.current.value = 0;
+      // Ensure logo stays hidden during standard exit (not transitioning to contact)
+      logoOpacityRef.current.value = 0;
+      transitionProgressRef.current.value = 0;
     } else if (animationPhase === 'transitioning') {
       // Start transition to logo (for Contact)
       transitionStartTimeRef.current = performance.now();
@@ -1731,6 +1787,7 @@ const Scene = ({
       exitProgressRef.current.value = 0;
       exitStartTimeRef.current = null;
       returnProgressRef.current.value = 0;
+      entranceTypeRef.current.value = 0;
       // Reset transition state
       transitionProgressRef.current.value = 0;
       logoOpacityRef.current.value = 0;
@@ -1742,15 +1799,25 @@ const Scene = ({
       exitProgressRef.current.value = 1;
       returnProgressRef.current.value = 0;
     } else if (animationPhase === 'idle' && activeScene !== 'home') {
-      // Keep splat hidden when on other scenes
+      // Keep splat hidden when on other scenes (gallery, etc.)
       exitProgressRef.current.value = 1;
       returnProgressRef.current.value = 0;
+      // Ensure logo stays hidden too (not on contact scene)
+      if (activeScene !== 'contact') {
+        logoOpacityRef.current.value = 0;
+        transitionProgressRef.current.value = 0;
+      }
     } else if (animationPhase === 'entering') {
       // Start return animation back to home
       exitStartTimeRef.current = performance.now();
       exitTypeRef.current.value = 0;
       exitProgressRef.current.value = 0;
       returnProgressRef.current.value = 1;
+      // Use simple fade for all entrance animations for now
+      entranceTypeRef.current.value = 0;
+      // Ensure logo is hidden when returning from non-contact scenes
+      logoOpacityRef.current.value = 0;
+      transitionProgressRef.current.value = 0;
     }
   }, [animationPhase, targetScene, activeScene, overrideExitType]);
 
@@ -1978,31 +2045,39 @@ const Scene = ({
     }
   });
 
+  const splatContent = (
+    <sparkRenderer args={[sparkRendererArgs]}>
+      <splatMesh
+        ref={meshCallbackRef}
+        args={[splatMeshArgs]}
+        position={[splatOffsetRef.current.x, splatOffsetRef.current.y, splatOffsetRef.current.z]}
+        rotation={[rotationX, rotationY, rotationZ]}
+      />
+      <splatMesh
+        ref={logoMeshCallbackRef}
+        args={[logoSplatMeshArgs]}
+        position={[logoPositionX, logoPositionY, logoPositionZ]}
+        rotation={[logoRotationX, logoRotationY, logoRotationZ]}
+        scale={logoScale}
+      />
+    </sparkRenderer>
+  );
+
   return (
     <>
-      <PresentationControls
-        global
-        snap
-        rotation={[0, 0, 0]}
-        polar={[-Math.PI / 3, Math.PI / 3]}
-        azimuth={[-Math.PI / 1.4, Math.PI / 1.4]}
-      >
-        <sparkRenderer args={[sparkRendererArgs]}>
-          <splatMesh
-            ref={meshCallbackRef}
-            args={[splatMeshArgs]}
-            position={[splatOffsetRef.current.x, splatOffsetRef.current.y, splatOffsetRef.current.z]}
-            rotation={[rotationX, rotationY, rotationZ]}
-          />
-          <splatMesh
-            ref={logoMeshCallbackRef}
-            args={[logoSplatMeshArgs]}
-            position={[logoPositionX, logoPositionY, logoPositionZ]}
-            rotation={[logoRotationX, logoRotationY, logoRotationZ]}
-            scale={logoScale}
-          />
-        </sparkRenderer>
-      </PresentationControls>
+      {activeScene === 'gallery' ? null : activeScene === 'home' ? (
+        <PresentationControls
+          global
+          snap
+          rotation={[0, 0, 0]}
+          polar={[-Math.PI / 3, Math.PI / 3]}
+          azimuth={[-Math.PI / 1.4, Math.PI / 1.4]}
+        >
+          {splatContent}
+        </PresentationControls>
+      ) : (
+        splatContent
+      )}
     </>
   );
 };
