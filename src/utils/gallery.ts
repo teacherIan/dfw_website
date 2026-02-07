@@ -23,22 +23,22 @@ export const getGalleryImages = (): GalleryImage[] => {
   for (const path in imageModules) {
     // Skip if it's in the cropped folder or other excluded folders if needed
     if (path.includes('/cropped/')) continue;
-    
+
     // Extract category from folder name
     const parts = path.split('/');
     // path structure: /src/gallery/[category]/[filename] or /src/gallery/[filename]
     // parts: ['', 'src', 'gallery', 'category', 'filename'] or ['', 'src', 'gallery', 'filename']
-    
+
     let category = 'misc';
     let filename = '';
-    
+
     if (parts.length >= 5) {
       category = parts[3];
       filename = parts[4];
     } else {
       filename = parts[3];
     }
-    
+
     // Clean up filename for display
     const name = filename.split('.')[0].replace(/[_-]/g, ' ');
 
@@ -50,4 +50,38 @@ export const getGalleryImages = (): GalleryImage[] => {
   }
 
   return images;
+};
+
+// Get images filtered by category
+export const getImagesByCategory = (category: string): GalleryImage[] => {
+  return getGalleryImages().filter((img) => img.category === category);
+};
+
+// Get unique categories with their first image as preview
+export const getCategoriesWithPreview = (): { category: string; label: string; preview: GalleryImage }[] => {
+  const images = getGalleryImages();
+  const categoryMap: Record<string, GalleryImage[]> = {};
+
+  for (const img of images) {
+    if (!categoryMap[img.category]) {
+      categoryMap[img.category] = [];
+    }
+    categoryMap[img.category].push(img);
+  }
+
+  // Define display order and labels
+  const categoryConfig: Record<string, string> = {
+    chairs: 'Chairs',
+    large_tables: 'Large Tables',
+    small_tables: 'Small Tables',
+    structures: 'Structures',
+  };
+
+  return Object.entries(categoryConfig)
+    .filter(([key]) => categoryMap[key]?.length > 0)
+    .map(([key, label]) => ({
+      category: key,
+      label,
+      preview: categoryMap[key][0],
+    }));
 };

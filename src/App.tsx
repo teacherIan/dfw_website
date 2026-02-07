@@ -4,7 +4,12 @@ import { useControls, useCreateStore, LevaPanel, folder } from 'leva';
 import Scene from './components/scene/Scene';
 import TextOverlay from './components/scene/TextOverlay';
 import HandDrawnText from './components/scene/HandDrawnText';
-import Gallery3D from './components/gallery/Gallery3D';
+import Gallery3D, {
+  subscribeToGalleryState,
+  setGallerySelectedCategory,
+  GalleryViewState,
+} from './components/gallery/Gallery3D';
+import BlueprintPicker from './components/gallery/BlueprintPicker';
 import MenuOverlay from './components/navigation/MenuOverlay';
 import BackButton from './components/navigation/BackButton';
 import {
@@ -21,8 +26,18 @@ function App() {
   const [showText, setShowText] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
 
+  // Gallery picker state (synced with Gallery3D)
+  const [galleryViewState, setGalleryViewState] = useState<GalleryViewState>('picker');
+
   const controlsStore = useCreateStore();
   const showLeva = import.meta.env.DEV;
+
+  // Subscribe to Gallery3D state changes
+  useEffect(() => {
+    return subscribeToGalleryState((state) => {
+      setGalleryViewState(state.viewState);
+    });
+  }, []);
 
   // Scene navigation state
   const [activeScene, setActiveScene] = useState<SceneId>('home');
@@ -202,8 +217,26 @@ function App() {
         <ContactOverlay />
       )}
 
+      {/* Gallery transition overlay - fades from white to blue during exit animation */}
+      {targetScene === 'gallery' && animationPhase === 'exiting' && (
+        <div className="gallery-transition-overlay" />
+      )}
+
+      {/* Gallery return overlay - fades from blue to white when returning from gallery */}
+      {targetScene === 'gallery' && animationPhase === 'entering' && (
+        <div className="gallery-return-overlay" />
+      )}
+
+      {/* Gallery picker - show when on gallery and in picker mode */}
+      {/* Using new BlueprintPicker (2D DOM) instead of 3D picker */}
+      {activeScene === 'gallery' && animationPhase === 'idle' && galleryViewState === 'picker' && (
+        <BlueprintPicker onSelectCategory={setGallerySelectedCategory} onBack={handleReturnHome} />
+      )}
+
       {/* Back button - show during exit/transition animations and when on other scenes */}
-      {(animationPhase === 'exiting' || animationPhase === 'transitioning' || (activeScene !== 'home' && animationPhase === 'idle')) && (
+      {/* Hide when BlueprintPicker is visible (it has its own exit button) */}
+      {(animationPhase === 'exiting' || animationPhase === 'transitioning' ||
+        (activeScene !== 'home' && animationPhase === 'idle' && !(activeScene === 'gallery' && galleryViewState === 'picker'))) && (
         <BackButton onClick={handleReturnHome} />
       )}
     </div>
