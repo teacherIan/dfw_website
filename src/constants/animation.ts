@@ -24,3 +24,11 @@ export const MOBILE_NAV_DELAYS = {
   GALLERY_LABEL: 300,
   GALLERY_ARROW: 550,
 } as const;
+
+/**
+ * Blueprint picker animation timing (in milliseconds)
+ */
+export const BLUEPRINT_PICKER_TIMING = {
+  ROLL_DELAY: 100,
+  CONTENT_DELAY: 1200,
+} as const;

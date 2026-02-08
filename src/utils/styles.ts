@@ -29,23 +29,6 @@ export const createFadeSlideStyle = (
 });
 
 /**
- * Creates a fade + dual-axis slide animation style object
- * Used for contact button which needs both X and Y transforms
- */
-export const createFadeSlideXYStyle = (
-  isVisible: boolean,
-  xAmount: string,
-  yAmount: string,
-  delay: number
-): CSSProperties => ({
-  opacity: isVisible ? 1 : 0,
-  transform: isVisible
-    ? `translateX(${xAmount}) translateY(0)`
-    : `translateX(${xAmount}) translateY(${yAmount})`,
-  transition: `all ${TRANSITION.DURATION} ${TRANSITION.CUBIC_BEZIER} ${delay}ms`,
-});
-
-/**
  * Creates a pop-in animation with scale overshoot (0 → 1.1 → 1.0)
  * Great for buttons and circular elements
  * @param isVisible - Whether element is visible

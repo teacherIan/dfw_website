@@ -9,6 +9,59 @@ import type { SceneId } from '../../constants';
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
+// Breakpoint configuration for button and label positions
+const BREAKPOINT_CONFIGS = {
+  small: {
+    name: 'Small (<400px)',
+    buttons: { ethosLeft: 14, ethosBottom: 26, contactLeft: 45, contactBottom: 7, galleryRight: 17, galleryBottom: 8 },
+    labels: { ethosLeft: 8, ethosBottom: 7, contactLeft: 40, contactBottom: 15, galleryRight: 10, galleryBottom: 2 },
+  },
+  mid: {
+    name: 'Mid (400-699px)',
+    buttons: { ethosLeft: 14, ethosBottom: 26, contactLeft: 45, contactBottom: 7.0, galleryRight: 17, galleryBottom: 8 },
+    labels: { ethosLeft: 8, ethosBottom: 7, contactLeft: 40, contactBottom: 15, galleryRight: 10, galleryBottom: 2 },
+  },
+  tablet: {
+    name: 'Tablet (700-999px)',
+    buttons: { ethosLeft: 11, ethosBottom: 29, contactLeft: 40, contactBottom: 5.0, galleryRight: 8, galleryBottom: 8 },
+    labels: { ethosLeft: 8, ethosBottom: 7, contactLeft: 51, contactBottom: 13, galleryRight: 21, galleryBottom: 2 },
+  },
+  ipadPro: {
+    name: 'iPad Pro (1000-1199px)',
+    buttons: { ethosLeft: 11, ethosBottom: 29, contactLeft: 40, contactBottom: 5.0, galleryRight: 8, galleryBottom: 8 },
+    labels: { ethosLeft: 8, ethosBottom: 7, contactLeft: 51, contactBottom: 13, galleryRight: 21, galleryBottom: 2 },
+  },
+} as const;
+
+type BreakpointKey = keyof typeof BREAKPOINT_CONFIGS;
+
+// Generate Leva control schema for position controls
+const createPositionControls = (defaults: typeof BREAKPOINT_CONFIGS.small.buttons) => ({
+  ethosLeft: { value: defaults.ethosLeft, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
+  ethosBottom: { value: defaults.ethosBottom, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
+  contactLeft: { value: defaults.contactLeft, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
+  contactBottom: { value: defaults.contactBottom, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
+  galleryRight: { value: defaults.galleryRight, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
+  galleryBottom: { value: defaults.galleryBottom, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
+});
+
+// Hook to get all position controls for a breakpoint
+const useBreakpointControls = (
+  breakpoint: BreakpointKey,
+  type: 'buttons' | 'labels',
+  controlsStore?: LevaStore
+) => {
+  const config = BREAKPOINT_CONFIGS[breakpoint];
+  const prefix = type === 'buttons' ? 'Mobile Buttons' : 'Mobile Labels';
+
+  return useControls({
+    [`🏠 Base.📱 ${prefix}.${config.name}`]: folder(
+      createPositionControls(config[type]),
+      { collapsed: true }
+    ),
+  }, { store: controlsStore });
+};
+
 interface MobileNavLayoutProps {
   font: string;
   isVisible: boolean;
@@ -22,95 +75,17 @@ const MobileNavLayout = ({
   onNavigate,
   controlsStore,
 }: MobileNavLayoutProps) => {
-  // Button positions for each breakpoint (nested under Mobile Buttons)
-  const btnPositionsSmall = useControls({
-    '🏠 Base.📱 Mobile Buttons.Small (<400px)': folder({
-      ethosLeft: { value: 14, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
-      ethosBottom: { value: 26, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-      contactLeft: { value: 45, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-      contactBottom: { value: 7, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
-      galleryRight: { value: 17, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
-      galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-    }, { collapsed: true }),
-  }, { store: controlsStore });
+  // Button positions for each breakpoint
+  const btnPositionsSmall = useBreakpointControls('small', 'buttons', controlsStore);
+  const btnPositionsMid = useBreakpointControls('mid', 'buttons', controlsStore);
+  const btnPositionsTablet = useBreakpointControls('tablet', 'buttons', controlsStore);
+  const btnPositionsIpadPro = useBreakpointControls('ipadPro', 'buttons', controlsStore);
 
-  const btnPositionsMid = useControls({
-    '🏠 Base.📱 Mobile Buttons.Mid (400-699px)': folder({
-      ethosLeft: { value: 14, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
-      ethosBottom: { value: 26, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-      contactLeft: { value: 45, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-      contactBottom: { value: 7.0, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
-      galleryRight: { value: 17, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
-      galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-    }, { collapsed: true }),
-  }, { store: controlsStore });
-
-  const btnPositionsTablet = useControls({
-    '🏠 Base.📱 Mobile Buttons.Tablet (700-999px)': folder({
-      ethosLeft: { value: 11, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
-      ethosBottom: { value: 29, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-      contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-      contactBottom: { value: 5.0, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
-      galleryRight: { value: 8, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
-      galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-    }, { collapsed: true }),
-  }, { store: controlsStore });
-
-  const btnPositionsIpadPro = useControls({
-    '🏠 Base.📱 Mobile Buttons.iPad Pro (1000-1199px)': folder({
-      ethosLeft: { value: 11, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
-      ethosBottom: { value: 29, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-      contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-      contactBottom: { value: 5.0, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
-      galleryRight: { value: 8, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
-      galleryBottom: { value: 8, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-    }, { collapsed: true }),
-  }, { store: controlsStore });
-
-  // Label positions for each breakpoint (nested under Mobile Labels)
-  const labelPositionsSmall = useControls({
-    '🏠 Base.📱 Mobile Labels.Small (<400px)': folder({
-      ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
-      ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-      contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-      contactBottom: { value: 15, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
-      galleryRight: { value: 10, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
-      galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-    }, { collapsed: true }),
-  }, { store: controlsStore });
-
-  const labelPositionsMid = useControls({
-    '🏠 Base.📱 Mobile Labels.Mid (400-699px)': folder({
-      ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
-      ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-      contactLeft: { value: 40, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-      contactBottom: { value: 15, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
-      galleryRight: { value: 10, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
-      galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-    }, { collapsed: true }),
-  }, { store: controlsStore });
-
-  const labelPositionsTablet = useControls({
-    '🏠 Base.📱 Mobile Labels.Tablet (700-999px)': folder({
-      ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
-      ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-      contactLeft: { value: 51, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-      contactBottom: { value: 13, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
-      galleryRight: { value: 21, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
-      galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-    }, { collapsed: true }),
-  }, { store: controlsStore });
-
-  const labelPositionsIpadPro = useControls({
-    '🏠 Base.📱 Mobile Labels.iPad Pro (1000-1199px)': folder({
-      ethosLeft: { value: 8, min: 0, max: 100, step: 1, label: 'Ethos Left (%)' },
-      ethosBottom: { value: 7, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
-      contactLeft: { value: 51, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-      contactBottom: { value: 13, min: -20, max: 100, step: 1, label: 'Contact Bottom (vh)' },
-      galleryRight: { value: 21, min: 0, max: 100, step: 1, label: 'Gallery Right (%)' },
-      galleryBottom: { value: 2, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
-    }, { collapsed: true }),
-  }, { store: controlsStore });
+  // Label positions for each breakpoint
+  const labelPositionsSmall = useBreakpointControls('small', 'labels', controlsStore);
+  const labelPositionsMid = useBreakpointControls('mid', 'labels', controlsStore);
+  const labelPositionsTablet = useBreakpointControls('tablet', 'labels', controlsStore);
+  const labelPositionsIpadPro = useBreakpointControls('ipadPro', 'labels', controlsStore);
 
   return (
     <div className="mobile-nav-only">

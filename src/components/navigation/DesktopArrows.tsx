@@ -1,41 +1,10 @@
+import { AnimatedArrowhead } from './ArrowComponents';
+
 interface ArrowProps {
   className?: string;
   isVisible?: boolean;
   delay?: number;
 }
-
-// Animated arrowhead that fades in when line finishes drawing
-const AnimatedArrowhead = ({
-  x,
-  y,
-  angle,
-  isVisible,
-  delay,
-}: {
-  x: number;
-  y: number;
-  angle: number;
-  isVisible: boolean;
-  delay: number;
-}) => (
-  <g
-    transform={`translate(${x}, ${y}) rotate(${angle})`}
-    style={{
-      opacity: isVisible ? 1 : 0,
-      transition: `opacity 0.3s ease-out ${delay}ms`,
-    }}
-  >
-    <path
-      d="M-7,-3 L0,0 L-7,3"
-      fill="none"
-      stroke="white"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
-    />
-  </g>
-);
 
 // 1. LOOP ARROW (Top)
 export const LoopArrow = ({ className = 'nav-arrow', isVisible = true, delay = 0 }: ArrowProps) => {

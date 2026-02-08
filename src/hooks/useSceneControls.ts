@@ -123,23 +123,6 @@ export interface SceneControls {
   teleportBandWidth: number;
   teleportDirection: number;
 
-  // Splat Transitions
-  transitionType: number;
-  transitionDuration: number;
-  transitionScatterRadius: number;
-  transitionSpinSpeed: number;
-  transitionWipeDirection: number;
-  onTestTransition: () => void;
-  onResetTransition: () => void;
-
-  // Logo Transform
-  logoRotationX: number;
-  logoRotationY: number;
-  logoRotationZ: number;
-  logoScale: number;
-  logoPositionX: number;
-  logoPositionY: number;
-  logoPositionZ: number;
   // Monitor refs
   currentCameraX: React.MutableRefObject<number>;
   currentCameraY: React.MutableRefObject<number>;
@@ -151,8 +134,6 @@ type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 interface UseSceneControlsParams {
   isMobile: boolean;
   onResetAnimation: () => void;
-  onTestTransition?: () => void;
-  onResetTransition?: () => void;
   store?: LevaStore;
 }
 
@@ -163,8 +144,6 @@ interface UseSceneControlsParams {
 export const useSceneControls = ({
   isMobile,
   onResetAnimation,
-  onTestTransition,
-  onResetTransition,
   store,
 }: UseSceneControlsParams): SceneControls => {
   // Refs for monitoring current camera position
@@ -701,50 +680,6 @@ export const useSceneControls = ({
     { store }
   );
 
-  const {
-    transitionType,
-    transitionDuration,
-    transitionScatterRadius,
-    transitionSpinSpeed,
-    transitionWipeDirection,
-    logoRotationX,
-    logoRotationY,
-    logoRotationZ,
-    logoScale,
-    logoPositionX,
-    logoPositionY,
-    logoPositionZ,
-  } = useControls({
-    '🔄 Splat Transitions': folder({
-      transitionType: {
-        value: 0,
-        options: { Morph: 0, Dissolve: 1, Vortex: 2, Wipe: 3, Pixelate: 4 },
-        label: 'Transition Type',
-      },
-      transitionDuration: { value: 3.0, min: 1.0, max: 10.0, step: 0.5, label: 'Duration (s)' },
-      'Logo Transform': folder({
-        logoRotationX: { value: -0.49, min: -Math.PI, max: Math.PI, step: 0.01, label: 'Rotation X' },
-        logoRotationY: { value: -Math.PI, min: -Math.PI, max: Math.PI, step: 0.01, label: 'Rotation Y' },
-        logoRotationZ: { value: 3.09, min: -Math.PI, max: Math.PI, step: 0.01, label: 'Rotation Z' },
-        logoScale: { value: 1.1, min: 0.1, max: 10.0, step: 0.1, label: 'Scale' },
-        logoPositionX: { value: -0.5, min: -5, max: 5, step: 0.1, label: 'Position X' },
-        logoPositionY: { value: 2.1, min: -5, max: 5, step: 0.1, label: 'Position Y' },
-        logoPositionZ: { value: 0.7, min: -5, max: 5, step: 0.1, label: 'Position Z' },
-      }, { collapsed: false }),
-      'Effect Parameters': folder({
-        transitionScatterRadius: { value: 2.0, min: 0.5, max: 8.0, step: 0.5, label: 'Scatter Radius' },
-        transitionSpinSpeed: { value: 2.0, min: 0.5, max: 10.0, step: 0.5, label: 'Spin Speed' },
-        transitionWipeDirection: {
-          value: 0,
-          options: { 'Left to Right': 0, 'Right to Left': 1, 'Top to Bottom': 2, 'Bottom to Top': 3 },
-          label: 'Wipe Direction',
-        },
-      }, { collapsed: true }),
-      testTransition: button(() => onTestTransition?.()),
-      resetTransition: button(() => onResetTransition?.()),
-    }, { collapsed: false }),
-  }, { store });
-
   useControls({
     '🏠 Base.📊 Monitor': folder(
       {
@@ -875,23 +810,6 @@ export const useSceneControls = ({
     teleportBandWidth,
     teleportDirection,
 
-    // Splat Transitions
-    transitionType,
-    transitionDuration,
-    transitionScatterRadius,
-    transitionSpinSpeed,
-    transitionWipeDirection,
-    onTestTransition: onTestTransition ?? (() => {}),
-    onResetTransition: onResetTransition ?? (() => {}),
-
-    // Logo Transform
-    logoRotationX,
-    logoRotationY,
-    logoRotationZ,
-    logoScale,
-    logoPositionX,
-    logoPositionY,
-    logoPositionZ,
     // Monitor refs
     currentCameraX,
     currentCameraY,
