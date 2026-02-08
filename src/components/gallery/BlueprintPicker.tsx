@@ -136,16 +136,6 @@ export const BlueprintPicker = ({ onSelectCategory, onBack }: BlueprintPickerPro
         {/* Major grid lines */}
         <div className="blueprint-picker__major-grid" />
 
-        {/* Title block (like architectural drawings) */}
-        <div className={`blueprint-picker__title-block ${showContent ? 'blueprint-picker__content--visible' : ''}`}>
-          <div className="blueprint-picker__title">GALLERY INDEX</div>
-          <div className="blueprint-picker__subtitle">DOUG'S FOUND WOOD - FURNITURE COLLECTION</div>
-          <div className="blueprint-picker__meta">
-            <span>SCALE: NOT TO SCALE</span>
-            <span>SHEET: 1 OF 1</span>
-          </div>
-        </div>
-
         {/* Compass rose / North arrow */}
         <div className={`blueprint-picker__compass ${showContent ? 'blueprint-picker__content--visible' : ''}`}>
           <svg viewBox="0 0 40 40" width="60" height="60">

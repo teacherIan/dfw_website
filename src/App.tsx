@@ -148,13 +148,39 @@ function AppContent() {
     }, { collapsed: true }),
   }, { store: controlsStore });
 
+  // Track when streaming starts and when splat is loaded
+  const [streamingStarted, setStreamingStarted] = useState(false);
+  const streamingStartTimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const handleStreamingStarted = () => {
+      streamingStartTimeRef.current = performance.now();
+      setStreamingStarted(true);
+    };
+
+    const handleSplatLoaded = () => {
+      // Splat fully loaded - could use this for additional timing if needed
+      console.log('Splat fully loaded');
+    };
+
+    window.addEventListener('splatStreamingStarted', handleStreamingStarted);
+    window.addEventListener('splatLoaded', handleSplatLoaded);
+    return () => {
+      window.removeEventListener('splatStreamingStarted', handleStreamingStarted);
+      window.removeEventListener('splatLoaded', handleSplatLoaded);
+    };
+  }, []);
+
   useEffect(() => {
     // Start showing the text after the splat animation has fully finished
+    // Wait for streaming to start before beginning the timer
+    if (!streamingStarted) return;
+
     const timer = setTimeout(() => {
       setShowText(true);
     }, ANIMATION_TIMING.TEXT_APPEAR);
     return () => clearTimeout(timer);
-  }, [animationKey]);
+  }, [animationKey, streamingStarted]);
 
   useEffect(() => {
     const handleReset = () => {
