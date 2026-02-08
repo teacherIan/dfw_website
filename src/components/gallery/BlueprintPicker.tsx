@@ -109,11 +109,11 @@ export const BlueprintPicker = ({ onSelectCategory, onBack }: BlueprintPickerPro
     };
   }, []);
 
-  // Leva controls for each category image position
-  const chairsControls = useControls('Chairs', createCategoryControlSchema(CATEGORY_DEFAULTS.chairs));
-  const largeTablesControls = useControls('Large Tables', createCategoryControlSchema(CATEGORY_DEFAULTS.large_tables));
-  const smallTablesControls = useControls('Small Tables', createCategoryControlSchema(CATEGORY_DEFAULTS.small_tables));
-  const structuresControls = useControls('Structures', createCategoryControlSchema(CATEGORY_DEFAULTS.structures));
+  // Leva controls for each category image position (hidden in production)
+  const chairsControls = useControls('Chairs', createCategoryControlSchema(CATEGORY_DEFAULTS.chairs), { hidden: !import.meta.env.DEV });
+  const largeTablesControls = useControls('Large Tables', createCategoryControlSchema(CATEGORY_DEFAULTS.large_tables), { hidden: !import.meta.env.DEV });
+  const smallTablesControls = useControls('Small Tables', createCategoryControlSchema(CATEGORY_DEFAULTS.small_tables), { hidden: !import.meta.env.DEV });
+  const structuresControls = useControls('Structures', createCategoryControlSchema(CATEGORY_DEFAULTS.structures), { hidden: !import.meta.env.DEV });
 
   // Map controls to categories (convert flat structure to expected format)
   const categoryControls: Record<string, { position: { x: number; y: number }; size: number; rotation: number }> = {

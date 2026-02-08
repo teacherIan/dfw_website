@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useControls, useCreateStore, LevaPanel, folder } from 'leva';
+import { useControls, useCreateStore, LevaPanel, Leva, folder } from 'leva';
 import Scene from './components/scene/Scene';
 import TextOverlay from './components/scene/TextOverlay';
 import HandDrawnText from './components/scene/HandDrawnText';
@@ -193,6 +193,8 @@ function AppContent() {
 
   return (
     <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
+      {/* Hide default Leva panel in production, show custom panel in dev */}
+      <Leva hidden={!showLeva} />
       {showLeva && <LevaPanel store={controlsStore} />}
 
       {/* Main 3D Canvas */}
