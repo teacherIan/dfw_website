@@ -250,7 +250,8 @@ function AppContent() {
 
       {/* Back button - show during exit/transition animations and when on other scenes */}
       {/* Hide when BlueprintPicker is visible (it has its own exit button) */}
-      {(animationPhase === 'exiting' || animationPhase === 'transitioning' ||
+      {/* Hide when navigating to gallery (has its own transition overlay) */}
+      {((animationPhase === 'exiting' && targetScene !== 'gallery') || animationPhase === 'transitioning' ||
         (activeScene !== 'home' && animationPhase === 'idle' && !(activeScene === 'gallery' && galleryViewState === 'picker'))) && (
         <BackButton onClick={handleReturnHome} />
       )}
