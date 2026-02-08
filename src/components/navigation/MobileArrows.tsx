@@ -1,4 +1,5 @@
 import { useControls } from 'leva';
+import { AnimatedArrowhead, AnimatedDot, getArrowAngle } from './ArrowComponents';
 
 interface ArrowProps {
   isVisible: boolean;
@@ -6,78 +7,6 @@ interface ArrowProps {
 }
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
-
-// Helper to calculate arrowhead rotation angle for quadratic bezier
-// At t=1, tangent direction is from control point to end point
-const getArrowAngle = (controlX: number, controlY: number, endX: number, endY: number) => {
-  const dx = endX - controlX;
-  const dy = endY - controlY;
-  return Math.atan2(dy, dx) * (180 / Math.PI);
-};
-
-// Reusable animated arrowhead component
-const AnimatedArrowhead = ({
-  x,
-  y,
-  angle,
-  isVisible,
-  delay,
-  className,
-}: {
-  x: number;
-  y: number;
-  angle: number;
-  isVisible: boolean;
-  delay: number;
-  className?: string;
-}) => (
-  <g
-    transform={`translate(${x}, ${y}) rotate(${angle})`}
-    style={{
-      opacity: isVisible ? 1 : 0,
-      transition: `opacity 0.3s ease-out ${delay}ms`,
-    }}
-    className={className}
-  >
-    <path
-      d="M-8,-4 L0,0 L-8,4"
-      fill="none"
-      stroke="white"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-    />
-  </g>
-);
-
-// Reusable animated dot component
-const AnimatedDot = ({
-  x,
-  y,
-  isVisible,
-  delay,
-  className,
-}: {
-  x: number;
-  y: number;
-  isVisible: boolean;
-  delay: number;
-  className?: string;
-}) => (
-  <circle
-    cx={x}
-    cy={y}
-    r="3"
-    fill="white"
-    filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-    style={{
-      opacity: isVisible ? 1 : 0,
-      transition: `opacity 0.3s ease-out ${delay}ms`,
-    }}
-    className={className}
-  />
-);
 
 export const EthosArrow = ({ isVisible, delay = 300, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
   const ethosSmall = useControls('🏠 Base.📱 Mobile Arrows.Ethos Small (<400px)', {
@@ -158,6 +87,7 @@ export const EthosArrow = ({ isVisible, delay = 300, controlsStore }: ArrowProps
         />
         <AnimatedDot x={ethosIpadPro.startX} y={ethosIpadPro.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={ethosIpadPro.endX}
           y={ethosIpadPro.endY}
           angle={getArrowAngle(ethosIpadPro.controlX, ethosIpadPro.controlY, ethosIpadPro.endX, ethosIpadPro.endY)}
@@ -182,6 +112,7 @@ export const EthosArrow = ({ isVisible, delay = 300, controlsStore }: ArrowProps
         />
         <AnimatedDot x={ethosTablet.startX} y={ethosTablet.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={ethosTablet.endX}
           y={ethosTablet.endY}
           angle={getArrowAngle(ethosTablet.controlX, ethosTablet.controlY, ethosTablet.endX, ethosTablet.endY)}
@@ -206,6 +137,7 @@ export const EthosArrow = ({ isVisible, delay = 300, controlsStore }: ArrowProps
         />
         <AnimatedDot x={ethosMid.startX} y={ethosMid.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={ethosMid.endX}
           y={ethosMid.endY}
           angle={getArrowAngle(ethosMid.controlX, ethosMid.controlY, ethosMid.endX, ethosMid.endY)}
@@ -230,6 +162,7 @@ export const EthosArrow = ({ isVisible, delay = 300, controlsStore }: ArrowProps
         />
         <AnimatedDot x={ethosSmall.startX} y={ethosSmall.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={ethosSmall.endX}
           y={ethosSmall.endY}
           angle={getArrowAngle(ethosSmall.controlX, ethosSmall.controlY, ethosSmall.endX, ethosSmall.endY)}
@@ -316,6 +249,7 @@ export const ContactArrow = ({ isVisible, delay = 400, controlsStore }: ArrowPro
         />
         <AnimatedDot x={contactIpadPro.startX} y={contactIpadPro.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={contactIpadPro.endX}
           y={contactIpadPro.endY}
           angle={getArrowAngle(contactIpadPro.controlX, contactIpadPro.controlY, contactIpadPro.endX, contactIpadPro.endY)}
@@ -340,6 +274,7 @@ export const ContactArrow = ({ isVisible, delay = 400, controlsStore }: ArrowPro
         />
         <AnimatedDot x={contactTablet.startX} y={contactTablet.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={contactTablet.endX}
           y={contactTablet.endY}
           angle={getArrowAngle(contactTablet.controlX, contactTablet.controlY, contactTablet.endX, contactTablet.endY)}
@@ -364,6 +299,7 @@ export const ContactArrow = ({ isVisible, delay = 400, controlsStore }: ArrowPro
         />
         <AnimatedDot x={contactMid.startX} y={contactMid.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={contactMid.endX}
           y={contactMid.endY}
           angle={getArrowAngle(contactMid.controlX, contactMid.controlY, contactMid.endX, contactMid.endY)}
@@ -388,6 +324,7 @@ export const ContactArrow = ({ isVisible, delay = 400, controlsStore }: ArrowPro
         />
         <AnimatedDot x={contactSmall.startX} y={contactSmall.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={contactSmall.endX}
           y={contactSmall.endY}
           angle={getArrowAngle(contactSmall.controlX, contactSmall.controlY, contactSmall.endX, contactSmall.endY)}
@@ -478,6 +415,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, controlsStore }: ArrowPro
         />
         <AnimatedDot x={galleryIpadPro.startX} y={galleryIpadPro.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={galleryIpadPro.endX}
           y={galleryIpadPro.endY}
           angle={getArrowAngle(galleryIpadPro.controlX, galleryIpadPro.controlY, galleryIpadPro.endX, galleryIpadPro.endY)}
@@ -502,6 +440,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, controlsStore }: ArrowPro
         />
         <AnimatedDot x={galleryTablet.startX} y={galleryTablet.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={galleryTablet.endX}
           y={galleryTablet.endY}
           angle={getArrowAngle(galleryTablet.controlX, galleryTablet.controlY, galleryTablet.endX, galleryTablet.endY)}
@@ -526,6 +465,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, controlsStore }: ArrowPro
         />
         <AnimatedDot x={galleryMid.startX} y={galleryMid.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={galleryMid.endX}
           y={galleryMid.endY}
           angle={getArrowAngle(galleryMid.controlX, galleryMid.controlY, galleryMid.endX, galleryMid.endY)}
@@ -550,6 +490,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, controlsStore }: ArrowPro
         />
         <AnimatedDot x={gallerySmall.startX} y={gallerySmall.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
+          size="mobile"
           x={gallerySmall.endX}
           y={gallerySmall.endY}
           angle={getArrowAngle(gallerySmall.controlX, gallerySmall.controlY, gallerySmall.endX, gallerySmall.endY)}

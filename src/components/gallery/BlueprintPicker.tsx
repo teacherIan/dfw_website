@@ -3,7 +3,23 @@ import { useControls } from 'leva';
 import { getCategoriesWithPreview } from '../../utils/gallery';
 import BlueprintButtonSVG from '../navigation/BlueprintButtonSVG';
 import { WaveArrow } from '../navigation/DesktopArrows';
-import { fontFamilyMap } from '../../constants';
+import { fontFamilyMap, BLUEPRINT_PICKER_TIMING } from '../../constants';
+
+// Default positions and settings for category images
+const CATEGORY_DEFAULTS = {
+  chairs: { x: 25, y: 30, size: 22, rotation: -3 },
+  large_tables: { x: 75, y: 30, size: 22, rotation: 2 },
+  small_tables: { x: 25, y: 70, size: 22, rotation: 1 },
+  structures: { x: 75, y: 70, size: 22, rotation: -2 },
+} as const;
+
+// Generate Leva control schema for category position
+const createCategoryControlSchema = (defaults: typeof CATEGORY_DEFAULTS.chairs) => ({
+  x: { value: defaults.x, min: 5, max: 95, step: 1, label: 'X Position' },
+  y: { value: defaults.y, min: 5, max: 95, step: 1, label: 'Y Position' },
+  size: { value: defaults.size, min: 10, max: 40, step: 1, label: 'Size' },
+  rotation: { value: defaults.rotation, min: -15, max: 15, step: 0.5, label: 'Rotation' },
+});
 
 interface CategoryImageProps {
   label: string;
@@ -84,43 +100,20 @@ export const BlueprintPicker = ({ onSelectCategory, onBack }: BlueprintPickerPro
   // Trigger roll-out animation on mount
   useEffect(() => {
     // Small delay before starting roll animation
-    const rollTimer = setTimeout(() => setIsRolledOut(true), 100);
+    const rollTimer = setTimeout(() => setIsRolledOut(true), BLUEPRINT_PICKER_TIMING.ROLL_DELAY);
     // Show content after roll completes
-    const contentTimer = setTimeout(() => setShowContent(true), 1200);
+    const contentTimer = setTimeout(() => setShowContent(true), BLUEPRINT_PICKER_TIMING.CONTENT_DELAY);
     return () => {
       clearTimeout(rollTimer);
       clearTimeout(contentTimer);
     };
   }, []);
 
-  // Leva controls for each category image
-  const chairsControls = useControls('Chairs', {
-    x: { value: 25, min: 5, max: 95, step: 1, label: 'X Position' },
-    y: { value: 30, min: 5, max: 95, step: 1, label: 'Y Position' },
-    size: { value: 22, min: 10, max: 40, step: 1, label: 'Size' },
-    rotation: { value: -3, min: -15, max: 15, step: 0.5, label: 'Rotation' },
-  });
-
-  const largeTablesControls = useControls('Large Tables', {
-    x: { value: 75, min: 5, max: 95, step: 1, label: 'X Position' },
-    y: { value: 30, min: 5, max: 95, step: 1, label: 'Y Position' },
-    size: { value: 22, min: 10, max: 40, step: 1, label: 'Size' },
-    rotation: { value: 2, min: -15, max: 15, step: 0.5, label: 'Rotation' },
-  });
-
-  const smallTablesControls = useControls('Small Tables', {
-    x: { value: 25, min: 5, max: 95, step: 1, label: 'X Position' },
-    y: { value: 70, min: 5, max: 95, step: 1, label: 'Y Position' },
-    size: { value: 22, min: 10, max: 40, step: 1, label: 'Size' },
-    rotation: { value: 1, min: -15, max: 15, step: 0.5, label: 'Rotation' },
-  });
-
-  const structuresControls = useControls('Structures', {
-    x: { value: 75, min: 5, max: 95, step: 1, label: 'X Position' },
-    y: { value: 70, min: 5, max: 95, step: 1, label: 'Y Position' },
-    size: { value: 22, min: 10, max: 40, step: 1, label: 'Size' },
-    rotation: { value: -2, min: -15, max: 15, step: 0.5, label: 'Rotation' },
-  });
+  // Leva controls for each category image position
+  const chairsControls = useControls('Chairs', createCategoryControlSchema(CATEGORY_DEFAULTS.chairs));
+  const largeTablesControls = useControls('Large Tables', createCategoryControlSchema(CATEGORY_DEFAULTS.large_tables));
+  const smallTablesControls = useControls('Small Tables', createCategoryControlSchema(CATEGORY_DEFAULTS.small_tables));
+  const structuresControls = useControls('Structures', createCategoryControlSchema(CATEGORY_DEFAULTS.structures));
 
   // Map controls to categories (convert flat structure to expected format)
   const categoryControls: Record<string, { position: { x: number; y: number }; size: number; rotation: number }> = {

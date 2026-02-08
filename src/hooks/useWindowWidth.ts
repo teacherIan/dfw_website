@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
-const PORTRAIT_BREAKPOINT = 400;
-const TABLET_BREAKPOINT = 700;
-const IPAD_PRO_BREAKPOINT = 1000;
-const DESKTOP_BREAKPOINT = 1200;
+export const PORTRAIT_BREAKPOINT = 400;
+export const TABLET_BREAKPOINT = 700;
+export const IPAD_PRO_BREAKPOINT = 1000;
+export const DESKTOP_BREAKPOINT = 1200;
 
 /**
  * Hook to track window width and provide responsive breakpoint detection.

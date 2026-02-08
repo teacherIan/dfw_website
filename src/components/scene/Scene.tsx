@@ -5,7 +5,7 @@ import { Euler, Quaternion, Vector3 } from 'three';
 import type { SplatMesh as SparkSplatMesh } from '@sparkjsdev/spark';
 import { dyno } from '@sparkjsdev/spark';
 import { easeOutCubic, easeInOutCubic, lerp } from '../../utils';
-import { useSceneControls } from '../../hooks';
+import { useSceneControls, DESKTOP_BREAKPOINT } from '../../hooks';
 import { EXIT_ANIMATION_TYPE } from '../../constants';
 import type { SceneId, AnimationPhase } from '../../constants';
 import '../spark';
@@ -191,7 +191,7 @@ const Scene = ({
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1200);
+      setIsMobile(window.innerWidth < DESKTOP_BREAKPOINT);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
