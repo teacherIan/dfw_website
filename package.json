@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:babylon": "vite --config vite.config.babylon.ts",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext .ts,.tsx",
@@ -13,6 +14,8 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
+    "@babylonjs/core": "^8.52.0",
+    "@babylonjs/loaders": "^8.52.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.2",
     "@sparkjsdev/spark": "^0.1.10",
