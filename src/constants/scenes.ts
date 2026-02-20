@@ -5,7 +5,7 @@
 
 export type SceneId = 'home' | 'ethos' | 'contact' | 'gallery';
 
-export type AnimationPhase = 'idle' | 'exiting' | 'entering' | 'transitioning' | 'transitioningBack';
+export type AnimationPhase = 'idle' | 'exiting' | 'entering' | 'transitioning' | 'transitioningBack' | 'wallHolding';
 
 /**
  * Splat transition types for transitioning between two splat meshes
@@ -31,19 +31,30 @@ export const TRANSITION_DURATION = 3.0;
  * 0 = no exit animation (home/idle)
  * 1 = Gust (Ethos)
  * 2 = Sonic (Contact)
- * 3 = Cosmic (Gallery)
+ * 16 = Blueprint Wall (Gallery)
  */
 export const EXIT_ANIMATION_TYPE: Record<SceneId, number> = {
   home: 0,
   ethos: 1,
   contact: 2,
-  gallery: 3,
+  gallery: 16,
 } as const;
 
 /**
  * Duration of exit animations in seconds
  */
 export const EXIT_ANIMATION_DURATION = 5.9;
+
+/**
+ * Duration of gallery wall formation animation in seconds
+ * Shorter than general exit animation for snappier gallery transition
+ */
+export const GALLERY_WALL_DURATION = 2.5;
+
+/**
+ * Delay in seconds after wall forms before completing gallery transition
+ */
+export const GALLERY_WALL_HOLD_DELAY = 0.5;
 
 /**
  * Duration of entrance animation (returning home) in seconds

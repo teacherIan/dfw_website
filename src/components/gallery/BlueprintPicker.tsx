@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useControls } from 'leva';
 import { getCategoriesWithPreview } from '../../utils/gallery';
 import BlueprintButtonSVG from '../navigation/BlueprintButtonSVG';
@@ -90,16 +90,34 @@ const CategoryImage = ({
 interface BlueprintPickerProps {
   onSelectCategory?: (category: string) => void;
   onBack?: () => void;
+  wallReady?: boolean;
 }
 
-export const BlueprintPicker = ({ onSelectCategory, onBack }: BlueprintPickerProps) => {
+export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true }: BlueprintPickerProps) => {
   const categories = useMemo(() => getCategoriesWithPreview(), []);
   const [isRolledOut, setIsRolledOut] = useState(false);
   const [showContent, setShowContent] = useState(false);
+  const [isRollingUp, setIsRollingUp] = useState(false);
+  // Use ref to track if we've been ready (doesn't cause re-renders)
+  const hasBeenReadyRef = useRef(false);
 
-  // Trigger roll-out animation on mount
+  // Trigger roll-out animation when wall is ready
   useEffect(() => {
-    // Small delay before starting roll animation
+    console.log('[BlueprintPicker] wallReady:', wallReady, 'hasBeenReady:', hasBeenReadyRef.current);
+    if (!wallReady) {
+      // Only trigger exit animation if we were previously ready
+      // This prevents exit animation on initial mount
+      if (hasBeenReadyRef.current) {
+        setShowContent(false);
+        setIsRollingUp(true);
+      }
+      return;
+    }
+
+    // Wall is now ready - mark it and start entrance animation
+    hasBeenReadyRef.current = true;
+
+    // Small delay before starting roll animation (wall just finished forming)
     const rollTimer = setTimeout(() => setIsRolledOut(true), BLUEPRINT_PICKER_TIMING.ROLL_DELAY);
     // Show content after roll completes
     const contentTimer = setTimeout(() => setShowContent(true), BLUEPRINT_PICKER_TIMING.CONTENT_DELAY);
@@ -107,9 +125,20 @@ export const BlueprintPicker = ({ onSelectCategory, onBack }: BlueprintPickerPro
       clearTimeout(rollTimer);
       clearTimeout(contentTimer);
     };
-  }, []);
+  }, [wallReady]);
+
+  // Handle back with roll-up animation
+  const handleBack = () => {
+    setIsRollingUp(true);
+    setShowContent(false);
+    // Wait for roll-up animation before triggering actual navigation
+    setTimeout(() => {
+      onBack?.();
+    }, 800);
+  };
 
   // Leva controls for each category image position (hidden in production)
+  const { hideImages } = useControls('Gallery Settings', { hideImages: { value: false, label: 'Hide Images (for screenshot)' } }, { hidden: !import.meta.env.DEV });
   const chairsControls = useControls('Chairs', createCategoryControlSchema(CATEGORY_DEFAULTS.chairs), { hidden: !import.meta.env.DEV });
   const largeTablesControls = useControls('Large Tables', createCategoryControlSchema(CATEGORY_DEFAULTS.large_tables), { hidden: !import.meta.env.DEV });
   const smallTablesControls = useControls('Small Tables', createCategoryControlSchema(CATEGORY_DEFAULTS.small_tables), { hidden: !import.meta.env.DEV });
@@ -126,10 +155,10 @@ export const BlueprintPicker = ({ onSelectCategory, onBack }: BlueprintPickerPro
   return (
     <div className="blueprint-picker">
       {/* Rolling paper edge effect */}
-      <div className={`blueprint-picker__roll-edge ${isRolledOut ? 'blueprint-picker__roll-edge--hidden' : ''}`} />
+      <div className={`blueprint-picker__roll-edge ${isRolledOut && !isRollingUp ? 'blueprint-picker__roll-edge--hidden' : ''} ${isRollingUp ? 'blueprint-picker__roll-edge--rolling-up' : ''}`} />
 
       {/* Blueprint paper background */}
-      <div className={`blueprint-picker__paper ${isRolledOut ? 'blueprint-picker__paper--rolled-out' : ''}`}>
+      <div className={`blueprint-picker__paper ${isRolledOut ? 'blueprint-picker__paper--rolled-out' : ''} ${isRollingUp ? 'blueprint-picker__paper--rolling-up' : ''}`}>
         {/* Grid pattern overlay */}
         <div className="blueprint-picker__grid" />
 
@@ -166,7 +195,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack }: BlueprintPickerPro
         </div>
 
         {/* Category images */}
-        {categories.map((cat, index) => {
+        {!hideImages && categories.map((cat, index) => {
           const controls = categoryControls[cat.category];
           if (!controls) return null;
 
@@ -210,7 +239,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack }: BlueprintPickerPro
             type="button"
             className="nav-button-circle blueprint-picker__exit-button"
             aria-label="Exit gallery"
-            onClick={onBack}
+            onClick={handleBack}
           >
             <BlueprintButtonSVG />
           </button>
