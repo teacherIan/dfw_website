@@ -1,0 +1,82 @@
+/* ========================================
+   Animations
+   All @keyframes and animation classes
+   ======================================== */
+
+@keyframes writing-reveal {
+  0% {
+    clip-path: inset(-30px 100% -30px -30px);
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(-30px -30px -30px -30px);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.writing-animation {
+  /* Use clip-path instead of mask for reliable text reveal animation
+     Negative inset values give room for text stroke and shadow */
+  clip-path: inset(-30px -30px -30px -30px);
+  animation: writing-reveal 5s ease-out forwards;
+  overflow: visible;
+}
+
+/* Keyframes for gallery transition - transparent to blueprint blue */
+/* Simple 3-point fade for smooth continuous transition */
+@keyframes galleryTransitionFade {
+  0% {
+    background-color: rgba(255, 255, 255, 0);
+  }
+  50% {
+    background-color: rgba(60, 100, 140, 0.6);
+  }
+  100% {
+    background-color: #0a1525;
+  }
+}
+
+.gallery-transition-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  /* Animate during exit - starts slow, speeds up (ease-in curve) */
+  animation: galleryTransitionFade 5.5s cubic-bezier(0.3, 0, 0.8, 0.3) forwards;
+}
+
+/* Keyframes for returning from gallery - blue to transparent */
+@keyframes galleryReturnFade {
+  0% {
+    background-color: #0a1525;
+  }
+  15% {
+    background-color: rgba(30, 70, 110, 0.85);
+  }
+  35% {
+    background-color: rgba(80, 140, 180, 0.6);
+  }
+  60% {
+    background-color: rgba(180, 210, 235, 0.35);
+  }
+  85% {
+    background-color: rgba(240, 248, 255, 0.1);
+  }
+  100% {
+    background-color: rgba(255, 255, 255, 0);
+  }
+}
+
+.gallery-return-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  /* Animate during return - ease-out curve (fast start, slows down) */
+  animation: galleryReturnFade 1.8s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+}

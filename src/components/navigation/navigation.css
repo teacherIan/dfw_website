@@ -1,0 +1,731 @@
+/* ========================================
+   Navigation System
+   Mobile-first, organized by component
+   ======================================== */
+
+/* --- Navigation Container --- */
+.nav-container {
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.4));
+}
+
+/* --- Navigation Item --- */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+}
+
+.nav-exit-mobile,
+.nav-exit-desktop {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  transition:
+    transform 0.75s cubic-bezier(0.25, 0.8, 0.25, 1),
+    opacity 0.75s cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform, opacity;
+}
+
+.nav-exit-mobile {
+  transform-origin: center;
+}
+
+.nav-exit-desktop {
+  transform-origin: top right;
+}
+
+.nav-exiting .nav-exit-desktop {
+  opacity: 0;
+  transform: translate3d(160px, 24px, 0) scale(0.85);
+  pointer-events: none;
+}
+
+.nav-exiting .nav-exit-mobile {
+  opacity: 0;
+  transform: translate3d(0, 140px, 0) scale(0.85);
+  pointer-events: none;
+}
+
+/* --- Navigation Label --- */
+.nav-label {
+  text-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.7),
+    0 1px 3px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.02em;
+}
+
+/* --- Navigation Arrows --- */
+.nav-arrow {
+  width: clamp(70px, 10vw, 120px);
+  height: auto;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
+}
+
+/* --- Navigation Button (Circular Blueprint Style) --- */
+.nav-button-circle {
+  position: relative;
+  width: 80px; /* Mobile default */
+  height: 80px;
+  border-radius: 50%;
+  border: none;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(22, 26, 32, 0.95) 0%,
+    rgba(10, 12, 16, 0.98) 50%,
+    rgba(14, 16, 20, 0.95) 100%
+  );
+  color: rgba(245, 235, 220, 0.9);
+  padding: 0;
+  box-shadow:
+    0 0 20px rgba(0, 0, 0, 0.55),
+    0 0 8px rgba(0, 0, 0, 0.35),
+    0 0 0px rgba(41, 94, 65, 0),
+    0 0 0px rgba(139, 169, 139, 0),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  cursor: pointer;
+  transform: rotate(0deg) scale(1);
+  transition:
+    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.4s ease-out;
+}
+
+/* Tablet: larger buttons */
+@media (min-width: 768px) {
+  .nav-button-circle--mobile-large {
+    width: 110px;
+    height: 110px;
+  }
+}
+
+/* Desktop/Landscape: responsive sizing */
+@media (min-width: 1280px), (orientation: landscape) {
+  .nav-button-circle {
+    width: clamp(60px, 8vw, 90px);
+    height: clamp(60px, 8vw, 90px);
+  }
+}
+
+.nav-button-circle::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  border: 1px solid rgba(200, 190, 170, 0.4);
+  pointer-events: none;
+  transition: border-color 0.4s ease-out;
+}
+
+.nav-button-circle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.nav-button-circle:hover {
+  transform: rotate(15deg) scale(1.05);
+  box-shadow:
+    0 0 20px rgba(0, 0, 0, 0.45),
+    0 0 8px rgba(0, 0, 0, 0.3),
+    0 0 28px rgba(41, 94, 65, 0.4),
+    0 0 20px rgba(139, 169, 139, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.nav-button-circle:hover::before {
+  border-color: rgba(255, 250, 240, 0.6);
+}
+
+/* Active/pressed state */
+.nav-button-circle:active {
+  transform: rotate(15deg) scale(0.97);
+  transition-duration: 0.1s;
+  box-shadow:
+    0 0 12px rgba(0, 0, 0, 0.5),
+    0 0 6px rgba(0, 0, 0, 0.4),
+    0 0 16px rgba(41, 94, 65, 0.3),
+    0 0 10px rgba(139, 169, 139, 0.15),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Focus state for keyboard navigation */
+.nav-button-circle:focus-visible {
+  outline: none;
+  transform: rotate(15deg) scale(1.05);
+  box-shadow:
+    0 0 0 3px rgba(245, 235, 220, 0.6),
+    0 0 20px rgba(0, 0, 0, 0.45),
+    0 0 8px rgba(0, 0, 0, 0.3),
+    0 0 28px rgba(41, 94, 65, 0.4),
+    0 0 20px rgba(139, 169, 139, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.nav-button-circle:focus-visible::before {
+  border-color: rgba(255, 250, 240, 0.8);
+}
+
+/* Hovered button state (synced with 3D) */
+.nav-button-circle--hovered {
+  transform: rotate(15deg) scale(1.05);
+  box-shadow:
+    0 0 20px rgba(0, 0, 0, 0.45),
+    0 0 8px rgba(0, 0, 0, 0.3),
+    0 0 28px rgba(41, 94, 65, 0.4),
+    0 0 20px rgba(139, 169, 139, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Circular button grid pattern */
+.nav-circle__grid {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px,
+      transparent 6px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.04) 0px,
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px,
+      transparent 6px
+    );
+  pointer-events: none;
+}
+
+/* Circular button ring */
+.nav-circle__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(245, 235, 220, 0.75);
+  pointer-events: none;
+}
+
+/* Circular button crosshair */
+.nav-circle__crosshair {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(245, 235, 220, 0.65);
+  pointer-events: none;
+}
+
+/* Circular button compass arcs */
+.nav-circle__arcs {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(245, 235, 220, 0.55);
+  pointer-events: none;
+}
+
+/* ========================================
+   NAVIGATION LAYOUTS
+   Mobile and Desktop positioning
+   ======================================== */
+
+/* --- Mobile Navigation Layout (default) --- */
+.mobile-nav-only {
+  display: block;
+}
+
+.desktop-nav-only,
+.desktop-label-only,
+.desktop-arrow-only {
+  display: none;
+}
+
+/* Desktop Navigation Layout (large screens >= 1280px) */
+@media (min-width: 1280px) {
+  .mobile-nav-only {
+    display: none;
+  }
+
+  .desktop-nav-only {
+    display: flex;
+    position: absolute;
+    left: auto;
+    right: var(--nav-desktop-right);
+    top: var(--nav-desktop-top);
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--nav-desktop-gap);
+  }
+
+  .desktop-label-only,
+  .desktop-arrow-only {
+    display: block;
+  }
+}
+
+/* Landscape Navigation Layout (any landscape orientation) */
+@media (orientation: landscape) {
+  .mobile-nav-only {
+    display: none;
+  }
+
+  .desktop-nav-only {
+    display: flex;
+    position: absolute;
+    left: auto;
+    right: var(--nav-desktop-right);
+    top: var(--nav-desktop-top);
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--nav-desktop-gap);
+  }
+
+  .desktop-label-only,
+  .desktop-arrow-only {
+    display: block;
+  }
+}
+
+/* ========================================
+   MOBILE NAVIGATION - POSITION CLASSES
+   Using CSS custom properties
+   ======================================== */
+
+/* Ethos Button (bottom-left, half-off screen) */
+.nav-mobile-ethos-btn {
+  position: absolute;
+  left: var(--nav-mobile-ethos-btn-left);
+  bottom: var(--nav-mobile-ethos-btn-bottom);
+  margin-left: -3.5rem;
+}
+
+@media (min-width: 768px) {
+  .nav-mobile-ethos-btn {
+    margin-left: -55px;
+  }
+}
+
+/* Contact Button (bottom-center, half-off screen) */
+.nav-mobile-contact-btn {
+  position: absolute;
+  left: var(--nav-mobile-contact-btn-left);
+  bottom: var(--nav-mobile-contact-btn-bottom);
+  transform: translateX(-50%);
+  margin-bottom: -3.5rem;
+}
+
+@media (min-width: 768px) {
+  .nav-mobile-contact-btn {
+    margin-bottom: -55px;
+  }
+}
+
+/* Gallery Button (bottom-right, half-off screen) */
+.nav-mobile-gallery-btn {
+  position: absolute;
+  right: var(--nav-mobile-gallery-btn-right);
+  bottom: var(--nav-mobile-gallery-btn-bottom);
+  margin-right: -3.5rem;
+}
+
+@media (min-width: 768px) {
+  .nav-mobile-gallery-btn {
+    margin-right: -55px;
+  }
+}
+
+/* Mobile Labels */
+.nav-mobile-ethos-label {
+  position: absolute;
+  left: var(--nav-mobile-ethos-label-left);
+  bottom: var(--nav-mobile-ethos-label-bottom);
+}
+
+.nav-mobile-contact-label {
+  position: absolute;
+  left: var(--nav-mobile-contact-label-left);
+  bottom: var(--nav-mobile-contact-label-bottom);
+}
+
+.nav-mobile-gallery-label {
+  position: absolute;
+  right: var(--nav-mobile-gallery-label-right);
+  bottom: var(--nav-mobile-gallery-label-bottom);
+}
+
+/* Mobile Arrows - Responsive positioning */
+.nav-mobile-contact-arrow {
+  position: absolute;
+  pointer-events: none;
+  left: 43%;
+  bottom: 4vh;
+  overflow: visible;
+}
+
+/* Small screen adjustments for Contact arrow */
+@media (max-width: 375px) {
+  .nav-mobile-contact-arrow {
+    left: 46%;
+    bottom: 6vh;
+  }
+}
+
+/* ========================================
+   TITLE POSITIONING
+   Responsive bottom positioning
+   ======================================== */
+
+.title-overlay {
+  bottom: var(--title-bottom-mobile);
+}
+
+/* Landscape with small height */
+@media (orientation: landscape) and (max-height: 900px) {
+  .title-overlay {
+    bottom: var(--title-bottom-landscape-small);
+  }
+}
+
+/* Desktop or large landscape */
+@media (min-width: 1280px), (orientation: landscape) {
+  .title-overlay {
+    bottom: var(--title-bottom-desktop);
+  }
+
+  /* Override for small landscape */
+  @media (max-height: 900px) {
+    .title-overlay {
+      bottom: var(--title-bottom-landscape-small);
+    }
+  }
+}
+
+/* ========================================
+   GALLERY BUTTON DECORATIVE ELEMENTS
+   ======================================== */
+
+/* Wood grain texture overlay */
+.gallery-button__grain {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    125deg,
+    rgba(139, 90, 43, 0.15) 0%,
+    transparent 40%,
+    rgba(101, 67, 33, 0.1) 70%,
+    transparent 100%
+  );
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* Blueprint grid pattern */
+.gallery-button__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 16px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.025) 0px,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px,
+      transparent 16px
+    );
+  pointer-events: none;
+}
+
+/* Corner registration marks */
+.gallery-button__corners {
+  position: absolute;
+  inset: 8%;
+  width: 84%;
+  height: 84%;
+  color: rgba(245, 235, 220, 0.6);
+  pointer-events: none;
+}
+
+/* Dimension lines */
+.gallery-button__dimensions {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(245, 235, 220, 0.5);
+  pointer-events: none;
+}
+
+/* Scribe arcs - compass marks */
+.gallery-button__scribe {
+  position: absolute;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.gallery-button__scribe--arc {
+  width: clamp(80px, 45%, 120px);
+  height: clamp(45px, 30%, 70px);
+  bottom: 12%;
+  left: 10%;
+  border-top: none;
+  border-left: none;
+  transform: rotate(-15deg);
+}
+
+.gallery-button__scribe--tick {
+  width: clamp(50px, 30%, 80px);
+  height: clamp(25px, 18%, 40px);
+  top: 15%;
+  right: 15%;
+  border-bottom: none;
+  border-left: none;
+}
+
+/* Center crosshair */
+.gallery-button__crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40%;
+  height: 40%;
+  transform: translate(-50%, -50%);
+  color: rgba(245, 235, 220, 0.4);
+  pointer-events: none;
+}
+
+/* Pencil sketch lines */
+.gallery-button__sketch {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(245, 235, 220, 0.35);
+  pointer-events: none;
+}
+
+/* Measurement annotation */
+.gallery-button__measurement {
+  position: absolute;
+  bottom: 12%;
+  right: 12%;
+  font-family: 'Courier New', monospace;
+  font-size: clamp(8px, 1.2vw, 11px);
+  color: rgba(245, 235, 220, 0.45);
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+/* Legacy classes - hidden */
+.gallery-button__label,
+.gallery-button__note,
+.gallery-button__measurements,
+.gallery-button__tag,
+.gallery-button__pencil,
+.gallery-button__pencil--one,
+.gallery-button__pencil--two {
+  display: none;
+}
+
+/* ========================================
+   GALLERY PICKER OVERLAY
+   Category selection with buttons and arrows
+   ======================================== */
+
+.gallery-picker-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+/* Button positioning at corners */
+.gallery-picker-button {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: auto;
+}
+
+.gallery-picker-button--top-left {
+  top: 10%;
+  left: 6%;
+}
+
+.gallery-picker-button--top-right {
+  top: 10%;
+  right: 6%;
+}
+
+.gallery-picker-button--bottom-left {
+  bottom: 12%;
+  left: 6%;
+}
+
+.gallery-picker-button--bottom-right {
+  bottom: 12%;
+  right: 6%;
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) {
+  .gallery-picker-button--top-left {
+    top: 12%;
+    left: 8%;
+  }
+
+  .gallery-picker-button--top-right {
+    top: 12%;
+    right: 8%;
+  }
+
+  .gallery-picker-button--bottom-left {
+    bottom: 14%;
+    left: 8%;
+  }
+
+  .gallery-picker-button--bottom-right {
+    bottom: 14%;
+    right: 8%;
+  }
+}
+
+/* Desktop adjustments */
+@media (min-width: 1280px) {
+  .gallery-picker-button--top-left {
+    top: 15%;
+    left: 10%;
+  }
+
+  .gallery-picker-button--top-right {
+    top: 15%;
+    right: 10%;
+  }
+
+  .gallery-picker-button--bottom-left {
+    bottom: 18%;
+    left: 10%;
+  }
+
+  .gallery-picker-button--bottom-right {
+    bottom: 18%;
+    right: 10%;
+  }
+}
+
+/* Label styling */
+.gallery-picker-label {
+  font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+  color: rgba(245, 235, 220, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+/* Arrow container */
+.gallery-picker-arrows {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Individual arrow positioning */
+.gallery-picker-arrow {
+  position: absolute;
+  width: clamp(60px, 8vw, 100px);
+  height: auto;
+}
+
+/* Arrow positions - pointing from center toward buttons */
+.gallery-picker-arrow--top-left {
+  top: 22%;
+  left: 18%;
+  transform: rotate(200deg);
+}
+
+.gallery-picker-arrow--top-right {
+  top: 22%;
+  right: 18%;
+  transform: rotate(-20deg) scaleX(-1);
+}
+
+.gallery-picker-arrow--bottom-left {
+  bottom: 24%;
+  left: 18%;
+  transform: rotate(160deg);
+}
+
+.gallery-picker-arrow--bottom-right {
+  bottom: 24%;
+  right: 18%;
+  transform: rotate(20deg) scaleX(-1);
+}
+
+/* Tablet arrow adjustments */
+@media (min-width: 768px) {
+  .gallery-picker-arrow--top-left {
+    top: 24%;
+    left: 20%;
+  }
+
+  .gallery-picker-arrow--top-right {
+    top: 24%;
+    right: 20%;
+  }
+
+  .gallery-picker-arrow--bottom-left {
+    bottom: 26%;
+    left: 20%;
+  }
+
+  .gallery-picker-arrow--bottom-right {
+    bottom: 26%;
+    right: 20%;
+  }
+}
+
+/* Desktop arrow adjustments */
+@media (min-width: 1280px) {
+  .gallery-picker-arrow--top-left {
+    top: 28%;
+    left: 22%;
+  }
+
+  .gallery-picker-arrow--top-right {
+    top: 28%;
+    right: 22%;
+  }
+
+  .gallery-picker-arrow--bottom-left {
+    bottom: 30%;
+    left: 22%;
+  }
+
+  .gallery-picker-arrow--bottom-right {
+    bottom: 30%;
+    right: 22%;
+  }
+}
