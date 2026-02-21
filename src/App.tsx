@@ -180,11 +180,14 @@ function AppContent() {
     return false;
   }, [animationPhase, targetScene, activeScene, galleryViewState]);
 
-  // Note: CSS background fallback removed - splat animation now fills the screen completely
-  // during gallery transitions (two-stage gust exit + screen fill animation)
+  // Dynamic background: dark blue during gallery transitions, white otherwise
 
   return (
-    <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
+    <div className={`relative h-svh w-screen overflow-hidden text-white ${
+        activeScene === 'gallery' || targetScene === 'gallery'
+          ? 'bg-[#0a1525]'
+          : 'bg-white'
+      }`}>
       {/* Hide default Leva panel in production, show custom panel in dev */}
       <Leva hidden={!showLeva} />
       {showLeva && <LevaPanel store={controlsStore} />}
@@ -219,12 +222,8 @@ function AppContent() {
         <ContactOverlay />
       )}
 
-      {/* Gallery picker - show when on gallery and during exit animation */}
-      {/* Keep mounted during 'entering' phase so paper can animate out */}
-      {/* Also keep mounted during return from gallery (entranceType 16) so we see unroll */}
-      {((activeScene === 'gallery' && animationPhase === 'idle') ||
-        (targetScene === 'gallery' && animationPhase === 'entering') ||
-        (activeScene === 'home' && animationPhase === 'entering' && entranceType === 16)) &&
+      {/* Gallery picker - show when gallery is active or target */}
+      {(activeScene === 'gallery' || targetScene === 'gallery') &&
         galleryViewState === 'picker' && (
         <BlueprintPicker
           onSelectCategory={setSelectedCategory}

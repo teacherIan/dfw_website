@@ -5,8 +5,6 @@ import {
   EXIT_ANIMATION_DURATION,
   ENTRANCE_ANIMATION_DURATION,
   TRANSITION_DURATION,
-  GALLERY_WALL_DURATION,
-  GALLERY_WALL_HOLD_DELAY,
 } from '../constants';
 
 // DEV-only logging helper
@@ -121,22 +119,22 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
       }, TRANSITION_DURATION * 1000);
       navigationTimeouts.push(timeout);
     } else if (newTarget === 'gallery') {
-      // Gallery: phased wall formation
-      log('navigateTo gallery - setting wallReady: false');
+      // Gallery: no splat animation - scene stays visible behind gallery UI
+      log('navigateTo gallery - immediate transition (no animation)');
       set({ animationPhase: 'exiting', wallReady: false });
 
-      const wallFormTime = GALLERY_WALL_DURATION * 1000;
-      const settleBuffer = 200; // Let particles settle before showing paper
+      // Short delay for UI transition, then show gallery
+      const transitionDelay = 300; // Quick fade-in for gallery UI
 
       const timeout1 = setTimeout(() => {
-        log('Wall form complete - setting wallReady: true');
+        log('Gallery ready');
         set({ animationPhase: 'wallHolding', wallReady: true });
-      }, wallFormTime + settleBuffer);
+      }, transitionDelay);
       navigationTimeouts.push(timeout1);
 
       const timeout2 = setTimeout(() => {
         set({ activeScene: newTarget, animationPhase: 'idle' });
-      }, wallFormTime + settleBuffer + GALLERY_WALL_HOLD_DELAY * 1000);
+      }, transitionDelay + 200);
       navigationTimeouts.push(timeout2);
     } else {
       // Standard exit animation (ethos, etc.)
@@ -173,25 +171,18 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
       }, TRANSITION_DURATION * 1000);
       navigationTimeouts.push(timeout);
     } else if (state.activeScene === 'gallery') {
-      // Gallery: wall dissolves back
-      log('returnHome from gallery - setting wallReady: false');
-      const entranceType = EXIT_ANIMATION_TYPE['gallery'];
+      // Gallery: no animation - immediate return
+      // Paper roll-up already completed (BlueprintPicker waits 800ms before calling onBack)
+      // Go directly to idle - no animation phases needed
+      log('returnHome from gallery - direct to idle (no animation)');
       set({
         wallReady: false,
         activeScene: 'home',
-        animationPhase: 'entering',
-        entranceType,
+        animationPhase: 'idle',
+        targetScene: 'home',
+        showText: true,
+        entranceType: 0,
       });
-
-      const timeout = setTimeout(() => {
-        set({
-          animationPhase: 'idle',
-          targetScene: 'home',
-          showText: true,
-          entranceType: 0,
-        });
-      }, GALLERY_WALL_DURATION * 1000);
-      navigationTimeouts.push(timeout);
     } else {
       // Standard entrance animation
       const entranceType = EXIT_ANIMATION_TYPE[state.targetScene] ?? 0;

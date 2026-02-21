@@ -31,13 +31,13 @@ export const TRANSITION_DURATION = 3.0;
  * 0 = no exit animation (home/idle)
  * 1 = Gust (Ethos)
  * 2 = Sonic (Contact)
- * 16 = Blueprint Wall (Gallery)
+ * 16 = Blueprint Wall (Gallery) - disabled for transparent overlay effect
  */
 export const EXIT_ANIMATION_TYPE: Record<SceneId, number> = {
   home: 0,
   ethos: 1,
   contact: 2,
-  gallery: 16,
+  gallery: 0,  // No animation - scene stays visible behind gallery UI
 } as const;
 
 /**

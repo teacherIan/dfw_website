@@ -5,16 +5,28 @@ import BlueprintButtonSVG from '../navigation/BlueprintButtonSVG';
 import { WaveArrow } from '../navigation/DesktopArrows';
 import { fontFamilyMap, BLUEPRINT_PICKER_TIMING } from '../../constants';
 
-// Default positions and settings for category images
-const CATEGORY_DEFAULTS = {
+// Default positions and settings for category images (desktop - 2x2 grid)
+const CATEGORY_DEFAULTS_DESKTOP = {
   chairs: { x: 25, y: 30, size: 22, rotation: -3 },
   large_tables: { x: 75, y: 30, size: 22, rotation: 2 },
   small_tables: { x: 25, y: 70, size: 22, rotation: 1 },
   structures: { x: 75, y: 70, size: 22, rotation: -2 },
 } as const;
 
+// Mobile positions - staggered vertical layout with larger images
+// Starts on right side to avoid exit button overlap
+const CATEGORY_DEFAULTS_MOBILE = {
+  chairs: { x: 72, y: 20, size: 32, rotation: 2 },
+  large_tables: { x: 28, y: 38, size: 32, rotation: -3 },
+  small_tables: { x: 72, y: 58, size: 32, rotation: -2 },
+  structures: { x: 28, y: 78, size: 32, rotation: 1 },
+} as const;
+
+// Use mobile defaults on narrow screens
+const MOBILE_BREAKPOINT = 768;
+
 // Generate Leva control schema for category position
-const createCategoryControlSchema = (defaults: typeof CATEGORY_DEFAULTS.chairs) => ({
+const createCategoryControlSchema = (defaults: typeof CATEGORY_DEFAULTS_DESKTOP.chairs) => ({
   x: { value: defaults.x, min: 5, max: 95, step: 1, label: 'X Position' },
   y: { value: defaults.y, min: 5, max: 95, step: 1, label: 'Y Position' },
   size: { value: defaults.size, min: 10, max: 40, step: 1, label: 'Size' },
@@ -98,8 +110,17 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true }: 
   const [isRolledOut, setIsRolledOut] = useState(false);
   const [showContent, setShowContent] = useState(false);
   const [isRollingUp, setIsRollingUp] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   // Use ref to track if we've been ready (doesn't cause re-renders)
   const hasBeenReadyRef = useRef(false);
+
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Trigger roll-out animation when wall is ready
   useEffect(() => {
@@ -137,26 +158,35 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true }: 
     }, 800);
   };
 
-  // Leva controls for each category image position (hidden in production)
+  // Leva controls for each category image position (hidden in production, uses desktop defaults)
   const { hideImages } = useControls('Gallery Settings', { hideImages: { value: false, label: 'Hide Images (for screenshot)' } }, { hidden: !import.meta.env.DEV });
-  const chairsControls = useControls('Chairs', createCategoryControlSchema(CATEGORY_DEFAULTS.chairs), { hidden: !import.meta.env.DEV });
-  const largeTablesControls = useControls('Large Tables', createCategoryControlSchema(CATEGORY_DEFAULTS.large_tables), { hidden: !import.meta.env.DEV });
-  const smallTablesControls = useControls('Small Tables', createCategoryControlSchema(CATEGORY_DEFAULTS.small_tables), { hidden: !import.meta.env.DEV });
-  const structuresControls = useControls('Structures', createCategoryControlSchema(CATEGORY_DEFAULTS.structures), { hidden: !import.meta.env.DEV });
+  const chairsControls = useControls('Chairs', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.chairs), { hidden: !import.meta.env.DEV });
+  const largeTablesControls = useControls('Large Tables', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.large_tables), { hidden: !import.meta.env.DEV });
+  const smallTablesControls = useControls('Small Tables', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.small_tables), { hidden: !import.meta.env.DEV });
+  const structuresControls = useControls('Structures', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.structures), { hidden: !import.meta.env.DEV });
 
-  // Map controls to categories (convert flat structure to expected format)
+  // Select defaults based on screen size
+  const defaults = isMobile ? CATEGORY_DEFAULTS_MOBILE : CATEGORY_DEFAULTS_DESKTOP;
+
+  // Map controls to categories - use Leva controls in dev (desktop only), otherwise use responsive defaults
+  const isDev = import.meta.env.DEV;
   const categoryControls: Record<string, { position: { x: number; y: number }; size: number; rotation: number }> = {
-    chairs: { position: { x: chairsControls.x, y: chairsControls.y }, size: chairsControls.size, rotation: chairsControls.rotation },
-    large_tables: { position: { x: largeTablesControls.x, y: largeTablesControls.y }, size: largeTablesControls.size, rotation: largeTablesControls.rotation },
-    small_tables: { position: { x: smallTablesControls.x, y: smallTablesControls.y }, size: smallTablesControls.size, rotation: smallTablesControls.rotation },
-    structures: { position: { x: structuresControls.x, y: structuresControls.y }, size: structuresControls.size, rotation: structuresControls.rotation },
+    chairs: isDev && !isMobile
+      ? { position: { x: chairsControls.x, y: chairsControls.y }, size: chairsControls.size, rotation: chairsControls.rotation }
+      : { position: { x: defaults.chairs.x, y: defaults.chairs.y }, size: defaults.chairs.size, rotation: defaults.chairs.rotation },
+    large_tables: isDev && !isMobile
+      ? { position: { x: largeTablesControls.x, y: largeTablesControls.y }, size: largeTablesControls.size, rotation: largeTablesControls.rotation }
+      : { position: { x: defaults.large_tables.x, y: defaults.large_tables.y }, size: defaults.large_tables.size, rotation: defaults.large_tables.rotation },
+    small_tables: isDev && !isMobile
+      ? { position: { x: smallTablesControls.x, y: smallTablesControls.y }, size: smallTablesControls.size, rotation: smallTablesControls.rotation }
+      : { position: { x: defaults.small_tables.x, y: defaults.small_tables.y }, size: defaults.small_tables.size, rotation: defaults.small_tables.rotation },
+    structures: isDev && !isMobile
+      ? { position: { x: structuresControls.x, y: structuresControls.y }, size: structuresControls.size, rotation: structuresControls.rotation }
+      : { position: { x: defaults.structures.x, y: defaults.structures.y }, size: defaults.structures.size, rotation: defaults.structures.rotation },
   };
 
   return (
     <div className="blueprint-picker">
-      {/* Rolling paper edge effect */}
-      <div className={`blueprint-picker__roll-edge ${isRolledOut && !isRollingUp ? 'blueprint-picker__roll-edge--hidden' : ''} ${isRollingUp ? 'blueprint-picker__roll-edge--rolling-up' : ''}`} />
-
       {/* Blueprint paper background */}
       <div className={`blueprint-picker__paper ${isRolledOut ? 'blueprint-picker__paper--rolled-out' : ''} ${isRollingUp ? 'blueprint-picker__paper--rolling-up' : ''}`}>
         {/* Grid pattern overlay */}
