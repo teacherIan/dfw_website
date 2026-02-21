@@ -1,0 +1,59 @@
+/* ========================================
+   CSS Custom Properties
+   Mobile-first responsive values
+   All positioning controlled here
+   ======================================== */
+
+:root {
+  /* Breakpoints (for reference in comments)
+     - Mobile: < 768px
+     - Tablet: 768px - 1279px
+     - Desktop: >= 1280px (xl)
+     - Landscape: orientation-based
+     - Small screens: < 400px (includes iPhone SE 375px)
+     - Mid screens: 400px - 450px (iPhone 12 mini, etc.)
+     - Standard mobile: >= 450px
+  */
+
+  /* Mobile Navigation - Default (base) values */
+  --nav-mobile-ethos-btn-left: 0%;
+  --nav-mobile-ethos-btn-bottom: 26vh;
+  --nav-mobile-contact-btn-left: 56%;
+  --nav-mobile-contact-btn-bottom: -0.8vh;
+  --nav-mobile-gallery-btn-right: 0%;
+  --nav-mobile-gallery-btn-bottom: 9vh;
+
+  --nav-mobile-ethos-label-left: 8%;
+  --nav-mobile-ethos-label-bottom: 7vh;
+  --nav-mobile-contact-label-left: 45%;
+  --nav-mobile-contact-label-bottom: 12vh;
+  --nav-mobile-gallery-label-right: 10%;
+  --nav-mobile-gallery-label-bottom: 2vh;
+
+  /* Desktop Navigation */
+  --nav-desktop-right: 1rem;
+  --nav-desktop-top: 60%;
+  --nav-desktop-gap: 1rem;
+
+  /* Navigation Shadows (for use with filter: drop-shadow()) */
+  --shadow-nav-container: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-nav-item: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-nav-arrow: 0 2px 8px rgba(0, 0, 0, 0.6);
+
+  /* Navigation Transitions */
+  --transition-nav: 0.4s ease-out;
+
+  /* Title Positioning */
+  --title-bottom-mobile: 19vh;
+  --title-bottom-landscape-small: 2vh;
+  --title-bottom-desktop: 10vh;
+}
+
+/* Small screen adjustments (Mobile < 400px, includes iPhone SE 375px) */
+@media (max-width: 399px) {
+  :root {
+    --nav-mobile-contact-btn-left: 50%;
+    --nav-mobile-gallery-btn-bottom: 11vh;
+    --title-bottom-mobile: 21vh;
+  }
+}

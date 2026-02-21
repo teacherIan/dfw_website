@@ -1,14 +1,31 @@
 import { useControls } from 'leva';
 import { AnimatedArrowhead, AnimatedDot, getArrowAngle } from './ArrowComponents';
 
+interface SpringTransform {
+  rotate: number;
+  skewX: number;
+  skewY: number;
+  translateX: number;
+  translateY: number;
+  scale: number;
+}
+
+interface CurveOffset {
+  x: number;
+  y: number;
+}
+
 interface ArrowProps {
   isVisible: boolean;
   delay?: number;
+  unravelOffset?: number;
+  springTransform?: SpringTransform;
+  curveOffset?: CurveOffset;
 }
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
-export const EthosArrow = ({ isVisible, delay = 300, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
+export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffset, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
   const ethosSmall = useControls('🏠 Base.📱 Mobile Arrows.Ethos Small (<400px)', {
     startX: { value: 100, min: 0, max: 120, step: 1, label: 'Start X' },
     startY: { value: 135, min: 0, max: 160, step: 1, label: 'Start Y' },
@@ -45,6 +62,7 @@ export const EthosArrow = ({ isVisible, delay = 300, controlsStore }: ArrowProps
     endY: { value: -80, min: -100, max: 300, step: 1, label: 'End Y' },
   }, { collapsed: true }, { store: controlsStore });
 
+  // Static path definitions (no control point manipulation)
   const smallPathD = `M ${ethosSmall.startX} ${ethosSmall.startY} Q ${ethosSmall.controlX} ${ethosSmall.controlY}, ${ethosSmall.endX} ${ethosSmall.endY}`;
   const midPathD = `M ${ethosMid.startX} ${ethosMid.startY} Q ${ethosMid.controlX} ${ethosMid.controlY}, ${ethosMid.endX} ${ethosMid.endY}`;
   const tabletPathD = `M ${ethosTablet.startX} ${ethosTablet.startY} Q ${ethosTablet.controlX} ${ethosTablet.controlY}, ${ethosTablet.endX} ${ethosTablet.endY}`;
@@ -60,6 +78,15 @@ export const EthosArrow = ({ isVisible, delay = 300, controlsStore }: ArrowProps
   const dotDelay = delay;
   const arrowheadDelay = delay + 500; // Appears near end of stroke animation
 
+  // Use curveOffset for smooth whole-SVG deformation
+  const ox = curveOffset?.x ?? 0;
+  const oy = curveOffset?.y ?? 0;
+
+  // Build transform - Ethos arrow gets rotate + skewY for swooping effect (toned down)
+  const svgTransform = springTransform || curveOffset
+    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.05}px, ${(springTransform?.translateY ?? 0) + oy * 0.08}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.1}deg) skewY(${oy * 0.15}deg)`
+    : undefined;
+
   return (
     <svg
       className="pointer-events-none absolute h-[160px] w-[120px] md:h-[220px] md:w-[165px]"
@@ -67,6 +94,8 @@ export const EthosArrow = ({ isVisible, delay = 300, controlsStore }: ArrowProps
         left: '0%',
         bottom: '8vh',
         overflow: 'visible',
+        transform: svgTransform,
+        transformOrigin: 'bottom left',
       }}
       viewBox="0 0 120 160"
       fill="none"
@@ -174,7 +203,7 @@ export const EthosArrow = ({ isVisible, delay = 300, controlsStore }: ArrowProps
   );
 };
 
-export const ContactArrow = ({ isVisible, delay = 400, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
+export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOffset, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
   const contactSmall = useControls('🏠 Base.📱 Mobile Arrows.Contact Small (<400px)', {
     startX: { value: 93, min: 0, max: 150, step: 1, label: 'Start X' },
     startY: { value: 37, min: 0, max: 200, step: 1, label: 'Start Y' },
@@ -211,6 +240,7 @@ export const ContactArrow = ({ isVisible, delay = 400, controlsStore }: ArrowPro
     endY: { value: 105, min: -100, max: 300, step: 1, label: 'End Y' },
   }, { collapsed: true }, { store: controlsStore });
 
+  // Static path definitions (no control point manipulation)
   const smallPathD = `M ${contactSmall.startX} ${contactSmall.startY} Q ${contactSmall.controlX} ${contactSmall.controlY}, ${contactSmall.endX} ${contactSmall.endY}`;
   const midPathD = `M ${contactMid.startX} ${contactMid.startY} Q ${contactMid.controlX} ${contactMid.controlY}, ${contactMid.endX} ${contactMid.endY}`;
   const tabletPathD = `M ${contactTablet.startX} ${contactTablet.startY} Q ${contactTablet.controlX} ${contactTablet.controlY}, ${contactTablet.endX} ${contactTablet.endY}`;
@@ -226,12 +256,25 @@ export const ContactArrow = ({ isVisible, delay = 400, controlsStore }: ArrowPro
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
+  // Use curveOffset for smooth whole-SVG deformation
+  const ox = curveOffset?.x ?? 0;
+  const oy = curveOffset?.y ?? 0;
+
+  // Build transform - Contact arrow gets skewX for a different feel (toned down)
+  const svgTransform = springTransform || curveOffset
+    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.06}px, ${(springTransform?.translateY ?? 0) + oy * 0.05}px) rotate(${(springTransform?.rotate ?? 0) - ox * 0.12}deg) skewX(${ox * 0.18}deg)`
+    : undefined;
+
   return (
     <svg
       className="nav-mobile-contact-arrow h-[120px] w-[80px] md:h-[165px] md:w-[110px]"
       viewBox="0 0 80 120"
       fill="none"
-      style={{ overflow: 'visible' }}
+      style={{
+        overflow: 'visible',
+        transform: svgTransform,
+        transformOrigin: 'top center',
+      }}
     >
       {/* iPad Pro (1000-1199px) */}
       <g className="hidden min-[1000px]:max-[1199px]:block">
@@ -336,7 +379,7 @@ export const ContactArrow = ({ isVisible, delay = 400, controlsStore }: ArrowPro
   );
 };
 
-export const GalleryArrow = ({ isVisible, delay = 500, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
+export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOffset, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
   const gallerySmall = useControls('🏠 Base.📱 Mobile Arrows.Gallery Small (<400px)', {
     startX: { value: 92, min: 0, max: 250, step: 1, label: 'Start X' },
     startY: { value: 100, min: 0, max: 200, step: 1, label: 'Start Y' },
@@ -373,6 +416,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, controlsStore }: ArrowPro
     endY: { value: 0, min: -100, max: 300, step: 1, label: 'End Y' },
   }, { collapsed: true }, { store: controlsStore });
 
+  // Static path definitions (no control point manipulation)
   const smallPathD = `M ${gallerySmall.startX} ${gallerySmall.startY} Q ${gallerySmall.controlX} ${gallerySmall.controlY}, ${gallerySmall.endX} ${gallerySmall.endY}`;
   const midPathD = `M ${galleryMid.startX} ${galleryMid.startY} Q ${galleryMid.controlX} ${galleryMid.controlY}, ${galleryMid.endX} ${galleryMid.endY}`;
   const tabletPathD = `M ${galleryTablet.startX} ${galleryTablet.startY} Q ${galleryTablet.controlX} ${galleryTablet.controlY}, ${galleryTablet.endX} ${galleryTablet.endY}`;
@@ -388,6 +432,15 @@ export const GalleryArrow = ({ isVisible, delay = 500, controlsStore }: ArrowPro
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
+  // Use curveOffset for smooth whole-SVG deformation
+  const ox = curveOffset?.x ?? 0;
+  const oy = curveOffset?.y ?? 0;
+
+  // Build transform - Gallery arrow gets skewY + scaleX for a stretchy wave effect (toned down)
+  const svgTransform = springTransform || curveOffset
+    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.04}px, ${(springTransform?.translateY ?? 0) + oy * 0.06}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.08}deg) skewY(${-oy * 0.2}deg) scaleX(${1 + Math.abs(ox) * 0.004})`
+    : undefined;
+
   return (
     <svg
       className="pointer-events-none absolute h-[110px] w-[180px] md:h-[151px] md:w-[247px]"
@@ -395,6 +448,8 @@ export const GalleryArrow = ({ isVisible, delay = 500, controlsStore }: ArrowPro
         right: '2%',
         bottom: '0vh',
         overflow: 'visible',
+        transform: svgTransform,
+        transformOrigin: 'left center',
       }}
       viewBox="0 0 180 110"
       fill="none"

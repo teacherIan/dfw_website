@@ -6,7 +6,7 @@ import { LoopArrow, SpiralArrow, WaveArrow } from './DesktopArrows';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
 import { ANIMATION_TIMING, navItems, fontOptions, fontFamilyMap } from '../../constants';
 import type { ArrowType, SceneId } from '../../constants';
-import { useWindowWidth } from '../../hooks';
+import { useWindowWidth, useArrowUnravel } from '../../hooks';
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
@@ -53,9 +53,15 @@ const BlueprintButton = ({
   const arrowDelay = delay + 150;
   const buttonDelay = delay;
 
+  // Use unravel hook for spring-responsive arrow animation
+  const { hasCompletedInitialAnimation, transform, curveOffset } = useArrowUnravel({
+    isVisible,
+    delay: arrowDelay,
+  });
+
   return (
     <div className="nav-item flex items-center gap-3">
-      {/* Label - desktop only - fade + slide animation */}
+      {/* Label - desktop only - fade + slide animation + spring sway */}
       <span
         className={clsx(
           'nav-label desktop-label-only',
@@ -70,8 +76,14 @@ const BlueprintButton = ({
           paintOrder: 'stroke fill',
           fontSize: `${fontSize}em`,
           opacity: isVisible ? 1 : 0,
-          transform: isVisible ? 'translateX(0)' : 'translateX(20px)',
-          transition: `opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${labelDelay}ms, transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${labelDelay}ms`,
+          transform: !isVisible
+            ? 'translateX(20px)'
+            : hasCompletedInitialAnimation
+              ? `translateX(${(curveOffset?.x ?? 0) * 0.08}px) rotate(${(curveOffset?.x ?? 0) * 0.06}deg)`
+              : 'translateX(0)',
+          transition: hasCompletedInitialAnimation
+            ? 'transform 0.1s ease-out'
+            : `opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${labelDelay}ms, transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${labelDelay}ms`,
         }}
       >
         {label}
@@ -79,24 +91,40 @@ const BlueprintButton = ({
 
       {/* Unique arrow for each button - desktop only - draw-in animation */}
       <span className={clsx('desktop-arrow-only', 'hidden xl:block', 'relative z-10')}>
-        <ArrowComponent isVisible={isVisible} delay={arrowDelay} />
+        <ArrowComponent
+          isVisible={isVisible}
+          delay={arrowDelay}
+          springTransform={hasCompletedInitialAnimation ? transform : undefined}
+          curveOffset={hasCompletedInitialAnimation ? curveOffset : undefined}
+        />
       </span>
 
-      {/* Circular Blueprint Button - pop-in animation */}
-      <button
-        type="button"
-        className="nav-button-circle pointer-events-auto"
-        aria-label={`Open ${label.toLowerCase()}`}
-        onClick={() => onNavigate(sceneId)}
+      {/* Circular Blueprint Button - pop-in animation + spring rotation */}
+      <span
         style={{
-          opacity: isVisible ? 1 : 0,
-          transform: isVisible ? 'scale(1)' : 'scale(0)',
-          transition: `opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${buttonDelay}ms, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${buttonDelay}ms`,
+          display: 'inline-block',
+          transform: hasCompletedInitialAnimation
+            ? `rotate(${(curveOffset?.x ?? 0) * 0.15}deg)`
+            : undefined,
+          transition: 'transform 0.1s ease-out',
         }}
       >
-        <BlueprintButtonSVG />
-        <span className="sr-only">View {label.toLowerCase()}</span>
-      </button>
+        <button
+          type="button"
+          className="nav-button-circle pointer-events-auto"
+          aria-label={`Open ${label.toLowerCase()}`}
+          onClick={() => onNavigate(sceneId)}
+          style={{
+            opacity: isVisible ? 1 : 0,
+            // Only apply transform during pop-in animation, then let CSS handle hover
+            transform: !isVisible ? 'scale(0)' : (hasCompletedInitialAnimation ? undefined : 'scale(1)'),
+            transition: `opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${buttonDelay}ms, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${buttonDelay}ms`,
+          }}
+        >
+          <BlueprintButtonSVG />
+          <span className="sr-only">View {label.toLowerCase()}</span>
+        </button>
+      </span>
     </div>
   );
 };

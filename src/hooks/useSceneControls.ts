@@ -123,6 +123,11 @@ export interface SceneControls {
   teleportBandWidth: number;
   teleportDirection: number;
 
+  // Exit Animation - Gallery Transition (Type 16)
+  wallPlaneY: number;
+  screenCoverage: number;
+  gustStrength: number;
+
   // Monitor refs
   currentCameraX: React.MutableRefObject<number>;
   currentCameraY: React.MutableRefObject<number>;
@@ -366,6 +371,11 @@ export const useSceneControls = ({
       teleportSparkle,
       teleportBandWidth,
       teleportDirection,
+
+      // Exit Animation - Gallery Transition
+      wallPlaneY,
+      screenCoverage,
+      gustStrength,
     },
     setExitControls,
   ] = useControls(
@@ -675,6 +685,11 @@ export const useSceneControls = ({
             label: 'Direction',
           },
         }, { collapsed: true, render: (get) => shouldShowExitFolder(get, 15) }),
+        '🖼️ 16.Gallery': folder({
+          wallPlaneY: { value: -2.0, min: -4.0, max: 0.0, step: 0.1, label: 'Wall Plane Y' },
+          screenCoverage: { value: 3.0, min: 1.0, max: 6.0, step: 0.1, label: 'Screen Coverage' },
+          gustStrength: { value: 8.0, min: 2.0, max: 20.0, step: 0.5, label: 'Gust Strength' },
+        }, { collapsed: true, render: (get) => shouldShowExitFolder(get, 16) }),
       }, { collapsed: false }),
     }),
     { store }
@@ -809,6 +824,11 @@ export const useSceneControls = ({
     teleportSparkle,
     teleportBandWidth,
     teleportDirection,
+
+    // Exit Animation - Gallery Transition
+    wallPlaneY,
+    screenCoverage,
+    gustStrength,
 
     // Monitor refs
     currentCameraX,

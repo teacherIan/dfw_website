@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useControls, useCreateStore, LevaPanel, Leva, folder } from 'leva';
 import Scene from './components/scene/Scene';
 import TextOverlay from './components/scene/TextOverlay';
@@ -7,33 +7,44 @@ import HandDrawnText from './components/scene/HandDrawnText';
 import BlueprintPicker from './components/gallery/BlueprintPicker';
 import MenuOverlay from './components/navigation/MenuOverlay';
 import BackButton from './components/navigation/BackButton';
+import ErrorBoundary from './components/ErrorBoundary';
 import {
   ANIMATION_TIMING,
   EXIT_ANIMATION_DURATION,
   ENTRANCE_ANIMATION_DURATION,
-  TRANSITION_DURATION,
 } from './constants';
 import ContactOverlay from './components/contact/ContactOverlay';
 import { GalleryProvider, useGallery } from './contexts/GalleryContext';
-import type { SceneId, AnimationPhase } from './constants';
+import { DragDisplacementProvider } from './contexts/DragDisplacementContext';
+import { useAnimationStore } from './stores';
 import './types/r3f.d';
 
 function AppContent() {
-  const [showText, setShowText] = useState(false);
-  const [animationKey, setAnimationKey] = useState(0);
-
   // Gallery state from context
-  const { viewState: galleryViewState, setSelectedCategory } = useGallery();
+  const { viewState: galleryViewState, setSelectedCategory, resetGallery } = useGallery();
 
   const controlsStore = useCreateStore();
   const showLeva = import.meta.env.DEV;
 
-  // Scene navigation state
-  const [activeScene, setActiveScene] = useState<SceneId>('home');
-  const [targetScene, setTargetScene] = useState<SceneId>('home');
-  const [animationPhase, setAnimationPhase] = useState<AnimationPhase>('idle');
-  const [hasNavigated, setHasNavigated] = useState(false); // Track if we've left home before
-  const exitStartTimeRef = useRef<number | null>(null);
+  // Get state and actions from Zustand store
+  const {
+    activeScene,
+    targetScene,
+    animationPhase,
+    hasNavigated,
+    wallReady,
+    showText,
+    animationKey,
+    entranceType,
+    navigateTo,
+    returnHome,
+    setShowText,
+    setStreamingStarted,
+    setExitAnimationDuration,
+    setReturnAnimationDuration,
+    setExitTypeOverride,
+    resetAnimation,
+  } = useAnimationStore();
 
   const { exitAnimationDuration, returnAnimationDuration, exitTypeOverride } = useControls({
     '💥 Exit Animations': folder({
@@ -76,69 +87,33 @@ function AppContent() {
     }, { collapsed: false }),
   }, { store: controlsStore });
 
-  const safeExitDuration = Math.max(exitAnimationDuration ?? EXIT_ANIMATION_DURATION, 0.1);
-  const safeReturnDuration = Math.max(returnAnimationDuration ?? ENTRANCE_ANIMATION_DURATION, 0.1);
-  const overrideExitType = typeof exitTypeOverride === 'number' ? exitTypeOverride : null;
+  // Sync Leva controls to Zustand store
+  useEffect(() => {
+    setExitAnimationDuration(Math.max(exitAnimationDuration ?? EXIT_ANIMATION_DURATION, 0.1));
+  }, [exitAnimationDuration, setExitAnimationDuration]);
 
-  // Handle navigation to a new scene
-  const handleNavigate = useCallback((newTarget: SceneId) => {
-    if (animationPhase !== 'idle' || newTarget === activeScene) return;
+  useEffect(() => {
+    setReturnAnimationDuration(Math.max(returnAnimationDuration ?? ENTRANCE_ANIMATION_DURATION, 0.1));
+  }, [returnAnimationDuration, setReturnAnimationDuration]);
 
-    // Set target scene for exit animation type lookup
-    setTargetScene(newTarget);
-    setHasNavigated(true);
-    setShowText(false); // Hide title during transition
-    // Use different animation for Contact (splat-to-splat transition)
-    if (newTarget === 'contact') {
-      setAnimationPhase('transitioning');
-      exitStartTimeRef.current = performance.now();
+  useEffect(() => {
+    setExitTypeOverride(typeof exitTypeOverride === 'number' ? exitTypeOverride : null);
+  }, [exitTypeOverride, setExitTypeOverride]);
 
-      // After transition completes, show the contact scene
-      setTimeout(() => {
-        setActiveScene(newTarget);
-        setAnimationPhase('idle');
-      }, TRANSITION_DURATION * 1000);
-    } else {
-      // Use standard exit animation for other scenes
-      setAnimationPhase('exiting');
-      exitStartTimeRef.current = performance.now();
-
-      // After exit animation completes, show the target scene
-      setTimeout(() => {
-        setActiveScene(newTarget);
-        setAnimationPhase('idle');
-      }, safeExitDuration * 1000);
+  // Track previous activeScene to detect when returning from gallery
+  const prevActiveSceneRef = useRef(activeScene);
+  useEffect(() => {
+    // When we return from gallery to home, reset gallery state
+    if (prevActiveSceneRef.current === 'gallery' && activeScene === 'home' && animationPhase === 'idle') {
+      resetGallery();
     }
-  }, [animationPhase, activeScene, safeExitDuration]);
+    prevActiveSceneRef.current = activeScene;
+  }, [activeScene, animationPhase, resetGallery]);
 
-  // Handle returning to home
+  // Handle return home (just calls store action)
   const handleReturnHome = useCallback(() => {
-    if (animationPhase !== 'idle' || activeScene === 'home') return;
-
-    exitStartTimeRef.current = performance.now();
-    // Use different animation when returning from Contact (reverse transition)
-    if (activeScene === 'contact') {
-      setAnimationPhase('transitioningBack');
-
-      // After transition completes, show menu and title
-      setTimeout(() => {
-        setActiveScene('home');
-        setAnimationPhase('idle');
-        setShowText(true);
-      }, TRANSITION_DURATION * 1000);
-    } else {
-      // Start entrance animation (reverse of exit)
-      // Keep targetScene the same so we use the same animation type in reverse
-      setActiveScene('home');
-      setAnimationPhase('entering');
-
-      // After entrance animation completes, show menu and title
-      setTimeout(() => {
-        setAnimationPhase('idle');
-        setShowText(true);
-      }, safeReturnDuration * 1000);
-    }
-  }, [animationPhase, activeScene, safeReturnDuration]);
+    returnHome();
+  }, [returnHome]);
 
   // Leva control to hide overlays for screenshots
   const { showOverlays, useHandDrawn } = useControls({
@@ -148,19 +123,20 @@ function AppContent() {
     }, { collapsed: true }),
   }, { store: controlsStore });
 
-  // Track when streaming starts and when splat is loaded
-  const [streamingStarted, setStreamingStarted] = useState(false);
-  const streamingStartTimeRef = useRef<number | null>(null);
+  // Get streamingStarted from store
+  const streamingStarted = useAnimationStore((state) => state.streamingStarted);
 
+  // Track when streaming starts and when splat is loaded
   useEffect(() => {
     const handleStreamingStarted = () => {
-      streamingStartTimeRef.current = performance.now();
-      setStreamingStarted(true);
+      setStreamingStarted();
     };
 
     const handleSplatLoaded = () => {
       // Splat fully loaded - could use this for additional timing if needed
-      console.log('Splat fully loaded');
+      if (import.meta.env.DEV) {
+        console.log('Splat fully loaded');
+      }
     };
 
     window.addEventListener('splatStreamingStarted', handleStreamingStarted);
@@ -169,7 +145,7 @@ function AppContent() {
       window.removeEventListener('splatStreamingStarted', handleStreamingStarted);
       window.removeEventListener('splatLoaded', handleSplatLoaded);
     };
-  }, []);
+  }, [setStreamingStarted]);
 
   useEffect(() => {
     // Start showing the text after the splat animation has fully finished
@@ -180,41 +156,54 @@ function AppContent() {
       setShowText(true);
     }, ANIMATION_TIMING.TEXT_APPEAR);
     return () => clearTimeout(timer);
-  }, [animationKey, streamingStarted]);
+  }, [animationKey, streamingStarted, setShowText]);
 
   useEffect(() => {
     const handleReset = () => {
-      setShowText(false);
-      setAnimationKey((prev) => prev + 1);
+      resetAnimation();
     };
     window.addEventListener('resetAnimation', handleReset);
     return () => window.removeEventListener('resetAnimation', handleReset);
-  }, []);
+  }, [resetAnimation]);
+
+  // Determine when to show back button
+  const shouldShowBackButton = useCallback(() => {
+    // Show during exit animations (except when going to gallery)
+    if (animationPhase === 'exiting' && targetScene !== 'gallery') return true;
+    // Show during contact transition
+    if (animationPhase === 'transitioning') return true;
+    // Show on non-home scenes in idle state
+    if (activeScene !== 'home' && animationPhase === 'idle') {
+      // Hide when BlueprintPicker is visible (it has its own exit button)
+      return !(activeScene === 'gallery' && galleryViewState === 'picker');
+    }
+    return false;
+  }, [animationPhase, targetScene, activeScene, galleryViewState]);
+
+  // Dynamic background: dark blue during gallery transitions, white otherwise
 
   return (
-    <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
+    <div className={`relative h-svh w-screen overflow-hidden text-white ${
+        activeScene === 'gallery' || targetScene === 'gallery'
+          ? 'bg-[#0a1525]'
+          : 'bg-white'
+      }`}>
       {/* Hide default Leva panel in production, show custom panel in dev */}
       <Leva hidden={!showLeva} />
       {showLeva && <LevaPanel store={controlsStore} />}
 
       {/* Main 3D Canvas */}
-      <div className="relative z-0 h-full w-full" style={{ touchAction: 'none' }}>
-        <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
-          <Scene
-            activeScene={activeScene}
-            targetScene={targetScene}
-            animationPhase={animationPhase}
-            exitAnimationDuration={safeExitDuration}
-            returnAnimationDuration={safeReturnDuration}
-            controlsStore={controlsStore}
-            overrideExitType={overrideExitType}
-          />
-        </Canvas>
+      <div className="relative z-0 h-full w-full bg-transparent" style={{ touchAction: 'none' }}>
+        <ErrorBoundary>
+          <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
+            <Scene controlsStore={controlsStore} />
+          </Canvas>
+        </ErrorBoundary>
       </div>
       {/* Overlays - only show on home scene */}
       {showOverlays && activeScene === 'home' && (animationPhase === 'idle' || animationPhase === 'exiting') && (
         <MenuOverlay
-          onNavigate={handleNavigate}
+          onNavigate={navigateTo}
           skipDelay={hasNavigated}
           isExiting={animationPhase === 'exiting'}
           controlsStore={controlsStore}
@@ -232,27 +221,18 @@ function AppContent() {
         <ContactOverlay />
       )}
 
-      {/* Gallery transition overlay - fades from white to blue during exit animation */}
-      {targetScene === 'gallery' && animationPhase === 'exiting' && (
-        <div className="gallery-transition-overlay" />
-      )}
-
-      {/* Gallery return overlay - fades from blue to white when returning from gallery */}
-      {targetScene === 'gallery' && animationPhase === 'entering' && (
-        <div className="gallery-return-overlay" />
-      )}
-
-      {/* Gallery picker - show when on gallery and in picker mode */}
-      {/* Using new BlueprintPicker (2D DOM) instead of 3D picker */}
-      {activeScene === 'gallery' && animationPhase === 'idle' && galleryViewState === 'picker' && (
-        <BlueprintPicker onSelectCategory={setSelectedCategory} onBack={handleReturnHome} />
+      {/* Gallery picker - show when gallery is active or target */}
+      {(activeScene === 'gallery' || targetScene === 'gallery') &&
+        galleryViewState === 'picker' && (
+        <BlueprintPicker
+          onSelectCategory={setSelectedCategory}
+          onBack={handleReturnHome}
+          wallReady={wallReady}
+        />
       )}
 
       {/* Back button - show during exit/transition animations and when on other scenes */}
-      {/* Hide when BlueprintPicker is visible (it has its own exit button) */}
-      {/* Hide when navigating to gallery (has its own transition overlay) */}
-      {((animationPhase === 'exiting' && targetScene !== 'gallery') || animationPhase === 'transitioning' ||
-        (activeScene !== 'home' && animationPhase === 'idle' && !(activeScene === 'gallery' && galleryViewState === 'picker'))) && (
+      {shouldShowBackButton() && (
         <BackButton onClick={handleReturnHome} />
       )}
     </div>
@@ -261,9 +241,11 @@ function AppContent() {
 
 function App() {
   return (
-    <GalleryProvider>
-      <AppContent />
-    </GalleryProvider>
+    <DragDisplacementProvider>
+      <GalleryProvider>
+        <AppContent />
+      </GalleryProvider>
+    </DragDisplacementProvider>
   );
 }
 

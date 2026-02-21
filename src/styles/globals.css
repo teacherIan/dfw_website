@@ -1,0 +1,34 @@
+/* ========================================
+   Global Styles
+   Tailwind imports, theme, and base styles
+   ======================================== */
+
+@import 'tailwindcss';
+
+@theme {
+  --font-cursive: 'Pinyon Script', cursive;
+  --font-handdrawn-architects: 'Architects Daughter', cursive;
+  --font-handdrawn-caveat: 'Caveat', cursive;
+  --font-handdrawn-patrick: 'Patrick Hand', cursive;
+  --font-handdrawn-indie: 'Indie Flower', cursive;
+  --font-handdrawn-marker: 'Permanent Marker', cursive;
+  --font-handdrawn-shadows: 'Shadows Into Light', cursive;
+}
+
+/* ========================================
+   LEVA CONTROLS CUSTOMIZATION
+   Smaller font size for better readability
+   ======================================== */
+.leva-c-kWgxhW,
+.leva-c-kWgxhW *,
+[class*="leva-"] {
+  font-size: 10px !important;
+}
+
+.leva-c-kWgxhW input {
+  font-size: 10px !important;
+}
+
+.leva-c-kWgxhW label {
+  font-size: 10px !important;
+}

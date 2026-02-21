@@ -1,13 +1,35 @@
 import { AnimatedArrowhead } from './ArrowComponents';
 
+interface SpringTransform {
+  rotate: number;
+  skewX: number;
+  skewY: number;
+  translateX: number;
+  translateY: number;
+  scale: number;
+}
+
+interface CurveOffset {
+  x: number;
+  y: number;
+}
+
 interface ArrowProps {
   className?: string;
   isVisible?: boolean;
   delay?: number;
+  springTransform?: SpringTransform;
+  curveOffset?: CurveOffset;
 }
 
 // 1. LOOP ARROW (Top)
-export const LoopArrow = ({ className = 'nav-arrow', isVisible = true, delay = 0 }: ArrowProps) => {
+export const LoopArrow = ({
+  className = 'nav-arrow',
+  isVisible = true,
+  delay = 0,
+  springTransform,
+  curveOffset,
+}: ArrowProps) => {
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
@@ -21,13 +43,26 @@ export const LoopArrow = ({ className = 'nav-arrow', isVisible = true, delay = 0
   const endY = 25;
   const arrowAngle = 0; // Points right
 
+  // Use curveOffset for smooth whole-path deformation via transform
+  const ox = curveOffset?.x ?? 0;
+  const oy = curveOffset?.y ?? 0;
+
+  // Build transform - combines spring transform with curve-based skew for organic bending
+  const svgTransform = springTransform || curveOffset
+    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.1}px, ${(springTransform?.translateY ?? 0) + oy * 0.1}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.2}deg) skewY(${oy * 0.25}deg)`
+    : undefined;
+
   return (
     <svg
       className={className}
       viewBox="0 0 70 50"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ overflow: 'visible' }}
+      style={{
+        overflow: 'visible',
+        transform: svgTransform,
+        transformOrigin: 'left center',
+      }}
     >
       <path
         d="M2 25
@@ -59,7 +94,13 @@ export const LoopArrow = ({ className = 'nav-arrow', isVisible = true, delay = 0
 };
 
 // 2. SPIRAL ARROW (Middle)
-export const SpiralArrow = ({ className = 'nav-arrow', isVisible = true, delay = 0 }: ArrowProps) => {
+export const SpiralArrow = ({
+  className = 'nav-arrow',
+  isVisible = true,
+  delay = 0,
+  springTransform,
+  curveOffset,
+}: ArrowProps) => {
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
@@ -70,13 +111,26 @@ export const SpiralArrow = ({ className = 'nav-arrow', isVisible = true, delay =
   const endY = 25;
   const arrowAngle = 0;
 
+  // Use curveOffset for smooth whole-path deformation via transform
+  const ox = curveOffset?.x ?? 0;
+  const oy = curveOffset?.y ?? 0;
+
+  // Build transform - spiral gets a different skew direction for variety
+  const svgTransform = springTransform || curveOffset
+    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.08}px, ${(springTransform?.translateY ?? 0) + oy * 0.12}px) rotate(${(springTransform?.rotate ?? 0) - ox * 0.17}deg) skewX(${ox * 0.2}deg)`
+    : undefined;
+
   return (
     <svg
       className={className}
       viewBox="0 0 70 50"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ overflow: 'visible' }}
+      style={{
+        overflow: 'visible',
+        transform: svgTransform,
+        transformOrigin: 'left center',
+      }}
     >
       <path
         d="M5 25
@@ -108,7 +162,13 @@ export const SpiralArrow = ({ className = 'nav-arrow', isVisible = true, delay =
 };
 
 // 3. WAVE ARROW (Bottom)
-export const WaveArrow = ({ className = 'nav-arrow', isVisible = true, delay = 0 }: ArrowProps) => {
+export const WaveArrow = ({
+  className = 'nav-arrow',
+  isVisible = true,
+  delay = 0,
+  springTransform,
+  curveOffset,
+}: ArrowProps) => {
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
@@ -119,13 +179,26 @@ export const WaveArrow = ({ className = 'nav-arrow', isVisible = true, delay = 0
   const endY = 25;
   const arrowAngle = 0;
 
+  // Use curveOffset for smooth whole-path deformation via transform
+  const ox = curveOffset?.x ?? 0;
+  const oy = curveOffset?.y ?? 0;
+
+  // Build transform - wave gets vertical skew for a bouncy wave effect
+  const svgTransform = springTransform || curveOffset
+    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.07}px, ${(springTransform?.translateY ?? 0) + oy * 0.14}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.14}deg) skewY(${-oy * 0.35}deg) scaleY(${1 + Math.abs(oy) * 0.007})`
+    : undefined;
+
   return (
     <svg
       className={className}
       viewBox="0 0 70 50"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ overflow: 'visible' }}
+      style={{
+        overflow: 'visible',
+        transform: svgTransform,
+        transformOrigin: 'left center',
+      }}
     >
       <path
         d="M5 25

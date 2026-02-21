@@ -6,6 +6,7 @@ import NavLabel from './NavLabel';
 import { createFadeSlideStyle, createPopInStyle, createPopInCenteredStyle } from '../../utils/styles';
 import { MOBILE_NAV_DELAYS } from '../../constants/animation';
 import type { SceneId } from '../../constants';
+import { useArrowUnravel } from '../../hooks';
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
@@ -69,12 +70,90 @@ interface MobileNavLayoutProps {
   controlsStore?: LevaStore;
 }
 
+// Mobile button with spring rotation
+interface MobileButtonProps {
+  scene: SceneId;
+  label: string;
+  springRotation?: number;
+  hasCompletedAnimation: boolean;
+  className?: string;
+  onNavigate: (scene: SceneId) => void;
+}
+
+const MobileButton = ({
+  scene,
+  label,
+  springRotation = 0,
+  hasCompletedAnimation,
+  className = '',
+  onNavigate,
+}: MobileButtonProps) => (
+  <span
+    style={{
+      display: 'inline-block',
+      transform: hasCompletedAnimation ? `rotate(${springRotation * 0.12}deg)` : undefined,
+      transition: 'transform 0.1s ease-out',
+    }}
+  >
+    <button
+      type="button"
+      className={`nav-button-circle nav-button-circle--mobile-large pointer-events-auto ${className}`}
+      aria-label={`Open ${label}`}
+      onClick={() => onNavigate(scene)}
+    >
+      <BlueprintButtonSVG />
+      <span className="sr-only">View {label}</span>
+    </button>
+  </span>
+);
+
+// Mobile label with spring sway
+interface MobileLabelProps {
+  text: string;
+  font: string;
+  springOffset?: number;
+  hasCompletedAnimation: boolean;
+}
+
+const MobileLabel = ({
+  text,
+  font,
+  springOffset = 0,
+  hasCompletedAnimation,
+}: MobileLabelProps) => (
+  <span
+    style={{
+      display: 'inline-block',
+      transform: hasCompletedAnimation
+        ? `translateX(${springOffset * 0.05}px) rotate(${springOffset * 0.04}deg)`
+        : undefined,
+      transition: 'transform 0.1s ease-out',
+    }}
+  >
+    <NavLabel text={text} font={font} />
+  </span>
+);
+
 const MobileNavLayout = ({
   font,
   isVisible,
   onNavigate,
   controlsStore,
 }: MobileNavLayoutProps) => {
+  // Arrow unravel hooks for spring-responsive animation
+  const ethosUnravel = useArrowUnravel({
+    isVisible,
+    delay: MOBILE_NAV_DELAYS.ETHOS_ARROW,
+  });
+  const contactUnravel = useArrowUnravel({
+    isVisible,
+    delay: MOBILE_NAV_DELAYS.CONTACT_ARROW,
+  });
+  const galleryUnravel = useArrowUnravel({
+    isVisible,
+    delay: MOBILE_NAV_DELAYS.GALLERY_ARROW,
+  });
+
   // Button positions for each breakpoint
   const btnPositionsSmall = useBreakpointControls('small', 'buttons', controlsStore);
   const btnPositionsMid = useBreakpointControls('mid', 'buttons', controlsStore);
@@ -102,15 +181,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsSmall.ethosBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -ml-14 md:-ml-[55px]"
-          aria-label="Open ethos"
-          onClick={() => onNavigate('ethos')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View ethos</span>
-        </button>
+        <MobileButton
+          scene="ethos"
+          label="ethos"
+          springRotation={ethosUnravel.curveOffset.x}
+          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+          className="-ml-14 md:-ml-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Ethos Button - Mid (400-699px) */}
@@ -122,15 +200,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsMid.ethosBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -ml-14 md:-ml-[55px]"
-          aria-label="Open ethos"
-          onClick={() => onNavigate('ethos')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View ethos</span>
-        </button>
+        <MobileButton
+          scene="ethos"
+          label="ethos"
+          springRotation={ethosUnravel.curveOffset.x}
+          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+          className="-ml-14 md:-ml-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Ethos Button - Tablet (700-999px) */}
@@ -142,15 +219,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsTablet.ethosBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -ml-14 md:-ml-[55px]"
-          aria-label="Open ethos"
-          onClick={() => onNavigate('ethos')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View ethos</span>
-        </button>
+        <MobileButton
+          scene="ethos"
+          label="ethos"
+          springRotation={ethosUnravel.curveOffset.x}
+          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+          className="-ml-14 md:-ml-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Ethos Button - iPad Pro (1000-1199px) */}
@@ -162,15 +238,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsIpadPro.ethosBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -ml-14 md:-ml-[55px]"
-          aria-label="Open ethos"
-          onClick={() => onNavigate('ethos')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View ethos</span>
-        </button>
+        <MobileButton
+          scene="ethos"
+          label="ethos"
+          springRotation={ethosUnravel.curveOffset.x}
+          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+          className="-ml-14 md:-ml-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Ethos Label - Small (<400px) */}
@@ -182,7 +257,12 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsSmall.ethosBottom}vh`,
         }}
       >
-        <NavLabel text="Ethos" font={font} />
+        <MobileLabel
+          text="Ethos"
+          font={font}
+          springOffset={ethosUnravel.curveOffset.x}
+          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Ethos Label - Mid (400-699px) */}
@@ -194,7 +274,12 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsMid.ethosBottom}vh`,
         }}
       >
-        <NavLabel text="Ethos" font={font} />
+        <MobileLabel
+          text="Ethos"
+          font={font}
+          springOffset={ethosUnravel.curveOffset.x}
+          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Ethos Label - Tablet (700-999px) */}
@@ -206,7 +291,12 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsTablet.ethosBottom}vh`,
         }}
       >
-        <NavLabel text="Ethos" font={font} />
+        <MobileLabel
+          text="Ethos"
+          font={font}
+          springOffset={ethosUnravel.curveOffset.x}
+          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Ethos Label - iPad Pro (1000-1199px) */}
@@ -218,11 +308,22 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsIpadPro.ethosBottom}vh`,
         }}
       >
-        <NavLabel text="Ethos" font={font} />
+        <MobileLabel
+          text="Ethos"
+          font={font}
+          springOffset={ethosUnravel.curveOffset.x}
+          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Ethos Arrow */}
-      <EthosArrow isVisible={isVisible} delay={MOBILE_NAV_DELAYS.ETHOS_ARROW} controlsStore={controlsStore} />
+      <EthosArrow
+        isVisible={isVisible}
+        delay={MOBILE_NAV_DELAYS.ETHOS_ARROW}
+        springTransform={ethosUnravel.hasCompletedInitialAnimation ? ethosUnravel.transform : undefined}
+        curveOffset={ethosUnravel.hasCompletedInitialAnimation ? ethosUnravel.curveOffset : undefined}
+        controlsStore={controlsStore}
+      />
 
       {/* ============================================
           CONTACT - Center Bottom
@@ -237,15 +338,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsSmall.contactBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mb-14 md:-mb-[55px]"
-          aria-label="Open contact"
-          onClick={() => onNavigate('contact')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View contact</span>
-        </button>
+        <MobileButton
+          scene="contact"
+          label="contact"
+          springRotation={contactUnravel.curveOffset.x}
+          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+          className="-mb-14 md:-mb-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Contact Button - Mid (400-699px) */}
@@ -257,15 +357,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsMid.contactBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mb-14 md:-mb-[55px]"
-          aria-label="Open contact"
-          onClick={() => onNavigate('contact')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View contact</span>
-        </button>
+        <MobileButton
+          scene="contact"
+          label="contact"
+          springRotation={contactUnravel.curveOffset.x}
+          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+          className="-mb-14 md:-mb-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Contact Button - Tablet (700-999px) */}
@@ -277,15 +376,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsTablet.contactBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mb-14 md:-mb-[55px]"
-          aria-label="Open contact"
-          onClick={() => onNavigate('contact')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View contact</span>
-        </button>
+        <MobileButton
+          scene="contact"
+          label="contact"
+          springRotation={contactUnravel.curveOffset.x}
+          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+          className="-mb-14 md:-mb-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Contact Button - iPad Pro (1000-1199px) */}
@@ -297,15 +395,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsIpadPro.contactBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mb-14 md:-mb-[55px]"
-          aria-label="Open contact"
-          onClick={() => onNavigate('contact')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View contact</span>
-        </button>
+        <MobileButton
+          scene="contact"
+          label="contact"
+          springRotation={contactUnravel.curveOffset.x}
+          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+          className="-mb-14 md:-mb-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Contact Label - Small (<400px) */}
@@ -317,7 +414,12 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsSmall.contactBottom}vh`,
         }}
       >
-        <NavLabel text="Contact" font={font} />
+        <MobileLabel
+          text="Contact"
+          font={font}
+          springOffset={contactUnravel.curveOffset.x}
+          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Contact Label - Mid (400-699px) */}
@@ -329,7 +431,12 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsMid.contactBottom}vh`,
         }}
       >
-        <NavLabel text="Contact" font={font} />
+        <MobileLabel
+          text="Contact"
+          font={font}
+          springOffset={contactUnravel.curveOffset.x}
+          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Contact Label - Tablet (700-999px) */}
@@ -341,7 +448,12 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsTablet.contactBottom}vh`,
         }}
       >
-        <NavLabel text="Contact" font={font} />
+        <MobileLabel
+          text="Contact"
+          font={font}
+          springOffset={contactUnravel.curveOffset.x}
+          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Contact Label - iPad Pro (1000-1199px) */}
@@ -353,11 +465,22 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsIpadPro.contactBottom}vh`,
         }}
       >
-        <NavLabel text="Contact" font={font} />
+        <MobileLabel
+          text="Contact"
+          font={font}
+          springOffset={contactUnravel.curveOffset.x}
+          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Contact Arrow */}
-      <ContactArrow isVisible={isVisible} delay={MOBILE_NAV_DELAYS.CONTACT_ARROW} controlsStore={controlsStore} />
+      <ContactArrow
+        isVisible={isVisible}
+        delay={MOBILE_NAV_DELAYS.CONTACT_ARROW}
+        springTransform={contactUnravel.hasCompletedInitialAnimation ? contactUnravel.transform : undefined}
+        curveOffset={contactUnravel.hasCompletedInitialAnimation ? contactUnravel.curveOffset : undefined}
+        controlsStore={controlsStore}
+      />
 
       {/* ============================================
           GALLERY - Bottom Right Corner
@@ -372,15 +495,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsSmall.galleryBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mr-14 md:-mr-[55px]"
-          aria-label="Open gallery"
-          onClick={() => onNavigate('gallery')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View gallery</span>
-        </button>
+        <MobileButton
+          scene="gallery"
+          label="gallery"
+          springRotation={galleryUnravel.curveOffset.x}
+          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+          className="-mr-14 md:-mr-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Gallery Button - Mid (400-699px) */}
@@ -392,15 +514,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsMid.galleryBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mr-14 md:-mr-[55px]"
-          aria-label="Open gallery"
-          onClick={() => onNavigate('gallery')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View gallery</span>
-        </button>
+        <MobileButton
+          scene="gallery"
+          label="gallery"
+          springRotation={galleryUnravel.curveOffset.x}
+          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+          className="-mr-14 md:-mr-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Gallery Button - Tablet (700-999px) */}
@@ -412,15 +533,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsTablet.galleryBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mr-14 md:-mr-[55px]"
-          aria-label="Open gallery"
-          onClick={() => onNavigate('gallery')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View gallery</span>
-        </button>
+        <MobileButton
+          scene="gallery"
+          label="gallery"
+          springRotation={galleryUnravel.curveOffset.x}
+          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+          className="-mr-14 md:-mr-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Gallery Button - iPad Pro (1000-1199px) */}
@@ -432,15 +552,14 @@ const MobileNavLayout = ({
           bottom: `${btnPositionsIpadPro.galleryBottom}vh`,
         }}
       >
-        <button
-          type="button"
-          className="nav-button-circle nav-button-circle--mobile-large pointer-events-auto -mr-14 md:-mr-[55px]"
-          aria-label="Open gallery"
-          onClick={() => onNavigate('gallery')}
-        >
-          <BlueprintButtonSVG />
-          <span className="sr-only">View gallery</span>
-        </button>
+        <MobileButton
+          scene="gallery"
+          label="gallery"
+          springRotation={galleryUnravel.curveOffset.x}
+          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+          className="-mr-14 md:-mr-[55px]"
+          onNavigate={onNavigate}
+        />
       </div>
 
       {/* Gallery Label - Small (<400px) */}
@@ -452,7 +571,12 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsSmall.galleryBottom}vh`,
         }}
       >
-        <NavLabel text="Gallery" font={font} />
+        <MobileLabel
+          text="Gallery"
+          font={font}
+          springOffset={galleryUnravel.curveOffset.x}
+          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Gallery Label - Mid (400-699px) */}
@@ -464,7 +588,12 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsMid.galleryBottom}vh`,
         }}
       >
-        <NavLabel text="Gallery" font={font} />
+        <MobileLabel
+          text="Gallery"
+          font={font}
+          springOffset={galleryUnravel.curveOffset.x}
+          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Gallery Label - Tablet (700-999px) */}
@@ -476,7 +605,12 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsTablet.galleryBottom}vh`,
         }}
       >
-        <NavLabel text="Gallery" font={font} />
+        <MobileLabel
+          text="Gallery"
+          font={font}
+          springOffset={galleryUnravel.curveOffset.x}
+          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Gallery Label - iPad Pro (1000-1199px) */}
@@ -488,11 +622,22 @@ const MobileNavLayout = ({
           bottom: `${labelPositionsIpadPro.galleryBottom}vh`,
         }}
       >
-        <NavLabel text="Gallery" font={font} />
+        <MobileLabel
+          text="Gallery"
+          font={font}
+          springOffset={galleryUnravel.curveOffset.x}
+          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+        />
       </div>
 
       {/* Gallery Arrow */}
-      <GalleryArrow isVisible={isVisible} delay={MOBILE_NAV_DELAYS.GALLERY_ARROW} controlsStore={controlsStore} />
+      <GalleryArrow
+        isVisible={isVisible}
+        delay={MOBILE_NAV_DELAYS.GALLERY_ARROW}
+        springTransform={galleryUnravel.hasCompletedInitialAnimation ? galleryUnravel.transform : undefined}
+        curveOffset={galleryUnravel.hasCompletedInitialAnimation ? galleryUnravel.curveOffset : undefined}
+        controlsStore={controlsStore}
+      />
     </div>
   );
 };
