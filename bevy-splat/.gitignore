@@ -1,0 +1,18 @@
+# Rust build artifacts
+/target/
+bevy_gaussian_splatting_fork/target/
+
+# Cargo lock for binary crates (keep for reproducibility, but can ignore if preferred)
+# Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Debug
+*.pdb

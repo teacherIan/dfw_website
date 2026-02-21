@@ -1,0 +1,31 @@
+[package]
+name = "bevy_splat"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = "0.18"
+bevy_gaussian_splatting = { path = "bevy_gaussian_splatting_fork", default-features = false, features = [
+    "io_ply",
+    "io_bincode2",
+    "planar",
+    "buffer_storage",
+    "sort_std",
+    "sh3",
+] }
+bevy_panorbit_camera = "0.34"
+
+# Optimize for release builds
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+
+# WASM configuration
+[target.wasm32-unknown-unknown]
+runner = "wasm-server-runner"
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = "thin"
