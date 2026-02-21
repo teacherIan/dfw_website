@@ -35,6 +35,14 @@
   --nav-desktop-top: 60%;
   --nav-desktop-gap: 1rem;
 
+  /* Navigation Shadows (for use with filter: drop-shadow()) */
+  --shadow-nav-container: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-nav-item: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-nav-arrow: 0 2px 8px rgba(0, 0, 0, 0.6);
+
+  /* Navigation Transitions */
+  --transition-nav: 0.4s ease-out;
+
   /* Title Positioning */
   --title-bottom-mobile: 19vh;
   --title-bottom-landscape-small: 2vh;

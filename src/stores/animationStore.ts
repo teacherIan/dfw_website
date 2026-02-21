@@ -9,6 +9,11 @@ import {
   GALLERY_WALL_HOLD_DELAY,
 } from '../constants';
 
+// DEV-only logging helper
+const log = import.meta.env.DEV
+  ? (...args: unknown[]) => console.log('[Store]', ...args)
+  : () => {};
+
 interface AnimationState {
   // Navigation
   activeScene: SceneId;
@@ -117,14 +122,14 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
       navigationTimeouts.push(timeout);
     } else if (newTarget === 'gallery') {
       // Gallery: phased wall formation
-      console.log('[Store] navigateTo gallery - setting wallReady: false');
+      log('navigateTo gallery - setting wallReady: false');
       set({ animationPhase: 'exiting', wallReady: false });
 
       const wallFormTime = GALLERY_WALL_DURATION * 1000;
       const settleBuffer = 200; // Let particles settle before showing paper
 
       const timeout1 = setTimeout(() => {
-        console.log('[Store] Wall form complete - setting wallReady: true');
+        log('Wall form complete - setting wallReady: true');
         set({ animationPhase: 'wallHolding', wallReady: true });
       }, wallFormTime + settleBuffer);
       navigationTimeouts.push(timeout1);
@@ -169,7 +174,7 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
       navigationTimeouts.push(timeout);
     } else if (state.activeScene === 'gallery') {
       // Gallery: wall dissolves back
-      console.log('[Store] returnHome from gallery - setting wallReady: false');
+      log('returnHome from gallery - setting wallReady: false');
       const entranceType = EXIT_ANIMATION_TYPE['gallery'];
       set({
         wallReady: false,
@@ -213,7 +218,7 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
   setAnimationPhase: (phase) => set({ animationPhase: phase }),
   setStreamingStarted: () => set({ streamingStarted: true }),
   setWallReady: (ready) => {
-    console.log('[Store] setWallReady called with:', ready);
+    log('setWallReady called with:', ready);
     set({ wallReady: ready });
   },
   setCameraAnimationComplete: () => set({ cameraAnimationComplete: true }),

@@ -7,6 +7,7 @@ import HandDrawnText from './components/scene/HandDrawnText';
 import BlueprintPicker from './components/gallery/BlueprintPicker';
 import MenuOverlay from './components/navigation/MenuOverlay';
 import BackButton from './components/navigation/BackButton';
+import ErrorBoundary from './components/ErrorBoundary';
 import {
   ANIMATION_TIMING,
   EXIT_ANIMATION_DURATION,
@@ -133,7 +134,9 @@ function AppContent() {
 
     const handleSplatLoaded = () => {
       // Splat fully loaded - could use this for additional timing if needed
-      console.log('Splat fully loaded');
+      if (import.meta.env.DEV) {
+        console.log('Splat fully loaded');
+      }
     };
 
     window.addEventListener('splatStreamingStarted', handleStreamingStarted);
@@ -191,9 +194,11 @@ function AppContent() {
 
       {/* Main 3D Canvas - dark blue background during gallery view */}
       <div className={`relative z-0 h-full w-full ${canvasBgClass}`} style={{ touchAction: 'none' }}>
-        <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
-          <Scene controlsStore={controlsStore} />
-        </Canvas>
+        <ErrorBoundary>
+          <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
+            <Scene controlsStore={controlsStore} />
+          </Canvas>
+        </ErrorBoundary>
       </div>
 
       {/* Overlays - only show on home scene */}
