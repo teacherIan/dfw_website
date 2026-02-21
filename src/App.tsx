@@ -180,11 +180,8 @@ function AppContent() {
     return false;
   }, [animationPhase, targetScene, activeScene, galleryViewState]);
 
-  // Dark blue background for canvas during gallery transitions (fills gaps between particles)
-  const isGalleryView = activeScene === 'gallery' ||
-    (animationPhase === 'exiting' && targetScene === 'gallery') ||
-    (animationPhase === 'entering' && entranceType === 16);
-  const canvasBgClass = isGalleryView ? 'bg-[#0a1525]' : 'bg-transparent';
+  // Note: CSS background fallback removed - splat animation now fills the screen completely
+  // during gallery transitions (two-stage gust exit + screen fill animation)
 
   return (
     <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
@@ -192,8 +189,8 @@ function AppContent() {
       <Leva hidden={!showLeva} />
       {showLeva && <LevaPanel store={controlsStore} />}
 
-      {/* Main 3D Canvas - dark blue background during gallery view */}
-      <div className={`relative z-0 h-full w-full ${canvasBgClass}`} style={{ touchAction: 'none' }}>
+      {/* Main 3D Canvas */}
+      <div className="relative z-0 h-full w-full bg-transparent" style={{ touchAction: 'none' }}>
         <ErrorBoundary>
           <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
             <Scene controlsStore={controlsStore} />

@@ -724,74 +724,92 @@ vec4 exitTeleport(vec3 pos, vec3 scale, float progress, vec3 h,
 
 // 16. Blueprint Unroll - Scene rolls up like a scroll
 export const exitBlueprintWall = `
-// 16. Blueprint Unroll - Scene rolls up like a scroll
-// Physical metaphor: paper curls from bottom to top, revealing gallery behind
-vec4 exitBlueprintWall(vec3 pos, vec3 scale, float progress, vec3 h, float motionReduction) {
+// 16. Gallery Transition - Two-stage gust exit + screen fill
+// Stage 1 (0-50%): Particles blow away like gust animation
+// Stage 2 (50-100%): Particles return, transform to blue, fill the screen
+vec4 exitBlueprintWall(vec3 pos, vec3 scale, float progress, vec3 h, float motionReduction,
+                       float wallPlaneY, float screenCoverage, float gustStrength) {
   vec3 newPos = pos;
-
-  // Roll line moves from bottom to top (local Z = world Y)
-  float rollStartZ = -4.0;
-  float rollEndZ = 8.0;
-
-  // Soft wave edge for organic feel
-  float waveOffset = sin(pos.x * 0.5 + h.x * 2.0) * 0.12;
-  float localProgress = clamp((progress - waveOffset * 0.3) / (1.0 - waveOffset * 0.3), 0.0, 1.0);
-
-  // Mobile: simplify (no wave offset)
-  if (motionReduction > 0.5) {
-    localProgress = progress;
-    waveOffset = 0.0;
-  }
-
-  // Current roll line position
-  float rollLineZ = mix(rollStartZ, rollEndZ, localProgress);
-
-  // How far below the roll line is this particle?
-  float distBelowRoll = rollLineZ - pos.z;
-
-  // Only affect particles below the roll line
-  if (distBelowRoll > 0.0) {
-    // Roll parameters
-    float rollRadius = 1.2;  // Tightness of curl (smaller = tighter)
-    float maxArc = rollRadius * 3.14159;  // Max half-circle rotation
-    float arcLength = min(distBelowRoll, maxArc);
-    float angle = arcLength / rollRadius;
-
-    // Rotate in YZ plane (around X axis = roll axis)
-    float sinA = sin(angle);
-    float cosA = cos(angle);
-
-    // Calculate curl at the roll edge
-    newPos.z = rollLineZ + rollRadius * sinA;
-
-    // Flatten particles to a wall plane IN FRONT of camera (not behind!)
-    // wallProgress: how "walled" is this particle (0 = still curling, 1 = fully wall)
-    float wallProgress = smoothstep(0.0, maxArc, arcLength);
-
-    // CRITICAL: Local Y = -2.0 maps to World Z = +2.0 (in front of camera at Z=3.1)
-    // Local Y → World -Z (inverted!), so negative local Y = positive world Z
-    newPos.y = mix(pos.y + rollRadius * (1.0 - cosA), -2.0, wallProgress);
-
-    // Compress X slightly for wall cohesion
-    newPos.x = pos.x * (1.0 - wallProgress * 0.15);
-
-    // Flatten Z variation (but keep some texture)
-    float flatZ = rollLineZ - 0.3;  // Just below roll line
-    newPos.z = mix(newPos.z, flatZ, wallProgress * 0.6);
-
-    // Subtle paper flutter only at roll edge, not on wall
-    float edgeFactor = 1.0 - wallProgress;
-    float flutter = sin(localProgress * 15.0 + pos.x * 2.5) * 0.04 * edgeFactor;
-    newPos.z += flutter;
-  }
-
-  // Scale: grow particles on wall for solid coverage
-  float rollAmount = clamp(distBelowRoll / (1.2 * 3.14159), 0.0, 1.0);
-  float wallProgress = smoothstep(0.0, 1.0, rollAmount);
-  float scaleMult = mix(1.0, 1.4, wallProgress);  // Grow to 140% for coverage
-
-  // Keep full opacity - particles are hidden by going behind camera, not fading
+  float scaleMult = 1.0;
   float opacity = 1.0;
+
+  // Stage 1: Gust Exit (0-50% progress)
+  if (progress < 0.5) {
+    float exitProgress = progress / 0.5;  // 0 to 1 within stage 1
+    float easedExit = exitProgress * exitProgress;  // Ease in
+
+    // Wind direction - blow particles away from camera (Local +Y = World -Z = away)
+    vec3 windDir = normalize(vec3(0.8, 0.6, 0.3));  // Local: +X right, +Y away from camera, +Z up
+
+    // Stagger particles by position for wave effect
+    float xDelay = (pos.x + 8.0) / 16.0;
+    float zDelay = (pos.z + 4.0) / 12.0;
+    float particleDelay = xDelay * 0.2 + zDelay * 0.15 + h.x * 0.15;
+    float effectiveProgress = smoothstep(particleDelay * 0.4, 1.0, exitProgress);
+
+    // Movement with wind
+    float weight = mix(0.7, 1.3, h.y);  // Vary by particle
+    float movement = pow(effectiveProgress, 1.5) * gustStrength / weight;
+    newPos += windDir * movement;
+
+    // Turbulence for organic feel
+    float turbulence = sin(effectiveProgress * 12.0 + h.y * 6.28) * effectiveProgress * 1.2;
+    newPos.z += turbulence;
+    newPos.x += cos(effectiveProgress * 8.0 + h.z * 6.28) * effectiveProgress * 0.8;
+
+    // Scale down and fade out
+    scaleMult = 1.0 - effectiveProgress * 0.8;
+    opacity = 1.0 - effectiveProgress;
+
+    // Mobile: reduce turbulence
+    if (motionReduction > 0.5) {
+      newPos = pos + windDir * movement * 0.7;
+      scaleMult = 1.0 - effectiveProgress * 0.9;
+    }
+  }
+  // Stage 2: Screen Fill (50-100% progress)
+  else {
+    float fillProgress = (progress - 0.5) / 0.5;  // 0 to 1 within stage 2
+    float easedFill = 1.0 - pow(1.0 - fillProgress, 2.0);  // Ease out
+
+    // Calculate where particles ended up after gust (at progress = 0.5)
+    vec3 windDir = normalize(vec3(0.8, 0.6, 0.3));  // Same as stage 1
+    float xDelay = (pos.x + 8.0) / 16.0;
+    float zDelay = (pos.z + 4.0) / 12.0;
+    float particleDelay = xDelay * 0.2 + zDelay * 0.15 + h.x * 0.15;
+    float effectiveExitProgress = smoothstep(particleDelay * 0.4, 1.0, 1.0);
+    float weight = mix(0.7, 1.3, h.y);
+    float exitMovement = pow(effectiveExitProgress, 1.5) * gustStrength / weight;
+    vec3 exitPos = pos + windDir * exitMovement;
+    exitPos.z += sin(1.0 * 12.0 + h.y * 6.28) * 1.0 * 1.2;
+    exitPos.x += cos(1.0 * 8.0 + h.z * 6.28) * 1.0 * 0.8;
+
+    // Target position: wall filling the screen
+    // Use hash to distribute particles evenly across screen
+    float screenX = (h.x * 2.0 - 1.0) * 12.0;  // Spread across X
+    float screenZ = (h.z * 2.0 - 1.0) * 8.0;   // Spread across Z (world Y)
+    vec3 targetPos = vec3(screenX, wallPlaneY, screenZ);
+
+    // Interpolate from exit position to target wall position
+    newPos = mix(exitPos, targetPos, easedFill);
+
+    // Add subtle wave during return for organic feel
+    float wave = sin(fillProgress * 3.14159 + h.x * 4.0) * (1.0 - fillProgress) * 0.3;
+    newPos.z += wave;
+
+    // Scale up dramatically for screen coverage
+    float targetScale = screenCoverage;
+    scaleMult = mix(0.2, targetScale, easedFill);
+
+    // Fade back in
+    opacity = easedFill;
+
+    // Mobile: simpler interpolation
+    if (motionReduction > 0.5) {
+      newPos = mix(exitPos * 0.7, targetPos, easedFill);
+      scaleMult = mix(0.1, targetScale * 0.9, easedFill);
+    }
+  }
 
   return vec4(newPos, floor(max(0.001, scaleMult) * 1000.0) + min(opacity, 0.999));
 }
@@ -816,7 +834,8 @@ vec4 applyExitAnimation(vec3 pos, vec3 scale, float exitType, float exitProgress
                        float sandFall, float sandFunnel, float sandSpread, float sandGrain,
                        vec3 sandViewRight, vec3 sandViewUp, vec3 sandCameraPos,
                        float teleSpd, float teleSparkle, float teleBand, float teleDir,
-                       float motionReduction) {
+                       float motionReduction,
+                       float wallPlaneY, float screenCoverage, float gustStrength) {
   if (exitProgress <= 0.001 || exitType < 0.5) {
     return vec4(pos, 1000.0 + 0.999);
   }
@@ -837,7 +856,7 @@ vec4 applyExitAnimation(vec3 pos, vec3 scale, float exitType, float exitProgress
   if (exitType < 14.5) return exitSand(pos, scale, exitProgress, h, sandFall, sandFunnel, sandSpread, sandGrain,
                                       sandViewRight, sandViewUp, sandCameraPos);
   if (exitType < 15.5) return exitTeleport(pos, scale, exitProgress, h, teleSpd, teleSparkle, teleBand, teleDir);
-  return exitBlueprintWall(pos, scale, exitProgress, h, motionReduction);
+  return exitBlueprintWall(pos, scale, exitProgress, h, motionReduction, wallPlaneY, screenCoverage, gustStrength);
 }
 `;
 

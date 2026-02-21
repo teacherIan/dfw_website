@@ -150,7 +150,13 @@ const Scene = ({ controlsStore }: SceneProps) => {
   const teleportSparkleRef = useRef(dyno.dynoFloat(1.0));
   const teleportBandWidthRef = useRef(dyno.dynoFloat(2.0));
   const teleportDirectionRef = useRef(dyno.dynoFloat(1.0));
-  
+
+  // Gallery transition controls (Blueprint Wall type 16)
+  // Local Y = -2.0 → World Z = 2.0 (in front of camera at Z=3.1)
+  const wallPlaneYRef = useRef(dyno.dynoFloat(-2.0));  // Wall position
+  const screenCoverageRef = useRef(dyno.dynoFloat(3.0));  // Scale multiplier for coverage
+  const gustStrengthRef = useRef(dyno.dynoFloat(8.0));  // Wind intensity (reduced for slower motion)
+
   // Mobile simplification refs - reduce small particle chaos
   const smallParticleThresholdRef = useRef(dyno.dynoFloat(0.0));
   const smallMotionReductionRef = useRef(dyno.dynoFloat(0.0));
@@ -320,6 +326,11 @@ const Scene = ({ controlsStore }: SceneProps) => {
     teleportBandWidth,
     teleportDirection,
 
+    // Exit Animation - Gallery Transition
+    wallPlaneY,
+    screenCoverage,
+    gustStrength,
+
     currentCameraX,
     currentCameraY,
     currentCameraZ,
@@ -471,6 +482,10 @@ const Scene = ({ controlsStore }: SceneProps) => {
               exitProgress: 'float',
               returnProgress: 'float',
               entranceType: 'float',
+              // Gallery transition controls (type 16)
+              wallPlaneY: 'float',
+              screenCoverage: 'float',
+              gustStrength: 'float',
             },
             outTypes: { gsplat: dyno.Gsplat },
             // GLSL shader globals imported from ./shaders/
@@ -587,6 +602,11 @@ const Scene = ({ controlsStore }: SceneProps) => {
               float teleBand = ${inputs.teleportBandWidth};
               float teleDir = ${inputs.teleportDirection};
 
+              // Gallery transition controls (type 16)
+              float wallPlaneY = ${inputs.wallPlaneY};
+              float screenCoverage = ${inputs.screenCoverage};
+              float gustStrength = ${inputs.gustStrength};
+
               // Get random hash for this particle (used by both entrance and exit animations)
               vec3 h = hash(localPos);
 
@@ -623,7 +643,8 @@ const Scene = ({ controlsStore }: SceneProps) => {
                                                       sandFall, sandFunnel, sandSpread, sandGrain,
                                                       sandViewRight, sandViewUp, sandCameraPos,
                                                       teleSpd, teleSparkle, teleBand, teleDir,
-                                                      motionReduction);
+                                                      motionReduction,
+                                                      wallPlaneY, screenCoverage, gustStrength);
                   ${outputs.gsplat}.center = exitResult.xyz;
 
                   // Unpack scale multiplier and opacity from w component
@@ -636,28 +657,25 @@ const Scene = ({ controlsStore }: SceneProps) => {
                   ${outputs.gsplat}.scales *= exitScaleMultiplier;
                   ${outputs.gsplat}.rgba.a *= exitOpacity;
 
-                  // Color shift for blueprint wall (type 16) - transform TO blueprint blue
+                  // Color shift for gallery transition (type 16) - transform TO blueprint blue
+                  // Stage 1 (0-50%): particles exit, keep original colors
+                  // Stage 2 (50-100%): particles return, shift to blueprint blue
                   if (exitType > 15.5 && exitType < 16.5) {
                     vec3 blueprintBlue = vec3(0.039, 0.082, 0.145);  // #0a1525
 
-                    // Calculate wall factor from position (same logic as vertex shader)
-                    float rollStartZ = -4.0;
-                    float rollEndZ = 8.0;
-                    float rollLineZ = mix(rollStartZ, rollEndZ, exitProgress);
-                    float distBelowRoll = rollLineZ - localPos.z;
-
-                    float wallFactor = 0.0;
-                    if (distBelowRoll > 0.0) {
-                      float maxArc = 1.2 * 3.14159;
-                      wallFactor = smoothstep(0.0, maxArc, min(distBelowRoll, maxArc));
+                    // Only apply color shift during stage 2 (return phase)
+                    float fillProgress = 0.0;
+                    if (exitProgress > 0.5) {
+                      fillProgress = (exitProgress - 0.5) / 0.5;  // 0 to 1 within stage 2
+                      fillProgress = 1.0 - pow(1.0 - fillProgress, 2.0);  // Ease out
                     }
 
                     // Preserve luminance for texture variation
                     float luma = dot(${outputs.gsplat}.rgba.rgb, vec3(0.299, 0.587, 0.114));
                     vec3 blueWithTexture = blueprintBlue * (0.6 + luma * 0.8);
 
-                    // Full blend to blue based on wall factor
-                    ${outputs.gsplat}.rgba.rgb = mix(${outputs.gsplat}.rgba.rgb, blueWithTexture, wallFactor);
+                    // Blend to blue based on fill progress
+                    ${outputs.gsplat}.rgba.rgb = mix(${outputs.gsplat}.rgba.rgb, blueWithTexture, fillProgress);
                   }
                 }
               }
@@ -748,7 +766,8 @@ const Scene = ({ controlsStore }: SceneProps) => {
                   sandFall, sandFunnel, sandSpread, sandGrain,
                   sandViewRight, sandViewUp, sandCameraPos,
                   teleSpd, teleSparkle, teleBand, teleDir,
-                  motionReduction
+                  motionReduction,
+                  wallPlaneY, screenCoverage, gustStrength
                 );
                 ${outputs.gsplat}.center = entranceResult.xyz;
                 float entrancePacked = entranceResult.w;
@@ -758,22 +777,23 @@ const Scene = ({ controlsStore }: SceneProps) => {
                 ${outputs.gsplat}.rgba.a *= entranceOpacity;
 
                 // Color shift for return from gallery (type 16) - transform FROM blueprint blue back to original
+                // returnProgress: 1.0 → 0.0 (reversed two-stage animation)
+                // Stage 2 reversed (1.0 → 0.5): Wall unfills, shift FROM blue back to original
+                // Stage 1 reversed (0.5 → 0.0): Particles return, keep original colors
                 if (entranceType > 15.5 && entranceType < 16.5) {
                   vec3 blueprintBlue = vec3(0.039, 0.082, 0.145);  // #0a1525
 
-                  // returnProgress goes 1 -> 0, so wallFactor decreases over time
-                  float rollLineZ = mix(-4.0, 8.0, returnProgress);
-                  float distBelowRoll = rollLineZ - localPos.z;
-
-                  float wallFactor = 0.0;
-                  if (distBelowRoll > 0.0) {
-                    float maxArc = 1.2 * 3.14159;
-                    wallFactor = smoothstep(0.0, maxArc, min(distBelowRoll, maxArc));
+                  // Only apply color shift during reversed stage 2 (returnProgress 1.0 → 0.5)
+                  float fillFactor = 0.0;
+                  if (returnProgress > 0.5) {
+                    // returnProgress goes 1 → 0.5 in this stage
+                    fillFactor = (returnProgress - 0.5) / 0.5;  // 1 to 0
+                    fillFactor = fillFactor * fillFactor;  // Ease in (reversed ease out)
                   }
 
                   float luma = dot(${outputs.gsplat}.rgba.rgb, vec3(0.299, 0.587, 0.114));
                   vec3 blueWithTexture = blueprintBlue * (0.6 + luma * 0.8);
-                  ${outputs.gsplat}.rgba.rgb = mix(${outputs.gsplat}.rgba.rgb, blueWithTexture, wallFactor);
+                  ${outputs.gsplat}.rgba.rgb = mix(${outputs.gsplat}.rgba.rgb, blueWithTexture, fillFactor);
                 }
               } else if (returnProgress > 0.001) {
                 // Simple fade/scale for default entrance
@@ -876,6 +896,10 @@ const Scene = ({ controlsStore }: SceneProps) => {
             exitProgress: exitProgressRef.current,
             returnProgress: returnProgressRef.current,
             entranceType: entranceTypeRef.current,
+            // Gallery transition (type 16)
+            wallPlaneY: wallPlaneYRef.current,
+            screenCoverage: screenCoverageRef.current,
+            gustStrength: gustStrengthRef.current,
           }).gsplat;
 
           return { gsplat };
@@ -1098,6 +1122,11 @@ const Scene = ({ controlsStore }: SceneProps) => {
     teleportSparkleRef.current.value = teleportSparkle;
     teleportBandWidthRef.current.value = teleportBandWidth;
     teleportDirectionRef.current.value = Math.max(0.0, teleportDirection);
+
+    // Gallery transition parameters (type 16)
+    wallPlaneYRef.current.value = wallPlaneY;
+    screenCoverageRef.current.value = screenCoverage;
+    gustStrengthRef.current.value = gustStrength;
 
     // Mobile simplification - reduce small particle chaos
     smallParticleThresholdRef.current.value = smallParticleThreshold;
