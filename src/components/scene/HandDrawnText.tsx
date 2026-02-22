@@ -8,6 +8,7 @@ import { useWindowWidth } from '../../hooks';
 
 interface HandDrawnTextProps {
   show: boolean;
+  isExiting?: boolean;
   controlsStore?: LevaStore;
 }
 
@@ -31,12 +32,15 @@ const EMERGE_DURATION = 0.35; // Settling onto the page
 const STROKE_DURATION = 0.45; // Drawing the outline
 const FILL_DURATION = 0.3; // Fill flooding in
 
+// Exit animation - reverse of entrance (unfill, then undraw)
+const EXIT_STAGGER_DELAY = 0.04; // Stagger between letters
+const EXIT_EASE = [0.25, 0.8, 0.25, 1] as const; // Smooth easing
+
 // Emerge effect settings
 const EMERGE_SCALE_START = 1.15; // Start larger (pressing toward viewer)
-// NOTE: translateY doesn't seem to work on SVG <g> elements in Framer Motion.
-// The Y movement effect is not visible, but the scale animation works fine.
-// Keeping this value in case a future fix makes it work.
-const EMERGE_Y_START = -20; // Start well above (currently not working)
+// NOTE: Using Framer Motion's `y` property instead of `translateY` for SVG transforms.
+// The `y` property works reliably on SVG <g> elements.
+const EMERGE_Y_START = -20; // Start above, settle down into place
 
 // Custom easing curves
 const SETTLE_EASE = [0.22, 1.8, 0.36, 1] as const; // Very springy overshoot for settling
@@ -50,7 +54,7 @@ const FILL_EASE = [0.22, 1, 0.36, 1] as const; // Quick start, gentle finish
  * Each letter emerges, gets drawn, then fills - creating the feeling
  * of watching someone hand-letter the title in real-time.
  */
-const HandDrawnText = ({ show, controlsStore }: HandDrawnTextProps) => {
+const HandDrawnText = ({ show, isExiting = false, controlsStore }: HandDrawnTextProps) => {
   const { isPortrait, isSmallLandscape, isTablet, isIpadPro } = useWindowWidth();
 
   // Title size controls organized by breakpoint
@@ -84,7 +88,8 @@ const HandDrawnText = ({ show, controlsStore }: HandDrawnTextProps) => {
           ? titleIpadPro.ipadProTitleScale
           : titleDesktop.desktopTitleScale;
 
-  if (!show) return null;
+  // Keep mounted during exit animation so we can animate out
+  if (!show && !isExiting) return null;
 
   return (
     <div
@@ -118,6 +123,10 @@ const HandDrawnText = ({ show, controlsStore }: HandDrawnTextProps) => {
             const strokeStart = startDelay + EMERGE_DURATION * 0.4; // Start drawing as emerge settles
             const fillStart = startDelay + EMERGE_DURATION + STROKE_DURATION * 0.5; // Fill as stroke finishes
 
+            // Exit timing - reverse order (last letter exits first), simple slide down
+            const reverseIndex = LETTER_COUNT - 1 - index;
+            const exitDelay = reverseIndex * EXIT_STAGGER_DELAY;
+
             // Calculate center point for transform origin
             const centerX = letter.startX + 12;
             const centerY = letter.startY;
@@ -125,83 +134,59 @@ const HandDrawnText = ({ show, controlsStore }: HandDrawnTextProps) => {
             return (
               <motion.g
                 key={index}
-                initial={{
-                  opacity: 0
-                }}
+                initial={{ opacity: 0, y: EMERGE_Y_START }}
                 animate={{
-                  opacity: 1
+                  opacity: isExiting ? 0 : 1,
+                  y: isExiting ? 0 : 0,  // No slide on exit
                 }}
                 transition={{
-                  opacity: {
-                    delay: emergeStart,
-                    duration: EMERGE_DURATION * 0.6,
-                    ease: 'easeOut',
-                  },
+                  opacity: isExiting
+                    ? { delay: exitDelay + FILL_DURATION * 1.5 + STROKE_DURATION * 1.2, duration: STROKE_DURATION * 0.5, ease: 'easeOut' }
+                    : { delay: emergeStart, duration: EMERGE_DURATION * 0.6, ease: 'easeOut' },
+                  y: { delay: emergeStart, duration: EMERGE_DURATION, ease: SETTLE_EASE },
                 }}
               >
-                {/* Inner g for scale + translate transforms */}
+                {/* Inner g for scale transform (entrance only) */}
                 <motion.g
-                  initial={{
-                    scale: EMERGE_SCALE_START,
-                    translateY: EMERGE_Y_START
-                  }}
-                  animate={{
-                    scale: 1,
-                    translateY: 0
-                  }}
+                  initial={{ scale: EMERGE_SCALE_START }}
+                  animate={{ scale: 1 }}
                   style={{
                     originX: `${centerX}px`,
-                    originY: `${centerY}px`
+                    originY: `${centerY}px`,
                   }}
                   transition={{
-                    scale: {
-                      delay: emergeStart,
-                      duration: EMERGE_DURATION,
-                      ease: SETTLE_EASE,
-                    },
-                    translateY: {
-                      delay: emergeStart,
-                      duration: EMERGE_DURATION,
-                      ease: SETTLE_EASE,
-                    },
+                    scale: { delay: emergeStart, duration: EMERGE_DURATION, ease: SETTLE_EASE },
                   }}
                 >
-                <motion.path
-                  d={letter.d}
-                  fill="white"
-                  fillRule="evenodd"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  initial={{
-                    pathLength: 0,
-                    fillOpacity: 0,
-                    strokeOpacity: 0.9
-                  }}
-                  animate={{
-                    pathLength: 1,
-                    fillOpacity: 1,
-                    strokeOpacity: 0.2 // Stroke fades as fill takes over
-                  }}
-                  transition={{
-                    pathLength: {
-                      delay: strokeStart,
-                      duration: STROKE_DURATION,
-                      ease: DRAW_EASE,
-                    },
-                    fillOpacity: {
-                      delay: fillStart,
-                      duration: FILL_DURATION,
-                      ease: FILL_EASE,
-                    },
-                    strokeOpacity: {
-                      delay: fillStart + FILL_DURATION * 0.3,
-                      duration: FILL_DURATION * 0.7,
-                      ease: 'easeOut',
-                    },
-                  }}
-                />
+                  <motion.path
+                    d={letter.d}
+                    fill="white"
+                    fillRule="evenodd"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    initial={{ pathLength: 0, fillOpacity: 0, strokeOpacity: 0.9 }}
+                    animate={{
+                      pathLength: isExiting ? 0 : 1,  // Undraw on exit (reverse of entrance)
+                      fillOpacity: isExiting ? 0 : 1,  // Unfill on exit
+                      strokeOpacity: isExiting ? 0.9 : 0.2,  // Stroke appears as fill drains
+                    }}
+                    transition={
+                      isExiting
+                        ? {
+                            // Reverse of entrance: unfill first, then undraw (slower for elegance)
+                            fillOpacity: { delay: exitDelay, duration: FILL_DURATION * 1.5, ease: FILL_EASE },
+                            strokeOpacity: { delay: exitDelay, duration: FILL_DURATION * 0.8, ease: 'easeOut' },
+                            pathLength: { delay: exitDelay + FILL_DURATION * 0.8, duration: STROKE_DURATION * 1.5, ease: DRAW_EASE },
+                          }
+                        : {
+                            pathLength: { delay: strokeStart, duration: STROKE_DURATION, ease: DRAW_EASE },
+                            fillOpacity: { delay: fillStart, duration: FILL_DURATION, ease: FILL_EASE },
+                            strokeOpacity: { delay: fillStart + FILL_DURATION * 0.3, duration: FILL_DURATION * 0.7, ease: 'easeOut' },
+                          }
+                    }
+                  />
                 </motion.g>
               </motion.g>
             );
