@@ -31,6 +31,7 @@ interface AnimationState {
   wallReady: boolean;
   streamingStarted: boolean;
   cameraAnimationComplete: boolean;
+  loadingComplete: boolean;
 
   // Animation key for resetting
   animationKey: number;
@@ -52,6 +53,7 @@ interface AnimationActions {
   setWallReady: (ready: boolean) => void;
   setCameraAnimationComplete: () => void;
   setShowText: (show: boolean) => void;
+  setLoadingComplete: () => void;
 
   // Duration setters (for Leva controls)
   setExitAnimationDuration: (duration: number) => void;
@@ -85,6 +87,7 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
   wallReady: false,
   streamingStarted: false,
   cameraAnimationComplete: false,
+  loadingComplete: false,
   animationKey: 0,
   exitAnimationDuration: EXIT_ANIMATION_DURATION,
   returnAnimationDuration: ENTRANCE_ANIMATION_DURATION,
@@ -214,6 +217,7 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
   },
   setCameraAnimationComplete: () => set({ cameraAnimationComplete: true }),
   setShowText: (show) => set({ showText: show }),
+  setLoadingComplete: () => set({ loadingComplete: true }),
 
   // Duration setters
   setExitAnimationDuration: (duration) => set({ exitAnimationDuration: duration }),

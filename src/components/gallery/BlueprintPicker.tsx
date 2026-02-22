@@ -158,8 +158,12 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true }: 
     }, 800);
   };
 
-  // Leva controls for each category image position (hidden in production, uses desktop defaults)
-  const { hideImages } = useControls('Gallery Settings', { hideImages: { value: false, label: 'Hide Images (for screenshot)' } }, { hidden: !import.meta.env.DEV });
+  // Leva controls for gallery settings (hidden in production)
+  const { hideImages, paperOpacity, gridDarkness } = useControls('Gallery Settings', {
+    hideImages: { value: false, label: 'Hide Images (for screenshot)' },
+    paperOpacity: { value: 0.45, min: 0, max: 1, step: 0.05, label: 'Paper Opacity' },
+    gridDarkness: { value: 0.08, min: 0, max: 0.3, step: 0.01, label: 'Grid Line Darkness' },
+  }, { hidden: !import.meta.env.DEV });
   const chairsControls = useControls('Chairs', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.chairs), { hidden: !import.meta.env.DEV });
   const largeTablesControls = useControls('Large Tables', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.large_tables), { hidden: !import.meta.env.DEV });
   const smallTablesControls = useControls('Small Tables', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.small_tables), { hidden: !import.meta.env.DEV });
@@ -188,12 +192,64 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true }: 
   return (
     <div className="blueprint-picker">
       {/* Blueprint paper background */}
-      <div className={`blueprint-picker__paper ${isRolledOut ? 'blueprint-picker__paper--rolled-out' : ''} ${isRollingUp ? 'blueprint-picker__paper--rolling-up' : ''}`}>
+      <div
+        className={`blueprint-picker__paper ${isRolledOut ? 'blueprint-picker__paper--rolled-out' : ''} ${isRollingUp ? 'blueprint-picker__paper--rolling-up' : ''}`}
+        style={{
+          background: `linear-gradient(
+            135deg,
+            rgba(13, 40, 71, ${paperOpacity * 1.1}) 0%,
+            rgba(26, 58, 92, ${paperOpacity * 0.9}) 25%,
+            rgba(30, 65, 101, ${paperOpacity * 0.9}) 50%,
+            rgba(26, 58, 92, ${paperOpacity * 0.9}) 75%,
+            rgba(13, 40, 71, ${paperOpacity * 1.1}) 100%
+          )`,
+        }}
+      >
         {/* Grid pattern overlay */}
-        <div className="blueprint-picker__grid" />
+        <div
+          className="blueprint-picker__grid"
+          style={{
+            backgroundImage: `
+              repeating-linear-gradient(
+                90deg,
+                rgba(255, 255, 255, ${gridDarkness * 0.4}) 0px,
+                rgba(255, 255, 255, ${gridDarkness * 0.4}) 1px,
+                transparent 1px,
+                transparent 20px
+              ),
+              repeating-linear-gradient(
+                0deg,
+                rgba(255, 255, 255, ${gridDarkness * 0.4}) 0px,
+                rgba(255, 255, 255, ${gridDarkness * 0.4}) 1px,
+                transparent 1px,
+                transparent 20px
+              )
+            `,
+          }}
+        />
 
         {/* Major grid lines */}
-        <div className="blueprint-picker__major-grid" />
+        <div
+          className="blueprint-picker__major-grid"
+          style={{
+            backgroundImage: `
+              repeating-linear-gradient(
+                90deg,
+                rgba(255, 255, 255, ${gridDarkness}) 0px,
+                rgba(255, 255, 255, ${gridDarkness}) 1px,
+                transparent 1px,
+                transparent 100px
+              ),
+              repeating-linear-gradient(
+                0deg,
+                rgba(255, 255, 255, ${gridDarkness}) 0px,
+                rgba(255, 255, 255, ${gridDarkness}) 1px,
+                transparent 1px,
+                transparent 100px
+              )
+            `,
+          }}
+        />
 
         {/* Compass rose / North arrow */}
         <div className={`blueprint-picker__compass ${showContent ? 'blueprint-picker__content--visible' : ''}`}>

@@ -1,51 +1,42 @@
 import { useState, useEffect } from 'react';
 import { fontFamilyMap } from '../constants';
 
-const STORAGE_KEY = 'dfw_has_visited';
 const MIN_DISPLAY_TIME = 6000; // Minimum time to show loading screen (ms)
 
 interface LoadingScreenProps {
   isReady: boolean;
+  onComplete?: () => void;
 }
 
-export default function LoadingScreen({ isReady }: LoadingScreenProps) {
-  const [isFirstVisit, setIsFirstVisit] = useState(true);
+export default function LoadingScreen({ isReady, onComplete }: LoadingScreenProps) {
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
-  // Check if first visit on mount
+  // Minimum display time
   useEffect(() => {
-    const hasVisited = localStorage.getItem(STORAGE_KEY);
-    if (hasVisited) {
-      setIsFirstVisit(false);
-      setIsHidden(true);
-    } else {
-      // Mark as visited for next time
-      localStorage.setItem(STORAGE_KEY, 'true');
-    }
-
-    // Minimum display time
     const timer = setTimeout(() => setMinTimeElapsed(true), MIN_DISPLAY_TIME);
     return () => clearTimeout(timer);
   }, []);
 
   // Fade out when ready and minimum time elapsed
   useEffect(() => {
-    if (isReady && minTimeElapsed && !isFadingOut && isFirstVisit) {
+    if (isReady && minTimeElapsed && !isFadingOut) {
       setIsFadingOut(true);
+      // Signal animation can start now
+      onComplete?.();
       // Hide completely after fade animation
       const timer = setTimeout(() => setIsHidden(true), 800);
       return () => clearTimeout(timer);
     }
-  }, [isReady, minTimeElapsed, isFadingOut, isFirstVisit]);
+  }, [isReady, minTimeElapsed, isFadingOut, onComplete]);
 
   if (isHidden) return null;
 
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center bg-white transition-opacity duration-700 ${
-        isFadingOut ? 'opacity-0' : 'opacity-100'
+        isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
       <div className="text-center">
