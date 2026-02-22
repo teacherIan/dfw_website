@@ -41,6 +41,7 @@ function AppContent() {
     returnHome,
     setShowText,
     setStreamingStarted,
+    setLoadingComplete,
     setExitAnimationDuration,
     setReturnAnimationDuration,
     setExitTypeOverride,
@@ -124,8 +125,9 @@ function AppContent() {
     }, { collapsed: true }),
   }, { store: controlsStore });
 
-  // Get streamingStarted from store
+  // Get streamingStarted and loadingComplete from store
   const streamingStarted = useAnimationStore((state) => state.streamingStarted);
+  const loadingComplete = useAnimationStore((state) => state.loadingComplete);
 
   // Track when streaming starts and when splat is loaded
   useEffect(() => {
@@ -149,15 +151,15 @@ function AppContent() {
   }, [setStreamingStarted]);
 
   useEffect(() => {
-    // Start showing the text after the splat animation has fully finished
-    // Wait for streaming to start before beginning the timer
-    if (!streamingStarted) return;
+    // Start showing the text after loading screen completes
+    // This ensures text appears after animation actually starts
+    if (!loadingComplete) return;
 
     const timer = setTimeout(() => {
       setShowText(true);
     }, ANIMATION_TIMING.TEXT_APPEAR);
     return () => clearTimeout(timer);
-  }, [animationKey, streamingStarted, setShowText]);
+  }, [animationKey, loadingComplete, setShowText]);
 
   useEffect(() => {
     const handleReset = () => {
@@ -183,12 +185,16 @@ function AppContent() {
 
   return (
     <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
-      {/* Loading screen for first-time visitors */}
-      <LoadingScreen isReady={streamingStarted} />
+      {/* Loading screen - signals when animation can start */}
+      <LoadingScreen
+        isReady={streamingStarted}
+        onComplete={setLoadingComplete}
+      />
 
       {/* Hide default Leva panel in production, show custom panel in dev */}
+      {/* Home controls use custom store, gallery controls use default panel */}
       <Leva hidden={!showLeva} />
-      {showLeva && <LevaPanel store={controlsStore} />}
+      {showLeva && activeScene !== 'gallery' && <LevaPanel store={controlsStore} />}
 
       {/* Main 3D Canvas */}
       <div className="relative z-0 h-full w-full bg-transparent" style={{ touchAction: 'none' }}>
@@ -199,8 +205,8 @@ function AppContent() {
         </ErrorBoundary>
       </div>
 
-      {/* Overlays - only show on home scene */}
-      {showOverlays && activeScene === 'home' && (animationPhase === 'idle' || animationPhase === 'exiting') && (
+      {/* Overlays - only show on home scene after loading completes */}
+      {showOverlays && activeScene === 'home' && (animationPhase === 'idle' || animationPhase === 'exiting') && (loadingComplete || hasNavigated) && (
         <MenuOverlay
           onNavigate={navigateTo}
           skipDelay={hasNavigated}
@@ -211,8 +217,13 @@ function AppContent() {
       {showOverlays && activeScene === 'home' && !useHandDrawn && (
         <TextOverlay key={animationKey} show={showText} />
       )}
-      {showOverlays && activeScene === 'home' && useHandDrawn && (
-        <HandDrawnText key={animationKey} show={showText} controlsStore={controlsStore} />
+      {showOverlays && activeScene === 'home' && (animationPhase === 'idle' || animationPhase === 'exiting') && useHandDrawn && (
+        <HandDrawnText
+          key={animationKey}
+          show={showText}
+          isExiting={animationPhase === 'exiting'}
+          controlsStore={controlsStore}
+        />
       )}
 
       {/* Contact overlay - show on contact scene */}

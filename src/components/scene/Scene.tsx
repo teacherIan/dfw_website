@@ -30,6 +30,7 @@ const Scene = ({ controlsStore }: SceneProps) => {
     exitAnimationDuration,
     returnAnimationDuration,
     exitTypeOverride,
+    loadingComplete,
   } = useAnimationStore();
   const renderer = useThree((state) => state.gl);
   const camera = useThree((state) => state.camera);
@@ -174,6 +175,7 @@ const Scene = ({ controlsStore }: SceneProps) => {
   const effectSetupRef = useRef(false);
   const cameraAnimationComplete = useRef(false);
   const cameraHoldRef = useRef<{ x: number; y: number; z: number } | null>(null);
+  const swayFactorRef = useRef(1); // Smoothly transitions sway on/off for gallery
 
 
   // Detect mobile viewport
@@ -189,16 +191,19 @@ const Scene = ({ controlsStore }: SceneProps) => {
   }, []);
 
   useEffect(() => {
-    if (animationPhase !== 'idle') {
+    // Only hold camera for non-gallery animations (gallery keeps swaying naturally)
+    const isGalleryTransition = targetScene === 'gallery' || activeScene === 'gallery';
+
+    if (animationPhase !== 'idle' && !isGalleryTransition) {
       cameraHoldRef.current = {
         x: camera.position.x,
         y: camera.position.y,
         z: camera.position.z,
       };
-    } else {
+    } else if (animationPhase === 'idle' || isGalleryTransition) {
       cameraHoldRef.current = null;
     }
-  }, [animationPhase, camera]);
+  }, [animationPhase, activeScene, targetScene, camera]);
 
   // Note: We no longer reset the mesh when gallery is active
   // because we want the splat to remain visible as the "wall" background
@@ -979,17 +984,23 @@ const Scene = ({ controlsStore }: SceneProps) => {
 
   // Animate the entrance effect and camera
   useFrame((_, delta) => {
-    baseTimeRef.current += delta;
-    animateT.current.value = baseTimeRef.current;
+    // Only advance animation time after loading screen completes
+    if (loadingComplete) {
+      baseTimeRef.current += delta;
+      animateT.current.value = baseTimeRef.current;
+    }
     depthOffsetRef.current.value = depthOffset;
     animationSpeedRef.current.value = animationSpeed;
-    if (animationPhase !== 'idle' && !cameraHoldRef.current) {
+    // Only hold camera for non-gallery animations
+    const isGalleryTransition = targetScene === 'gallery' || activeScene === 'gallery';
+
+    if (animationPhase !== 'idle' && !cameraHoldRef.current && !isGalleryTransition) {
       cameraHoldRef.current = {
         x: camera.position.x,
         y: camera.position.y,
         z: camera.position.z,
       };
-    } else if (animationPhase === 'idle' && cameraHoldRef.current) {
+    } else if ((animationPhase === 'idle' || isGalleryTransition) && cameraHoldRef.current) {
       cameraHoldRef.current = null;
     }
 
@@ -1147,14 +1158,19 @@ const Scene = ({ controlsStore }: SceneProps) => {
       swayY = (Math.sin(t * 0.2) * 0.4 + Math.cos(t * 0.5) * 0.3 + Math.sin(t * 0.11) * 0.3) * intensity;
     }
 
+    // Smoothly transition sway factor for gallery (prevents camera jump)
+    const targetSwayFactor = activeScene === 'gallery' ? 0 : 1;
+    swayFactorRef.current = lerp(swayFactorRef.current, targetSwayFactor, 0.005);
+    const effectiveSway = swayFactorRef.current;
+
     // Animate camera position during startup
     if (animateCamera && !cameraAnimationComplete.current) {
       const progress = Math.min(baseTimeRef.current / animationDuration, 1);
       const easedProgress = easeOutCubic(progress);
 
       // Interpolate camera position from start to target, plus sway
-      const newX = lerp(startX, cameraX, easedProgress) + swayX;
-      const newY = lerp(startY, cameraY, easedProgress) + swayY;
+      const newX = lerp(startX, cameraX, easedProgress) + swayX * effectiveSway;
+      const newY = lerp(startY, cameraY, easedProgress) + swayY * effectiveSway;
       const newZ = lerp(startZ, cameraZ, easedProgress);
 
       camera.position.set(newX, newY, newZ);
@@ -1164,12 +1180,15 @@ const Scene = ({ controlsStore }: SceneProps) => {
         cameraAnimationComplete.current = true;
       }
     } else if (ambientSway) {
-      // After entrance animation, apply sway to final position
+      // After entrance animation, apply sway (scaled by factor) to final position
       camera.position.set(
-        cameraX + swayX,
-        cameraY + swayY,
+        cameraX + swayX * effectiveSway,
+        cameraY + swayY * effectiveSway,
         cameraZ
       );
+    } else {
+      // No sway - hold camera steady
+      camera.position.set(cameraX, cameraY, cameraZ);
     }
 
     if (cameraHoldRef.current) {
