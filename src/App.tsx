@@ -8,6 +8,7 @@ import BlueprintPicker from './components/gallery/BlueprintPicker';
 import MenuOverlay from './components/navigation/MenuOverlay';
 import BackButton from './components/navigation/BackButton';
 import ErrorBoundary from './components/ErrorBoundary';
+import LoadingScreen from './components/LoadingScreen';
 import {
   ANIMATION_TIMING,
   EXIT_ANIMATION_DURATION,
@@ -180,14 +181,11 @@ function AppContent() {
     return false;
   }, [animationPhase, targetScene, activeScene, galleryViewState]);
 
-  // Dynamic background: dark blue during gallery transitions, white otherwise
-
   return (
-    <div className={`relative h-svh w-screen overflow-hidden text-white ${
-        activeScene === 'gallery' || targetScene === 'gallery'
-          ? 'bg-[#0a1525]'
-          : 'bg-white'
-      }`}>
+    <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
+      {/* Loading screen for first-time visitors */}
+      <LoadingScreen isReady={streamingStarted} />
+
       {/* Hide default Leva panel in production, show custom panel in dev */}
       <Leva hidden={!showLeva} />
       {showLeva && <LevaPanel store={controlsStore} />}
