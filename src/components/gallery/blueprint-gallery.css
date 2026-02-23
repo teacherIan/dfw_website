@@ -107,7 +107,7 @@
 /* ---- Thumbnail Container with Arrows ---- */
 .blueprint-gallery-grid__thumbnail-container {
   position: absolute;
-  top: 90px;
+  top: 110px;
   left: 0;
   right: 0;
   display: flex;
@@ -162,6 +162,39 @@
 
 .blueprint-gallery-grid__thumbnail-row::-webkit-scrollbar {
   display: none; /* Hide scrollbar Chrome/Safari */
+}
+
+/* Scroll fade indicators - subtle hint that more content exists */
+.blueprint-gallery-grid__thumbnail-container::before,
+.blueprint-gallery-grid__thumbnail-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 4;
+}
+
+.blueprint-gallery-grid__thumbnail-container::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(13, 40, 71, 0.9), transparent);
+}
+
+.blueprint-gallery-grid__thumbnail-container::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(13, 40, 71, 0.9), transparent);
+}
+
+/* Show fades based on scroll position */
+.blueprint-gallery-grid__thumbnail-container--can-scroll-left::before {
+  opacity: 1;
+}
+
+.blueprint-gallery-grid__thumbnail-container--can-scroll-right::after {
+  opacity: 1;
 }
 
 /* ---- Thumbnail Items (Beautiful styled cards) ---- */
@@ -230,7 +263,7 @@
 /* ---- Main Image Area (Centered) ---- */
 .blueprint-gallery-grid__main {
   position: absolute;
-  top: 240px;
+  top: 260px;
   left: 24px;
   right: 24px;
   bottom: 24px;
@@ -454,7 +487,7 @@
   }
 
   .blueprint-gallery-grid__thumbnail-container {
-    top: 70px;
+    top: 85px;
     padding: 0 4px;
     gap: 4px;
   }
@@ -485,7 +518,7 @@
   }
 
   .blueprint-gallery-grid__main {
-    top: 180px;
+    top: 195px;
     left: 16px;
     right: 16px;
     bottom: 16px;
@@ -532,7 +565,7 @@
   }
 
   .blueprint-gallery-grid__main {
-    top: 180px;
+    top: 195px;
     gap: 12px;
   }
 
