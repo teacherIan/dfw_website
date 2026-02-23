@@ -1,10 +1,6 @@
-/* ========================================
-   BLUEPRINT GALLERY GRID & PHOTO VIEWER
-   Matching the blueprint aesthetic
-   ======================================== */
+/* BlueprintGalleryGrid - CSS Module */
 
-/* ---- Gallery Grid ---- */
-.blueprint-gallery-grid {
+.grid {
   position: absolute;
   inset: 0;
   z-index: 26;
@@ -12,7 +8,7 @@
   overflow: hidden;
 }
 
-.blueprint-gallery-grid__paper {
+.paper {
   position: absolute;
   inset: 0;
   background: linear-gradient(
@@ -29,7 +25,7 @@
   overflow: hidden;
 }
 
-.blueprint-gallery-grid__grid-pattern {
+.gridPattern {
   position: absolute;
   inset: 0;
   background-image:
@@ -65,7 +61,7 @@
 }
 
 /* Header */
-.blueprint-gallery-grid__header {
+.header {
   position: absolute;
   top: 20px;
   left: 20px;
@@ -75,27 +71,27 @@
   z-index: 10;
 }
 
-.blueprint-gallery-grid__exit-button {
+.exitButton {
   transform: scale(0.8);
 }
 
-.blueprint-gallery-grid__exit-button:hover {
+.exitButton:hover {
   transform: scale(0.85) rotate(15deg);
 }
 
-.blueprint-gallery-grid__back-arrow {
+.backArrow {
   display: flex;
   align-items: center;
   width: clamp(50px, 8vw, 80px);
   transform: scaleX(-1);
 }
 
-.blueprint-gallery-grid__back-arrow svg {
+.backArrow svg {
   width: 100%;
   height: auto;
 }
 
-.blueprint-gallery-grid__title {
+.title {
   font-size: clamp(1.5rem, 4vw, 2.5rem);
   color: rgba(255, 255, 255, 0.9);
   text-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
@@ -104,8 +100,8 @@
   margin: 0;
 }
 
-/* ---- Thumbnail Container with Arrows ---- */
-.blueprint-gallery-grid__thumbnail-container {
+/* Thumbnail Container with Arrows */
+.thumbnailContainer {
   position: absolute;
   top: 110px;
   left: 0;
@@ -117,7 +113,7 @@
   gap: 12px;
 }
 
-.blueprint-gallery-grid__scroll-arrow {
+.scrollArrow {
   flex-shrink: 0;
   width: 40px;
   height: 40px;
@@ -133,39 +129,39 @@
   z-index: 5;
 }
 
-.blueprint-gallery-grid__scroll-arrow:hover:not(:disabled) {
+.scrollArrow:hover:not(:disabled) {
   background: rgba(26, 58, 92, 0.9);
   transform: scale(1.05);
 }
 
-.blueprint-gallery-grid__scroll-arrow:disabled {
+.scrollArrow:disabled {
   opacity: 0.3;
   cursor: default;
 }
 
-.blueprint-gallery-grid__scroll-arrow svg {
+.scrollArrow svg {
   width: 20px;
   height: 20px;
 }
 
-/* ---- Thumbnail Row ---- */
-.blueprint-gallery-grid__thumbnail-row {
+/* Thumbnail Row */
+.thumbnailRow {
   display: flex;
   gap: 16px;
   padding: 0 8px;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: none; /* Hide scrollbar Firefox */
-  -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
-  max-width: calc(100vw - 48px); /* Leave room for padding */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  max-width: calc(100vw - 48px);
 }
 
-.blueprint-gallery-grid__thumbnail-row::-webkit-scrollbar {
-  display: none; /* Hide scrollbar Chrome/Safari */
+.thumbnailRow::-webkit-scrollbar {
+  display: none;
 }
 
-/* ---- Thumbnail Items (Beautiful styled cards) ---- */
-.blueprint-gallery-grid__item {
+/* Thumbnail Items */
+.item {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -176,15 +172,15 @@
   transition: background 0.2s ease;
 }
 
-.blueprint-gallery-grid__item:hover {
+.item:hover {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.blueprint-gallery-grid__item--active {
+.itemActive {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.blueprint-gallery-grid__frame {
+.frame {
   position: relative;
   width: 150px;
   height: 112px;
@@ -197,7 +193,7 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.blueprint-gallery-grid__item--active .blueprint-gallery-grid__frame {
+.itemActive .frame {
   border-color: rgba(255, 255, 255, 0.6);
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.4),
@@ -205,18 +201,18 @@
     inset 0 0 15px rgba(0, 0, 0, 0.2);
 }
 
-.blueprint-gallery-grid__item:hover .blueprint-gallery-grid__frame {
+.item:hover .frame {
   border-color: rgba(255, 255, 255, 0.5);
 }
 
-.blueprint-gallery-grid__image {
+.image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   filter: grayscale(20%) contrast(1.05);
 }
 
-.blueprint-gallery-grid__label {
+.label {
   margin-top: 8px;
   font-size: clamp(0.8rem, 1.5vw, 0.95rem);
   color: rgba(255, 255, 255, 0.8);
@@ -227,8 +223,8 @@
   white-space: nowrap;
 }
 
-/* ---- Main Image Area (Centered) ---- */
-.blueprint-gallery-grid__main {
+/* Main Image Area */
+.main {
   position: absolute;
   top: 260px;
   left: 24px;
@@ -241,7 +237,7 @@
   overflow-y: auto;
 }
 
-.blueprint-gallery-grid__main-frame {
+.mainFrame {
   position: relative;
   max-width: 75%;
   max-height: 60%;
@@ -258,19 +254,19 @@
   transition: transform 0.2s ease;
 }
 
-.blueprint-gallery-grid__main-frame:hover {
+.mainFrame:hover {
   transform: scale(1.01);
 }
 
-.blueprint-gallery-grid__main-img {
+.mainImg {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
   filter: grayscale(10%) contrast(1.02);
 }
 
-/* ---- Product Info (Below Image) ---- */
-.blueprint-gallery-grid__info {
+/* Product Info */
+.info {
   width: 100%;
   max-width: 1400px;
   padding: 16px 48px;
@@ -281,14 +277,14 @@
   flex-shrink: 0;
 }
 
-.blueprint-gallery-grid__info-name {
+.infoName {
   font-size: clamp(1.5rem, 3vw, 2rem);
   color: rgba(255, 255, 255, 0.95);
   margin: 0 0 12px 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.blueprint-gallery-grid__info-description {
+.infoDescription {
   font-family: 'Courier New', monospace;
   font-size: clamp(0.85rem, 1.5vw, 1rem);
   color: rgba(255, 255, 255, 0.75);
@@ -296,7 +292,7 @@
   margin: 0 0 16px 0;
 }
 
-.blueprint-gallery-grid__info-price {
+.infoPrice {
   font-family: 'Courier New', monospace;
   font-size: clamp(1.1rem, 2vw, 1.4rem);
   color: rgba(255, 255, 255, 0.9);
@@ -306,7 +302,7 @@
 }
 
 /* Corner marks */
-.blueprint-gallery-grid__corner {
+.corner {
   position: absolute;
   width: 16px;
   height: 16px;
@@ -315,247 +311,43 @@
   border-width: 0;
 }
 
-.blueprint-gallery-grid__corner--tl {
+.cornerTl {
   top: -3px;
   left: -3px;
   border-top-width: 2px;
   border-left-width: 2px;
 }
 
-.blueprint-gallery-grid__corner--tr {
+.cornerTr {
   top: -3px;
   right: -3px;
   border-top-width: 2px;
   border-right-width: 2px;
 }
 
-.blueprint-gallery-grid__corner--bl {
+.cornerBl {
   bottom: -3px;
   left: -3px;
   border-bottom-width: 2px;
   border-left-width: 2px;
 }
 
-.blueprint-gallery-grid__corner--br {
+.cornerBr {
   bottom: -3px;
   right: -3px;
   border-bottom-width: 2px;
   border-right-width: 2px;
 }
 
-/* ---- Photo Viewer (Full Screen) ---- */
-.blueprint-photo-viewer {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-}
-
-.blueprint-viewer__toolbar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  background: linear-gradient(
-    180deg,
-    rgba(13, 40, 71, 0.95) 0%,
-    rgba(26, 58, 92, 0.8) 100%
-  );
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  z-index: 10;
-}
-
-.blueprint-viewer__close {
-  transform: scale(0.7);
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-}
-
-.blueprint-viewer__close:hover {
-  transform: scale(0.75) rotate(15deg);
-}
-
-.blueprint-viewer__counter {
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
-  letter-spacing: 0.1em;
-}
-
-.blueprint-viewer__info {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 20px;
-  background: linear-gradient(
-    0deg,
-    rgba(13, 40, 71, 0.95) 0%,
-    rgba(13, 40, 71, 0.8) 70%,
-    transparent 100%
-  );
-  z-index: 10;
-}
-
-.blueprint-viewer__info-name {
-  font-size: clamp(1.25rem, 3vw, 1.75rem);
-  color: rgba(255, 255, 255, 0.95);
-  margin-bottom: 8px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.blueprint-viewer__info-description {
-  font-family: 'Courier New', monospace;
-  font-size: clamp(0.8rem, 1.5vw, 0.95rem);
-  color: rgba(255, 255, 255, 0.7);
-  line-height: 1.6;
-  max-width: 800px;
-  margin-bottom: 12px;
-}
-
-.blueprint-viewer__info-price {
-  font-family: 'Courier New', monospace;
-  font-size: clamp(1rem, 2vw, 1.25rem);
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: 0.05em;
-}
-
-/* ---- Responsive ---- */
-@media (max-width: 1024px) {
-  .blueprint-gallery-grid__main-frame {
-    max-width: 85%;
-    max-height: 50%;
-  }
-
-  .blueprint-gallery-grid__info {
-    max-width: 90%;
-  }
-}
-
-@media (max-width: 768px) {
-  .blueprint-gallery-grid__header {
-    top: 10px;
-    left: 10px;
-    gap: 0.5rem;
-  }
-
-  .blueprint-gallery-grid__exit-button {
-    transform: scale(0.65);
-  }
-
-  .blueprint-gallery-grid__back-arrow {
-    width: clamp(30px, 6vw, 50px);
-  }
-
-  .blueprint-gallery-grid__thumbnail-container {
-    top: 85px;
-    padding: 0;
-    gap: 0;
-    justify-content: flex-start;
-  }
-
-  .blueprint-gallery-grid__thumbnail-row {
-    padding: 0;
-    gap: 12px;
-    max-width: none;
-    width: 100vw;
-  }
-
-  .blueprint-gallery-grid__frame {
-    width: 120px;
-    height: 90px;
-  }
-
-  .blueprint-gallery-grid__label {
-    max-width: 120px;
-    font-size: 0.75rem;
-  }
-
-  .blueprint-gallery-grid__scroll-arrow {
-    display: none; /* Hide scroll arrows on mobile - users swipe naturally */
-  }
-
-  .blueprint-gallery-grid__main {
-    top: 195px;
-    left: 16px;
-    right: 16px;
-    bottom: 16px;
-  }
-
-  .blueprint-gallery-grid__main-frame {
-    max-width: 85%;
-    max-height: 55%;
-  }
-
-  .blueprint-gallery-grid__info {
-    padding: 14px 24px;
-  }
-
-  .blueprint-gallery-grid__main-frame {
-    max-width: 95%;
-    padding: 8px;
-  }
-
-  .blueprint-gallery-grid__info {
-    padding: 16px;
-    max-width: 100%;
-  }
-
-  .blueprint-viewer__info {
-    padding: 16px;
-  }
-
-  .blueprint-viewer__toolbar {
-    height: 50px;
-    padding: 0 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .blueprint-gallery-grid__frame {
-    width: 100px;
-    height: 75px;
-  }
-
-  .blueprint-gallery-grid__label {
-    max-width: 100px;
-    font-size: 0.7rem;
-  }
-
-  .blueprint-gallery-grid__main {
-    top: 195px;
-    gap: 12px;
-  }
-
-  .blueprint-gallery-grid__info-description {
-    font-size: 0.8rem;
-  }
-
-  /* Hide scroll arrows on very small screens, rely on swipe */
-  .blueprint-gallery-grid__scroll-arrow {
-    display: none;
-  }
-
-  .blueprint-gallery-grid__thumbnail-container {
-    padding: 0 12px;
-  }
-}
-
-/* ---- Image Expansion Overlay ---- */
-.blueprint-gallery-grid__expand-backdrop {
+/* Image Expansion Overlay */
+.expandBackdrop {
   position: fixed;
   inset: 0;
   background: rgba(10, 21, 37, 0.85);
   z-index: 50;
 }
 
-.blueprint-gallery-grid__expanded-frame {
+.expandedFrame {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -572,8 +364,121 @@
   cursor: zoom-out;
 }
 
-.blueprint-gallery-grid__expanded-frame img {
+.expandedFrame img {
   max-width: 100%;
   max-height: calc(85vh - 32px);
   object-fit: contain;
+}
+
+/* Responsive - 1024px */
+@media (max-width: 1024px) {
+  .mainFrame {
+    max-width: 85%;
+    max-height: 50%;
+  }
+
+  .info {
+    max-width: 90%;
+  }
+}
+
+/* Responsive - 768px (mobile) */
+@media (max-width: 768px) {
+  .header {
+    top: 10px;
+    left: 10px;
+    gap: 0.5rem;
+  }
+
+  .exitButton {
+    transform: scale(0.65);
+  }
+
+  .backArrow {
+    width: clamp(30px, 6vw, 50px);
+  }
+
+  /* FIX: Make container scrollable, not the row */
+  .thumbnailContainer {
+    top: 85px;
+    padding: 0;
+    gap: 0;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .thumbnailContainer::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* FIX: Let row size to content naturally */
+  .thumbnailRow {
+    display: inline-flex;
+    padding: 0;
+    gap: 12px;
+    max-width: none;
+    width: auto;
+    overflow: visible;
+  }
+
+  .frame {
+    width: 120px;
+    height: 90px;
+  }
+
+  .label {
+    max-width: 120px;
+    font-size: 0.75rem;
+  }
+
+  .scrollArrow {
+    display: none;
+  }
+
+  .main {
+    top: 195px;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .mainFrame {
+    max-width: 95%;
+    max-height: 55%;
+    padding: 8px;
+  }
+
+  .info {
+    padding: 16px;
+    max-width: 100%;
+  }
+}
+
+/* Responsive - 480px (small mobile) */
+@media (max-width: 480px) {
+  .frame {
+    width: 100px;
+    height: 75px;
+  }
+
+  .label {
+    max-width: 100px;
+    font-size: 0.7rem;
+  }
+
+  .main {
+    top: 195px;
+    gap: 12px;
+  }
+
+  .infoDescription {
+    font-size: 0.8rem;
+  }
+
+  .thumbnailContainer {
+    padding: 0;
+  }
 }

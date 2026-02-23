@@ -6,6 +6,7 @@ import BlueprintButtonSVG from '../navigation/BlueprintButtonSVG';
 import { WaveArrow } from '../navigation/DesktopArrows';
 import { fontFamilyMap, BLUEPRINT_PICKER_TIMING } from '../../constants';
 import type { CategoryKey } from './image_info';
+import styles from './BlueprintPicker.module.css';
 
 // Default positions and settings for category images (desktop - 2x2 grid)
 const CATEGORY_DEFAULTS_DESKTOP = {
@@ -59,7 +60,7 @@ const CategoryImage = ({
   return (
     // Outer div handles positioning and centering
     <div
-      className="blueprint-image"
+      className={styles.image}
       style={{
         position: 'absolute',
         left: `${position.x}%`,
@@ -96,7 +97,7 @@ const CategoryImage = ({
         }}
       >
       {/* Image frame with blueprint styling */}
-      <div className="blueprint-image__frame">
+      <div className={styles.imageFrame}>
         <img
           src={imageSrc}
           alt={label}
@@ -109,15 +110,15 @@ const CategoryImage = ({
           }}
         />
         {/* Corner marks */}
-        <div className="blueprint-image__corner blueprint-image__corner--tl" />
-        <div className="blueprint-image__corner blueprint-image__corner--tr" />
-        <div className="blueprint-image__corner blueprint-image__corner--bl" />
-        <div className="blueprint-image__corner blueprint-image__corner--br" />
+        <div className={`${styles.imageCorner} ${styles.imageCornerTl}`} />
+        <div className={`${styles.imageCorner} ${styles.imageCornerTr}`} />
+        <div className={`${styles.imageCorner} ${styles.imageCornerBl}`} />
+        <div className={`${styles.imageCorner} ${styles.imageCornerBr}`} />
       </div>
 
       {/* Label below image */}
       <div
-        className="blueprint-image__label"
+        className={styles.imageLabel}
         style={{ fontFamily: fontFamilyMap['Caveat'] }}
       >
         {label}
@@ -222,11 +223,18 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
       : { position: { x: defaults.structures.x, y: defaults.structures.y }, size: defaults.structures.size, rotation: defaults.structures.rotation },
   };
 
+  // Build paper class names
+  const paperClasses = [
+    styles.paper,
+    isRolledOut ? styles.paperRolledOut : '',
+    isRollingUp ? styles.paperRollingUp : '',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className="blueprint-picker">
+    <div className={styles.picker}>
       {/* Blueprint paper background */}
       <div
-        className={`blueprint-picker__paper ${isRolledOut ? 'blueprint-picker__paper--rolled-out' : ''} ${isRollingUp ? 'blueprint-picker__paper--rolling-up' : ''}`}
+        className={paperClasses}
         style={{
           background: `linear-gradient(
             135deg,
@@ -240,7 +248,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
       >
         {/* Grid pattern overlay */}
         <div
-          className="blueprint-picker__grid"
+          className={styles.grid}
           style={{
             backgroundImage: `
               repeating-linear-gradient(
@@ -263,7 +271,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
 
         {/* Major grid lines */}
         <div
-          className="blueprint-picker__major-grid"
+          className={styles.majorGrid}
           style={{
             backgroundImage: `
               repeating-linear-gradient(
@@ -285,7 +293,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
         />
 
         {/* Compass rose / North arrow */}
-        <div className={`blueprint-picker__compass ${contentVisible ? 'blueprint-picker__content--visible' : ''}`}>
+        <div className={`${styles.compass} ${contentVisible ? styles.contentVisible : ''}`}>
           <svg viewBox="0 0 40 40" width="60" height="60">
             <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
             <circle cx="20" cy="20" r="12" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" strokeDasharray="2 2" />
@@ -296,7 +304,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
         </div>
 
         {/* Dimension lines on edges */}
-        <div className="blueprint-picker__dimension blueprint-picker__dimension--top">
+        <div className={`${styles.dimension} ${styles.dimensionTop}`}>
           <svg width="100%" height="20" preserveAspectRatio="none">
             <line x1="5%" y1="15" x2="95%" y2="15" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
             <line x1="5%" y1="10" x2="5%" y2="20" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
@@ -305,7 +313,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
           </svg>
         </div>
 
-        <div className="blueprint-picker__dimension blueprint-picker__dimension--left">
+        <div className={`${styles.dimension} ${styles.dimensionLeft}`}>
           <svg width="20" height="100%" preserveAspectRatio="none">
             <line x1="15" y1="5%" x2="15" y2="95%" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
             <line x1="10" y1="5%" x2="20" y2="5%" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
@@ -334,7 +342,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
         })}
 
         {/* Center crosshair */}
-        <div className="blueprint-picker__crosshair">
+        <div className={styles.crosshair}>
           <svg viewBox="0 0 40 40" width="40" height="40">
             <circle cx="20" cy="20" r="8" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
             <line x1="20" y1="5" x2="20" y2="15" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
@@ -345,18 +353,18 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
         </div>
 
         {/* Paper edge / fold marks */}
-        <div className="blueprint-picker__fold-mark blueprint-picker__fold-mark--top" />
-        <div className="blueprint-picker__fold-mark blueprint-picker__fold-mark--bottom" />
+        <div className={`${styles.foldMark} ${styles.foldMarkTop}`} />
+        <div className={`${styles.foldMark} ${styles.foldMarkBottom}`} />
 
         {/* Exit button with arrow and label - button on left, arrow and text on right */}
         <div
-          className={`blueprint-picker__exit ${contentVisible ? 'blueprint-picker__content--visible' : ''}`}
+          className={`${styles.exit} ${contentVisible ? styles.exitVisible : ''}`}
           style={{ transitionDelay: '600ms' }}
         >
           {/* Blueprint button */}
           <button
             type="button"
-            className="nav-button-circle blueprint-picker__exit-button"
+            className={`nav-button-circle ${styles.exitButton}`}
             aria-label="Exit gallery"
             onClick={handleBack}
           >
@@ -364,13 +372,13 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
           </button>
 
           {/* Animated arrow pointing toward button (reversed) */}
-          <span className="blueprint-picker__exit-arrow">
+          <span className={styles.exitArrow}>
             <WaveArrow isVisible={contentVisible} delay={800} />
           </span>
 
           {/* Exit label */}
           <span
-            className="blueprint-picker__exit-label"
+            className={styles.exitLabel}
             style={{ fontFamily: fontFamilyMap['Caveat'] }}
           >
             Exit

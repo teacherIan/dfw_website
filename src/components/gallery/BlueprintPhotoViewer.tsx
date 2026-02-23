@@ -4,6 +4,7 @@ import { useGallery } from '../../contexts/GalleryContext';
 import { getImagesForCategory, type ProductImage } from './image_info';
 import BlueprintButtonSVG from '../navigation/BlueprintButtonSVG';
 import { fontFamilyMap } from '../../constants';
+import styles from './BlueprintPhotoViewer.module.css';
 
 interface ImageInfoPanelProps {
   image: ProductImage | null;
@@ -15,21 +16,21 @@ const ImageInfoPanel = ({ image, isVisible }: ImageInfoPanelProps) => {
 
   return (
     <motion.div
-      className="blueprint-viewer__info"
+      className={styles.info}
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
       transition={{ duration: 0.3, delay: 0.2 }}
     >
       <h3
-        className="blueprint-viewer__info-name"
+        className={styles.infoName}
         style={{ fontFamily: fontFamilyMap['Caveat'] }}
       >
         {image.name}
       </h3>
-      <p className="blueprint-viewer__info-description">
+      <p className={styles.infoDescription}>
         {image.description}
       </p>
-      <div className="blueprint-viewer__info-price">
+      <div className={styles.infoPrice}>
         {image.price}
       </div>
     </motion.div>
@@ -113,7 +114,7 @@ export const BlueprintPhotoViewer = () => {
   return (
     <AnimatePresence>
       <motion.div
-        className="blueprint-photo-viewer"
+        className={styles.viewer}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -124,23 +125,22 @@ export const BlueprintPhotoViewer = () => {
         }}
       >
         {/* Custom toolbar */}
-        <div className="blueprint-viewer__toolbar">
+        <div className={styles.toolbar}>
           <button
             type="button"
-            className="blueprint-viewer__close"
+            className={styles.close}
             onClick={closeViewer}
             aria-label="Close viewer"
           >
             <BlueprintButtonSVG />
           </button>
-          <span className="blueprint-viewer__counter">
+          <span className={styles.counter}>
             {selectedImageIndex + 1} / {images.length}
           </span>
         </div>
 
         {/* Main image */}
         <motion.div
-          className="blueprint-viewer__main"
           style={{
             position: 'absolute',
             inset: '60px 0 140px 0',
@@ -174,7 +174,6 @@ export const BlueprintPhotoViewer = () => {
           <>
             <button
               type="button"
-              className="blueprint-viewer__nav blueprint-viewer__nav--prev"
               onClick={handlePrev}
               aria-label="Previous image"
               style={{
@@ -207,7 +206,6 @@ export const BlueprintPhotoViewer = () => {
             </button>
             <button
               type="button"
-              className="blueprint-viewer__nav blueprint-viewer__nav--next"
               onClick={handleNext}
               aria-label="Next image"
               style={{

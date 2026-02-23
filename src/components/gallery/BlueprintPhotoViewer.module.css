@@ -1,0 +1,95 @@
+/* BlueprintPhotoViewer - CSS Module */
+
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: linear-gradient(
+    180deg,
+    rgba(13, 40, 71, 0.95) 0%,
+    rgba(26, 58, 92, 0.8) 100%
+  );
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 10;
+}
+
+.close {
+  transform: scale(0.7);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.close:hover {
+  transform: scale(0.75) rotate(15deg);
+}
+
+.counter {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.1em;
+}
+
+.info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  background: linear-gradient(
+    0deg,
+    rgba(13, 40, 71, 0.95) 0%,
+    rgba(13, 40, 71, 0.8) 70%,
+    transparent 100%
+  );
+  z-index: 10;
+}
+
+.infoName {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 8px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.infoDescription {
+  font-family: 'Courier New', monospace;
+  font-size: clamp(0.8rem, 1.5vw, 0.95rem);
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  max-width: 800px;
+  margin-bottom: 12px;
+}
+
+.infoPrice {
+  font-family: 'Courier New', monospace;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.05em;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .info {
+    padding: 16px;
+  }
+
+  .toolbar {
+    height: 50px;
+    padding: 0 12px;
+  }
+}

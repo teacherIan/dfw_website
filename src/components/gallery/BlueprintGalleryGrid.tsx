@@ -5,7 +5,7 @@ import { getImagesForCategory, categoryLabels } from './image_info';
 import BlueprintButtonSVG from '../navigation/BlueprintButtonSVG';
 import { WaveArrow } from '../navigation/DesktopArrows';
 import { fontFamilyMap } from '../../constants';
-import './blueprint-gallery.css';
+import styles from './BlueprintGalleryGrid.module.css';
 
 // Chevron SVG for scroll arrows
 const ChevronIcon = ({ direction }: { direction: 'left' | 'right' }) => (
@@ -24,15 +24,15 @@ export const BlueprintGalleryGrid = () => {
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [needsScroll, setNeedsScroll] = useState(false);
 
-  const thumbnailRowRef = useRef<HTMLDivElement>(null);
+  const thumbnailContainerRef = useRef<HTMLDivElement>(null);
 
   const images = selectedCategory ? getImagesForCategory(selectedCategory) : [];
   const categoryLabel = selectedCategory ? categoryLabels[selectedCategory] : '';
   const activeImage = images[activeIndex] || null;
 
-  // Update scroll state
+  // Update scroll state - now checking the container, not the row
   const updateScrollState = useCallback(() => {
-    const container = thumbnailRowRef.current;
+    const container = thumbnailContainerRef.current;
     if (!container) return;
 
     const { scrollLeft, scrollWidth, clientWidth } = container;
@@ -54,7 +54,7 @@ export const BlueprintGalleryGrid = () => {
 
   // Setup scroll state listeners
   useEffect(() => {
-    const container = thumbnailRowRef.current;
+    const container = thumbnailContainerRef.current;
     if (!container) return;
 
     // Delay initial check to ensure thumbnails are rendered
@@ -116,8 +116,9 @@ export const BlueprintGalleryGrid = () => {
 
   // Scroll thumbnail into view
   const scrollThumbnailIntoView = (index: number) => {
-    const container = thumbnailRowRef.current;
-    const thumbnail = container?.children[index] as HTMLElement;
+    const container = thumbnailContainerRef.current;
+    const row = container?.querySelector(`.${styles.thumbnailRow}`);
+    const thumbnail = row?.children[index] as HTMLElement;
     if (thumbnail) {
       thumbnail.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
@@ -136,7 +137,7 @@ export const BlueprintGalleryGrid = () => {
   };
 
   const handleScrollLeft = () => {
-    const container = thumbnailRowRef.current;
+    const container = thumbnailContainerRef.current;
     if (!container) return;
     container.scrollTo({
       left: container.scrollLeft - 200,
@@ -145,7 +146,7 @@ export const BlueprintGalleryGrid = () => {
   };
 
   const handleScrollRight = () => {
-    const container = thumbnailRowRef.current;
+    const container = thumbnailContainerRef.current;
     if (!container) return;
     container.scrollTo({
       left: container.scrollLeft + 200,
@@ -162,35 +163,35 @@ export const BlueprintGalleryGrid = () => {
   };
 
   return (
-    <div className="blueprint-gallery-grid">
+    <div className={styles.grid}>
       <motion.div
-        className="blueprint-gallery-grid__paper"
+        className={styles.paper}
         initial={{ opacity: 0.3 }}
         animate={{ opacity: isExiting ? 0 : 1 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
       >
-        <div className="blueprint-gallery-grid__grid-pattern" />
+        <div className={styles.gridPattern} />
 
         {/* Header with circular exit button and title */}
         <motion.div
-          className="blueprint-gallery-grid__header"
+          className={styles.header}
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: isVisible && !isExpanded ? 1 : 0, y: isVisible ? 0 : -20 }}
           transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
         >
           <button
             type="button"
-            className="nav-button-circle blueprint-gallery-grid__exit-button"
+            className={`nav-button-circle ${styles.exitButton}`}
             onClick={handleBack}
             aria-label="Back to categories"
           >
             <BlueprintButtonSVG />
           </button>
-          <span className="blueprint-gallery-grid__back-arrow">
+          <span className={styles.backArrow}>
             <WaveArrow isVisible={isVisible} delay={200} />
           </span>
           <h2
-            className="blueprint-gallery-grid__title"
+            className={styles.title}
             style={{ fontFamily: fontFamilyMap['Caveat'] }}
           >
             {categoryLabel}
@@ -199,7 +200,8 @@ export const BlueprintGalleryGrid = () => {
 
         {/* Thumbnail container with scroll arrows */}
         <motion.div
-          className={`blueprint-gallery-grid__thumbnail-container${canScrollLeft ? ' blueprint-gallery-grid__thumbnail-container--can-scroll-left' : ''}${canScrollRight ? ' blueprint-gallery-grid__thumbnail-container--can-scroll-right' : ''}`}
+          ref={thumbnailContainerRef}
+          className={styles.thumbnailContainer}
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: isVisible && !isExpanded ? 1 : 0, y: isVisible ? 0 : -10 }}
           transition={{ duration: 0.5, delay: 0.25, ease: 'easeOut' }}
@@ -208,7 +210,7 @@ export const BlueprintGalleryGrid = () => {
           {needsScroll && (
             <button
               type="button"
-              className="blueprint-gallery-grid__scroll-arrow"
+              className={styles.scrollArrow}
               onClick={handleScrollLeft}
               disabled={!canScrollLeft}
               aria-label="Scroll left"
@@ -218,14 +220,11 @@ export const BlueprintGalleryGrid = () => {
           )}
 
           {/* Thumbnail row */}
-          <div
-            ref={thumbnailRowRef}
-            className="blueprint-gallery-grid__thumbnail-row"
-          >
+          <div className={styles.thumbnailRow}>
             {images.map((image, index) => (
               <motion.div
                 key={image.orderNumber}
-                className={`blueprint-gallery-grid__item ${index === activeIndex ? 'blueprint-gallery-grid__item--active' : ''}`}
+                className={`${styles.item} ${index === activeIndex ? styles.itemActive : ''}`}
                 onClick={() => handleThumbnailClick(index)}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{
@@ -244,21 +243,21 @@ export const BlueprintGalleryGrid = () => {
                 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div className="blueprint-gallery-grid__frame">
+                <div className={styles.frame}>
                   <img
                     src={image.img}
                     alt={image.name}
-                    className="blueprint-gallery-grid__image"
+                    className={styles.image}
                     loading="lazy"
                   />
                   {/* Corner marks */}
-                  <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--tl" />
-                  <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--tr" />
-                  <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--bl" />
-                  <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--br" />
+                  <div className={`${styles.corner} ${styles.cornerTl}`} />
+                  <div className={`${styles.corner} ${styles.cornerTr}`} />
+                  <div className={`${styles.corner} ${styles.cornerBl}`} />
+                  <div className={`${styles.corner} ${styles.cornerBr}`} />
                 </div>
                 <div
-                  className="blueprint-gallery-grid__label"
+                  className={styles.label}
                   style={{ fontFamily: fontFamilyMap['Caveat'] }}
                 >
                   {image.name}
@@ -271,7 +270,7 @@ export const BlueprintGalleryGrid = () => {
           {needsScroll && (
             <button
               type="button"
-              className="blueprint-gallery-grid__scroll-arrow"
+              className={styles.scrollArrow}
               onClick={handleScrollRight}
               disabled={!canScrollRight}
               aria-label="Scroll right"
@@ -284,13 +283,13 @@ export const BlueprintGalleryGrid = () => {
         {/* Centered active image */}
         {activeImage && (
           <motion.div
-            className="blueprint-gallery-grid__main"
+            className={styles.main}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible && !isExpanded ? 1 : 0, y: isVisible ? 0 : 20 }}
             transition={{ duration: 0.5, delay: 0.35, ease: 'easeOut' }}
           >
             <motion.div
-              className="blueprint-gallery-grid__main-frame"
+              className={styles.mainFrame}
               layoutId={`gallery-image-${activeIndex}`}
               onClick={handleImageClick}
               initial={{ opacity: 0.8, scale: 0.98 }}
@@ -300,33 +299,33 @@ export const BlueprintGalleryGrid = () => {
               <img
                 src={activeImage.img}
                 alt={activeImage.name}
-                className="blueprint-gallery-grid__main-img"
+                className={styles.mainImg}
               />
               {/* Corner marks */}
-              <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--tl" />
-              <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--tr" />
-              <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--bl" />
-              <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--br" />
+              <div className={`${styles.corner} ${styles.cornerTl}`} />
+              <div className={`${styles.corner} ${styles.cornerTr}`} />
+              <div className={`${styles.corner} ${styles.cornerBl}`} />
+              <div className={`${styles.corner} ${styles.cornerBr}`} />
             </motion.div>
 
             {/* Product info below image */}
             <motion.div
-              className="blueprint-gallery-grid__info"
+              className={styles.info}
               key={`info-${activeIndex}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
               <h3
-                className="blueprint-gallery-grid__info-name"
+                className={styles.infoName}
                 style={{ fontFamily: fontFamilyMap['Caveat'] }}
               >
                 {activeImage.name}
               </h3>
-              <p className="blueprint-gallery-grid__info-description">
+              <p className={styles.infoDescription}>
                 {activeImage.description}
               </p>
-              <div className="blueprint-gallery-grid__info-price">
+              <div className={styles.infoPrice}>
                 {activeImage.price}
               </div>
             </motion.div>
@@ -340,7 +339,7 @@ export const BlueprintGalleryGrid = () => {
           <>
             {/* Backdrop */}
             <motion.div
-              className="blueprint-gallery-grid__expand-backdrop"
+              className={styles.expandBackdrop}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -350,7 +349,7 @@ export const BlueprintGalleryGrid = () => {
 
             {/* Expanded image */}
             <motion.div
-              className="blueprint-gallery-grid__expanded-frame"
+              className={styles.expandedFrame}
               layoutId={`gallery-image-${activeIndex}`}
               onClick={handleCloseExpanded}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
@@ -360,10 +359,10 @@ export const BlueprintGalleryGrid = () => {
                 alt={activeImage.name}
               />
               {/* Corner marks */}
-              <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--tl" />
-              <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--tr" />
-              <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--bl" />
-              <div className="blueprint-gallery-grid__corner blueprint-gallery-grid__corner--br" />
+              <div className={`${styles.corner} ${styles.cornerTl}`} />
+              <div className={`${styles.corner} ${styles.cornerTr}`} />
+              <div className={`${styles.corner} ${styles.cornerBl}`} />
+              <div className={`${styles.corner} ${styles.cornerBr}`} />
             </motion.div>
           </>
         )}
