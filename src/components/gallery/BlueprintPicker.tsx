@@ -84,8 +84,9 @@ const CategoryImage = ({
         whileHover={{
           scale: 1.06,
           rotate: rotation + 3,
+          transition: { type: 'spring', stiffness: 300, damping: 15 },
         }}
-        whileTap={{ scale: 0.98 }}
+        whileTap={{ scale: 0.98, transition: { type: 'spring', stiffness: 400, damping: 20 } }}
         transition={{
           type: 'spring',
           stiffness: 200,
