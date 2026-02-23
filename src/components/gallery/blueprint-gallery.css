@@ -455,13 +455,14 @@
 
   .blueprint-gallery-grid__thumbnail-container {
     top: 85px;
-    padding: 0 4px;
-    gap: 4px;
+    padding: 0;
+    gap: 0;
   }
 
   .blueprint-gallery-grid__thumbnail-row {
-    padding: 0 4px;
+    padding: 0 12px;
     gap: 12px;
+    max-width: 100vw;
   }
 
   .blueprint-gallery-grid__frame {
@@ -475,13 +476,7 @@
   }
 
   .blueprint-gallery-grid__scroll-arrow {
-    width: 32px;
-    height: 32px;
-  }
-
-  .blueprint-gallery-grid__scroll-arrow svg {
-    width: 16px;
-    height: 16px;
+    display: none; /* Hide scroll arrows on mobile - users swipe naturally */
   }
 
   .blueprint-gallery-grid__main {
