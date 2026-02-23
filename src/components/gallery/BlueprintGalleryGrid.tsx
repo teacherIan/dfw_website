@@ -61,11 +61,14 @@ export const BlueprintGalleryGrid = () => {
     const initialCheckTimer = requestAnimationFrame(() => {
       updateScrollState();
 
-      // If there's scrollable content, add initial offset to show partial first thumbnail
-      // This hints "swipe for more" by having first item ~50% visible
-      const { scrollWidth, clientWidth } = container;
-      if (scrollWidth > clientWidth + 20) {
-        container.scrollLeft = 70; // Show first thumbnail about half visible
+      // On desktop only: add initial offset to show partial first thumbnail
+      // This hints "scroll for more" - skip on mobile where it clips awkwardly
+      const isDesktop = window.innerWidth >= 768;
+      if (isDesktop) {
+        const { scrollWidth, clientWidth } = container;
+        if (scrollWidth > clientWidth + 20) {
+          container.scrollLeft = 70; // Show first thumbnail about half visible
+        }
       }
     });
     // Backup check after a short delay (for images loading)
@@ -165,9 +168,9 @@ export const BlueprintGalleryGrid = () => {
     <div className="blueprint-gallery-grid">
       <motion.div
         className="blueprint-gallery-grid__paper"
-        initial={{ opacity: 1 }}
+        initial={{ opacity: 0.3 }}
         animate={{ opacity: isExiting ? 0 : 1 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
       >
         <div className="blueprint-gallery-grid__grid-pattern" />
 
@@ -176,7 +179,7 @@ export const BlueprintGalleryGrid = () => {
           className="blueprint-gallery-grid__header"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: isVisible && !isExpanded ? 1 : 0, y: isVisible ? 0 : -20 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+          transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
         >
           <button
             type="button"
@@ -202,7 +205,7 @@ export const BlueprintGalleryGrid = () => {
           className={`blueprint-gallery-grid__thumbnail-container${canScrollLeft ? ' blueprint-gallery-grid__thumbnail-container--can-scroll-left' : ''}${canScrollRight ? ' blueprint-gallery-grid__thumbnail-container--can-scroll-right' : ''}`}
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: isVisible && !isExpanded ? 1 : 0, y: isVisible ? 0 : -10 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.25, ease: 'easeOut' }}
         >
           {/* Left scroll arrow - only show when scrolling is needed */}
           {needsScroll && (
@@ -287,7 +290,7 @@ export const BlueprintGalleryGrid = () => {
             className="blueprint-gallery-grid__main"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible && !isExpanded ? 1 : 0, y: isVisible ? 0 : 20 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
+            transition={{ duration: 0.5, delay: 0.35, ease: 'easeOut' }}
           >
             <motion.div
               className="blueprint-gallery-grid__main-frame"

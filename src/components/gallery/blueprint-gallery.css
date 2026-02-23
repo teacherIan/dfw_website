@@ -164,39 +164,6 @@
   display: none; /* Hide scrollbar Chrome/Safari */
 }
 
-/* Scroll fade indicators - subtle hint that more content exists */
-.blueprint-gallery-grid__thumbnail-container::before,
-.blueprint-gallery-grid__thumbnail-container::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 40px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 4;
-}
-
-.blueprint-gallery-grid__thumbnail-container::before {
-  left: 0;
-  background: linear-gradient(to right, rgba(13, 40, 71, 0.9), transparent);
-}
-
-.blueprint-gallery-grid__thumbnail-container::after {
-  right: 0;
-  background: linear-gradient(to left, rgba(13, 40, 71, 0.9), transparent);
-}
-
-/* Show fades based on scroll position */
-.blueprint-gallery-grid__thumbnail-container--can-scroll-left::before {
-  opacity: 1;
-}
-
-.blueprint-gallery-grid__thumbnail-container--can-scroll-right::after {
-  opacity: 1;
-}
-
 /* ---- Thumbnail Items (Beautiful styled cards) ---- */
 .blueprint-gallery-grid__item {
   flex-shrink: 0;
