@@ -61,14 +61,11 @@ export const BlueprintGalleryGrid = () => {
     const initialCheckTimer = requestAnimationFrame(() => {
       updateScrollState();
 
-      // On desktop only: add initial offset to show partial first thumbnail
-      // This hints "scroll for more" - skip on mobile where it clips awkwardly
-      const isDesktop = window.innerWidth >= 768;
-      if (isDesktop) {
-        const { scrollWidth, clientWidth } = container;
-        if (scrollWidth > clientWidth + 20) {
-          container.scrollLeft = 70; // Show first thumbnail about half visible
-        }
+      // Add initial offset to show partial first thumbnail
+      // This hints "swipe/scroll for more" by having first item ~50% visible
+      const { scrollWidth, clientWidth } = container;
+      if (scrollWidth > clientWidth + 20) {
+        container.scrollLeft = 70; // Show first thumbnail about half visible
       }
     });
     // Backup check after a short delay (for images loading)
