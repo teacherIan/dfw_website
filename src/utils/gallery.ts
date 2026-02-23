@@ -1,6 +1,8 @@
 // Utility to load all gallery images
 // Uses Vite's import.meta.glob to load images from the gallery directory
 
+import type { CategoryKey } from '../components/gallery/image_info';
+
 export interface GalleryImage {
   src: string;
   category: string;
@@ -58,7 +60,7 @@ export const getImagesByCategory = (category: string): GalleryImage[] => {
 };
 
 // Get unique categories with their first image as preview
-export const getCategoriesWithPreview = (): { category: string; label: string; preview: GalleryImage }[] => {
+export const getCategoriesWithPreview = (): { category: CategoryKey; label: string; preview: GalleryImage }[] => {
   const images = getGalleryImages();
   const categoryMap: Record<string, GalleryImage[]> = {};
 
@@ -69,15 +71,15 @@ export const getCategoriesWithPreview = (): { category: string; label: string; p
     categoryMap[img.category].push(img);
   }
 
-  // Define display order and labels
-  const categoryConfig: Record<string, string> = {
+  // Define display order and labels - keys match CategoryKey type
+  const categoryConfig: Record<CategoryKey, string> = {
     chairs: 'Chairs',
     large_tables: 'Large Tables',
     small_tables: 'Small Tables',
     structures: 'Structures',
   };
 
-  return Object.entries(categoryConfig)
+  return (Object.entries(categoryConfig) as [CategoryKey, string][])
     .filter(([key]) => categoryMap[key]?.length > 0)
     .map(([key, label]) => ({
       category: key,

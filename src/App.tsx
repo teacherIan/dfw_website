@@ -5,6 +5,8 @@ import Scene from './components/scene/Scene';
 import TextOverlay from './components/scene/TextOverlay';
 import HandDrawnText from './components/scene/HandDrawnText';
 import BlueprintPicker from './components/gallery/BlueprintPicker';
+import BlueprintGalleryGrid from './components/gallery/BlueprintGalleryGrid';
+import BlueprintPhotoViewer from './components/gallery/BlueprintPhotoViewer';
 import MenuOverlay from './components/navigation/MenuOverlay';
 import BackButton from './components/navigation/BackButton';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -22,7 +24,7 @@ import './types/r3f.d';
 
 function AppContent() {
   // Gallery state from context
-  const { viewState: galleryViewState, setSelectedCategory, resetGallery } = useGallery();
+  const { viewState: galleryViewState, goToCategory, resetGallery, isViewerOpen } = useGallery();
 
   const controlsStore = useCreateStore();
   const showLeva = import.meta.env.DEV;
@@ -177,11 +179,12 @@ function AppContent() {
     if (animationPhase === 'transitioning') return true;
     // Show on non-home scenes in idle state
     if (activeScene !== 'home' && animationPhase === 'idle') {
-      // Hide when BlueprintPicker is visible (it has its own exit button)
-      return !(activeScene === 'gallery' && galleryViewState === 'picker');
+      // Hide when in gallery - BlueprintPicker and BlueprintGalleryGrid have their own exit buttons
+      if (activeScene === 'gallery') return false;
+      return true;
     }
     return false;
-  }, [animationPhase, targetScene, activeScene, galleryViewState]);
+  }, [animationPhase, targetScene, activeScene]);
 
   return (
     <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
@@ -235,10 +238,20 @@ function AppContent() {
       {(activeScene === 'gallery' || targetScene === 'gallery') &&
         galleryViewState === 'picker' && (
         <BlueprintPicker
-          onSelectCategory={setSelectedCategory}
+          onSelectCategory={goToCategory}
           onBack={handleReturnHome}
           wallReady={wallReady}
         />
+      )}
+
+      {/* Gallery grid - show when viewing a category */}
+      {activeScene === 'gallery' && galleryViewState === 'grid' && (
+        <BlueprintGalleryGrid />
+      )}
+
+      {/* Photo viewer - show when viewing an image */}
+      {activeScene === 'gallery' && isViewerOpen && (
+        <BlueprintPhotoViewer />
       )}
 
       {/* Back button - show during exit/transition animations and when on other scenes */}

@@ -5,6 +5,7 @@ import { getCategoriesWithPreview } from '../../utils/gallery';
 import BlueprintButtonSVG from '../navigation/BlueprintButtonSVG';
 import { WaveArrow } from '../navigation/DesktopArrows';
 import { fontFamilyMap, BLUEPRINT_PICKER_TIMING } from '../../constants';
+import type { CategoryKey } from './image_info';
 
 // Default positions and settings for category images (desktop - 2x2 grid)
 const CATEGORY_DEFAULTS_DESKTOP = {
@@ -127,7 +128,7 @@ const CategoryImage = ({
 };
 
 interface BlueprintPickerProps {
-  onSelectCategory?: (category: string) => void;
+  onSelectCategory?: (category: CategoryKey) => void;
   onBack?: () => void;
   wallReady?: boolean;
 }
