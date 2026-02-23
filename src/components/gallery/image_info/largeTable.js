@@ -13,8 +13,8 @@ export default [
     type: types.largeTable,
     name: 'Kids Picnic Table',
     description:
-      'Crafted from natural Maine white cedar roots and planks, this rustic children sized picnic table blends durability with woodland charm. Its organic root base offers sturdy support, while the smooth, rounded planks ensure safety and comfort—perfect for outdoor play and gatherings.',
-    price: '$1000 ~ $1500',
+      'Made from natural Maine white cedar roots and planks, this rustic children-sized picnic table blends durability with woodland charm. Its organic root base offers sturdy support, while the smooth, rounded planks ensure safety and comfort—perfect for outdoor play and gatherings.',
+    price: '$1,000 ~ $1,500',
   },
   {
     orderNumber: '312',
@@ -22,8 +22,8 @@ export default [
     type: types.largeTable,
     name: 'Picnic Table',
     description:
-      'This large picnic table is made of Maine White Cedar roots and planks and custom built to a variety of heights, lengths and widths.  ',
-    price: '$1400 ~ $2000',
+      'This large picnic table is made of Maine white cedar roots and planks, custom built to a variety of heights, lengths, and widths.',
+    price: '$1,400 ~ $2,000',
   },
   {
     orderNumber: '325',
@@ -31,8 +31,8 @@ export default [
     type: types.largeTable,
     name: 'Picnic Table',
     description:
-      'This large picnic table is made of Maine White Cedar roots and planks',
-    price: '$1400 ~ $2000',
+      'This large picnic table is made of Maine white cedar roots and planks, custom built to a variety of heights, lengths, and widths.',
+    price: '$1,400 ~ $2,000',
   },
   {
     orderNumber: '335',
@@ -40,8 +40,8 @@ export default [
     type: types.largeTable,
     name: 'Glass Dining Table',
     description:
-      'Pictured is the root system of three interconnected cedar trees.  Often the roots of the trees are interconnected & they lead themselves to the table bases.',
-    price: '$2000 ~ $4000',
+      'Top view of the glass table. Cedar grows slowly and underground often takes interesting shapes that support a glass top.',
+    price: '$2,000 ~ $4,000',
   },
   {
     orderNumber: '336',
@@ -49,8 +49,8 @@ export default [
     type: types.largeTable,
     name: 'Glass Dining Table',
     description:
-      'Top view of the glass table. Ceder grows slowly and, under the ground often takes interesting shapes that support a glass top',
-    price: '$2000 ~ $4000',
+      'Pictured is the root system of three interconnected cedar trees. Often the roots of the trees are interconnected and they lend themselves to becoming table bases.',
+    price: '$2,000 ~ $4,000',
   },
   {
     orderNumber: '013',
@@ -58,7 +58,7 @@ export default [
     type: types.largeTable,
     name: 'Glass Table',
     description:
-      'Ceder grows slowly and, under the ground often takes interesting shapes that support a glass top ',
-    price: '$1000 ~ $1200',
+      'Cedar grows slowly and underground often takes interesting shapes that support a glass top.',
+    price: '$1,000 ~ $1,200',
   },
 ];

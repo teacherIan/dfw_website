@@ -4,4 +4,5 @@ export {
   useAnimationPhase,
   useTargetScene,
   useShowText,
+  useIsContactOverlayOpen,
 } from './animationStore';

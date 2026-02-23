@@ -7,6 +7,7 @@ import BlueprintButtonSVG from './BlueprintButtonSVG';
 import { ANIMATION_TIMING, navItems, fontOptions, fontFamilyMap } from '../../constants';
 import type { ArrowType, SceneId } from '../../constants';
 import { useWindowWidth, useArrowUnravel } from '../../hooks';
+import { useAnimationStore, useIsContactOverlayOpen } from '../../stores/animationStore';
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
@@ -36,6 +37,8 @@ const BlueprintButton = ({
   currentFont,
   fontSize = 1,
   onNavigate,
+  onClick,
+  isActive = false,
 }: {
   label: string;
   sceneId: SceneId;
@@ -45,6 +48,8 @@ const BlueprintButton = ({
   currentFont: string;
   fontSize?: number;
   onNavigate: (scene: SceneId) => void;
+  onClick?: () => void;
+  isActive?: boolean;
 }) => {
   const ArrowComponent = ArrowComponents[arrowType];
 
@@ -111,9 +116,9 @@ const BlueprintButton = ({
       >
         <button
           type="button"
-          className="nav-button-circle pointer-events-auto"
+          className={clsx('nav-button-circle pointer-events-auto', isActive && 'nav-button-circle--active')}
           aria-label={`Open ${label.toLowerCase()}`}
-          onClick={() => onNavigate(sceneId)}
+          onClick={onClick ?? (() => onNavigate(sceneId))}
           style={{
             opacity: isVisible ? 1 : 0,
             // Only apply transform during pop-in animation, then let CSS handle hover
@@ -138,6 +143,8 @@ const MenuOverlay = ({
   const [isVisible, setIsVisible] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
   const { isSmallLandscape } = useWindowWidth();
+  const toggleContactOverlay = useAnimationStore((state) => state.toggleContactOverlay);
+  const isContactOverlayOpen = useIsContactOverlayOpen();
 
   const { menuFont } = useControls({
     '🏠 Base.🎨 Menu Style': folder({
@@ -244,6 +251,8 @@ const MenuOverlay = ({
               currentFont={currentFont}
               fontSize={navPos.fontSize}
               onNavigate={onNavigate}
+              onClick={item.id === 'contact' ? toggleContactOverlay : undefined}
+              isActive={item.id === 'contact' && isContactOverlayOpen}
             />
           ))}
         </div>

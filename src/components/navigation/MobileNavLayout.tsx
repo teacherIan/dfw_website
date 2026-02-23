@@ -7,6 +7,7 @@ import { createFadeSlideStyle, createPopInStyle, createPopInCenteredStyle } from
 import { MOBILE_NAV_DELAYS } from '../../constants/animation';
 import type { SceneId } from '../../constants';
 import { useArrowUnravel } from '../../hooks';
+import { useAnimationStore, useIsContactOverlayOpen } from '../../stores/animationStore';
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
@@ -78,6 +79,8 @@ interface MobileButtonProps {
   hasCompletedAnimation: boolean;
   className?: string;
   onNavigate: (scene: SceneId) => void;
+  onClick?: () => void;
+  isActive?: boolean;
 }
 
 const MobileButton = ({
@@ -87,6 +90,8 @@ const MobileButton = ({
   hasCompletedAnimation,
   className = '',
   onNavigate,
+  onClick,
+  isActive = false,
 }: MobileButtonProps) => (
   <span
     style={{
@@ -97,9 +102,9 @@ const MobileButton = ({
   >
     <button
       type="button"
-      className={`nav-button-circle nav-button-circle--mobile-large pointer-events-auto ${className}`}
+      className={`nav-button-circle nav-button-circle--mobile-large pointer-events-auto ${className} ${isActive ? 'nav-button-circle--active' : ''}`}
       aria-label={`Open ${label}`}
-      onClick={() => onNavigate(scene)}
+      onClick={onClick ?? (() => onNavigate(scene))}
     >
       <BlueprintButtonSVG />
       <span className="sr-only">View {label}</span>
@@ -140,6 +145,10 @@ const MobileNavLayout = ({
   onNavigate,
   controlsStore,
 }: MobileNavLayoutProps) => {
+  // Contact toggle state
+  const toggleContactOverlay = useAnimationStore((state) => state.toggleContactOverlay);
+  const isContactOverlayOpen = useIsContactOverlayOpen();
+
   // Arrow unravel hooks for spring-responsive animation
   const ethosUnravel = useArrowUnravel({
     isVisible,
@@ -345,6 +354,8 @@ const MobileNavLayout = ({
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
           className="-mb-14 md:-mb-[55px]"
           onNavigate={onNavigate}
+          onClick={toggleContactOverlay}
+          isActive={isContactOverlayOpen}
         />
       </div>
 
@@ -364,6 +375,8 @@ const MobileNavLayout = ({
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
           className="-mb-14 md:-mb-[55px]"
           onNavigate={onNavigate}
+          onClick={toggleContactOverlay}
+          isActive={isContactOverlayOpen}
         />
       </div>
 
@@ -383,6 +396,8 @@ const MobileNavLayout = ({
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
           className="-mb-14 md:-mb-[55px]"
           onNavigate={onNavigate}
+          onClick={toggleContactOverlay}
+          isActive={isContactOverlayOpen}
         />
       </div>
 
@@ -402,6 +417,8 @@ const MobileNavLayout = ({
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
           className="-mb-14 md:-mb-[55px]"
           onNavigate={onNavigate}
+          onClick={toggleContactOverlay}
+          isActive={isContactOverlayOpen}
         />
       </div>
 

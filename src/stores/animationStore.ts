@@ -32,6 +32,7 @@ interface AnimationState {
   streamingStarted: boolean;
   cameraAnimationComplete: boolean;
   loadingComplete: boolean;
+  isContactOverlayOpen: boolean;
 
   // Animation key for resetting
   animationKey: number;
@@ -62,6 +63,9 @@ interface AnimationActions {
 
   // Reset
   resetAnimation: () => void;
+
+  // Contact overlay toggle
+  toggleContactOverlay: () => void;
 }
 
 type AnimationStore = AnimationState & AnimationActions;
@@ -88,6 +92,7 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
   streamingStarted: false,
   cameraAnimationComplete: false,
   loadingComplete: false,
+  isContactOverlayOpen: false,
   animationKey: 0,
   exitAnimationDuration: EXIT_ANIMATION_DURATION,
   returnAnimationDuration: ENTRANCE_ANIMATION_DURATION,
@@ -108,6 +113,7 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
       showText: false,
       exitType,
       exitStartTime: performance.now(),
+      isContactOverlayOpen: false, // Close contact overlay when navigating
     });
 
     if (newTarget === 'contact') {
@@ -232,6 +238,11 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
       animationKey: get().animationKey + 1,
     });
   },
+
+  // Toggle contact overlay
+  toggleContactOverlay: () => {
+    set((state) => ({ isContactOverlayOpen: !state.isContactOverlayOpen }));
+  },
 }));
 
 // Selector hooks for common patterns
@@ -240,3 +251,4 @@ export const useAnimationPhase = () => useAnimationStore((state) => state.animat
 export const useTargetScene = () => useAnimationStore((state) => state.targetScene);
 export const useShowText = () => useAnimationStore((state) => state.showText);
 export const useEntranceType = () => useAnimationStore((state) => state.entranceType);
+export const useIsContactOverlayOpen = () => useAnimationStore((state) => state.isContactOverlayOpen);

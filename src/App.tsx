@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { useEffect, useCallback, useRef } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { useControls, useCreateStore, LevaPanel, Leva, folder } from 'leva';
 import Scene from './components/scene/Scene';
 import TextOverlay from './components/scene/TextOverlay';
@@ -19,7 +20,7 @@ import {
 import ContactOverlay from './components/contact/ContactOverlay';
 import { GalleryProvider, useGallery } from './contexts/GalleryContext';
 import { DragDisplacementProvider } from './contexts/DragDisplacementContext';
-import { useAnimationStore } from './stores';
+import { useAnimationStore, useIsContactOverlayOpen } from './stores';
 import './types/r3f.d';
 
 function AppContent() {
@@ -130,6 +131,7 @@ function AppContent() {
   // Get streamingStarted and loadingComplete from store
   const streamingStarted = useAnimationStore((state) => state.streamingStarted);
   const loadingComplete = useAnimationStore((state) => state.loadingComplete);
+  const isContactOverlayOpen = useIsContactOverlayOpen();
 
   // Track when streaming starts and when splat is loaded
   useEffect(() => {
@@ -229,10 +231,12 @@ function AppContent() {
         />
       )}
 
-      {/* Contact overlay - show on contact scene */}
-      {activeScene === 'contact' && animationPhase === 'idle' && (
-        <ContactOverlay />
-      )}
+      {/* Contact overlay - toggle from nav button */}
+      <AnimatePresence>
+        {isContactOverlayOpen && (
+          <ContactOverlay />
+        )}
+      </AnimatePresence>
 
       {/* Gallery picker - keep mounted while in gallery to prevent re-animation */}
       {(activeScene === 'gallery' || targetScene === 'gallery') && (
