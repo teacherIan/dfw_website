@@ -60,13 +60,6 @@ export const BlueprintGalleryGrid = () => {
     // Delay initial check to ensure thumbnails are rendered
     const initialCheckTimer = requestAnimationFrame(() => {
       updateScrollState();
-
-      // Add initial offset to show partial first thumbnail
-      // This hints "swipe/scroll for more" by having first item ~50% visible
-      const { scrollWidth, clientWidth } = container;
-      if (scrollWidth > clientWidth + 20) {
-        container.scrollLeft = 70; // Show first thumbnail about half visible
-      }
     });
     // Backup check after a short delay (for images loading)
     const backupTimer = setTimeout(updateScrollState, 200);
