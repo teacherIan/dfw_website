@@ -234,17 +234,17 @@ function AppContent() {
         <ContactOverlay />
       )}
 
-      {/* Gallery picker - show when gallery is active or target */}
-      {(activeScene === 'gallery' || targetScene === 'gallery') &&
-        galleryViewState === 'picker' && (
+      {/* Gallery picker - keep mounted while in gallery to prevent re-animation */}
+      {(activeScene === 'gallery' || targetScene === 'gallery') && (
         <BlueprintPicker
           onSelectCategory={goToCategory}
           onBack={handleReturnHome}
           wallReady={wallReady}
+          hideContent={galleryViewState === 'grid'}
         />
       )}
 
-      {/* Gallery grid - show when viewing a category */}
+      {/* Gallery grid - show when viewing a category (overlays picker) */}
       {activeScene === 'gallery' && galleryViewState === 'grid' && (
         <BlueprintGalleryGrid />
       )}

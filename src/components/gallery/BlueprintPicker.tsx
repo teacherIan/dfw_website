@@ -131,14 +131,19 @@ interface BlueprintPickerProps {
   onSelectCategory?: (category: CategoryKey) => void;
   onBack?: () => void;
   wallReady?: boolean;
+  hideContent?: boolean;
 }
 
-export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true }: BlueprintPickerProps) => {
+export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hideContent = false }: BlueprintPickerProps) => {
   const categories = useMemo(() => getCategoriesWithPreview(), []);
   const [isRolledOut, setIsRolledOut] = useState(false);
   const [showContent, setShowContent] = useState(false);
   const [isRollingUp, setIsRollingUp] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Derived: content is visible when showContent is true AND we're not hiding for grid view
+  const contentVisible = showContent && !hideContent;
+
   // Use ref to track if we've been ready (doesn't cause re-renders)
   const hasBeenReadyRef = useRef(false);
 
@@ -280,7 +285,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true }: 
         />
 
         {/* Compass rose / North arrow */}
-        <div className={`blueprint-picker__compass ${showContent ? 'blueprint-picker__content--visible' : ''}`}>
+        <div className={`blueprint-picker__compass ${contentVisible ? 'blueprint-picker__content--visible' : ''}`}>
           <svg viewBox="0 0 40 40" width="60" height="60">
             <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
             <circle cx="20" cy="20" r="12" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" strokeDasharray="2 2" />
@@ -322,7 +327,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true }: 
               size={controls.size}
               rotation={controls.rotation}
               onClick={() => onSelectCategory?.(cat.category)}
-              isVisible={showContent}
+              isVisible={contentVisible}
               index={index}
             />
           );
@@ -345,7 +350,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true }: 
 
         {/* Exit button with arrow and label - button on left, arrow and text on right */}
         <div
-          className={`blueprint-picker__exit ${showContent ? 'blueprint-picker__content--visible' : ''}`}
+          className={`blueprint-picker__exit ${contentVisible ? 'blueprint-picker__content--visible' : ''}`}
           style={{ transitionDelay: '600ms' }}
         >
           {/* Blueprint button */}
@@ -360,7 +365,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true }: 
 
           {/* Animated arrow pointing toward button (reversed) */}
           <span className="blueprint-picker__exit-arrow">
-            <WaveArrow isVisible={showContent} delay={800} />
+            <WaveArrow isVisible={contentVisible} delay={800} />
           </span>
 
           {/* Exit label */}

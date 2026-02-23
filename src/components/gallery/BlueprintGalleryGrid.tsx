@@ -57,13 +57,26 @@ export const BlueprintGalleryGrid = () => {
     const container = thumbnailRowRef.current;
     if (!container) return;
 
-    // Initial check
-    updateScrollState();
+    // Delay initial check to ensure thumbnails are rendered
+    const initialCheckTimer = requestAnimationFrame(() => {
+      updateScrollState();
+
+      // If there's scrollable content, add initial offset to show partial first thumbnail
+      // This hints "swipe for more" by having first item ~50% visible
+      const { scrollWidth, clientWidth } = container;
+      if (scrollWidth > clientWidth + 20) {
+        container.scrollLeft = 70; // Show first thumbnail about half visible
+      }
+    });
+    // Backup check after a short delay (for images loading)
+    const backupTimer = setTimeout(updateScrollState, 200);
 
     container.addEventListener('scroll', updateScrollState);
     window.addEventListener('resize', updateScrollState);
 
     return () => {
+      cancelAnimationFrame(initialCheckTimer);
+      clearTimeout(backupTimer);
       container.removeEventListener('scroll', updateScrollState);
       window.removeEventListener('resize', updateScrollState);
     };
@@ -152,7 +165,7 @@ export const BlueprintGalleryGrid = () => {
     <div className="blueprint-gallery-grid">
       <motion.div
         className="blueprint-gallery-grid__paper"
-        initial={{ opacity: 0 }}
+        initial={{ opacity: 1 }}
         animate={{ opacity: isExiting ? 0 : 1 }}
         transition={{ duration: 0.4 }}
       >
@@ -186,7 +199,7 @@ export const BlueprintGalleryGrid = () => {
 
         {/* Thumbnail container with scroll arrows */}
         <motion.div
-          className="blueprint-gallery-grid__thumbnail-container"
+          className={`blueprint-gallery-grid__thumbnail-container${canScrollLeft ? ' blueprint-gallery-grid__thumbnail-container--can-scroll-left' : ''}${canScrollRight ? ' blueprint-gallery-grid__thumbnail-container--can-scroll-right' : ''}`}
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: isVisible && !isExpanded ? 1 : 0, y: isVisible ? 0 : -10 }}
           transition={{ duration: 0.4, delay: 0.2 }}
