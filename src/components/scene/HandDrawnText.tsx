@@ -136,26 +136,26 @@ const HandDrawnText = ({ show, isExiting = false, controlsStore }: HandDrawnText
                 key={index}
                 initial={{ opacity: 0, y: EMERGE_Y_START }}
                 animate={{
-                  opacity: isExiting ? 0 : 1,
-                  y: isExiting ? 0 : 0,  // No slide on exit
+                  opacity: 1,
+                  y: 0,
                 }}
                 transition={{
-                  opacity: isExiting
-                    ? { delay: exitDelay + FILL_DURATION * 1.5 + STROKE_DURATION * 1.2, duration: STROKE_DURATION * 0.5, ease: 'easeOut' }
-                    : { delay: emergeStart, duration: EMERGE_DURATION * 0.6, ease: 'easeOut' },
+                  opacity: { delay: emergeStart, duration: EMERGE_DURATION * 0.6, ease: 'easeOut' },
                   y: { delay: emergeStart, duration: EMERGE_DURATION, ease: SETTLE_EASE },
                 }}
               >
-                {/* Inner g for scale transform (entrance only) */}
+                {/* Inner g for scale transform */}
                 <motion.g
                   initial={{ scale: EMERGE_SCALE_START }}
-                  animate={{ scale: 1 }}
+                  animate={{ scale: isExiting ? 0 : 1 }}
                   style={{
                     originX: `${centerX}px`,
                     originY: `${centerY}px`,
                   }}
                   transition={{
-                    scale: { delay: emergeStart, duration: EMERGE_DURATION, ease: SETTLE_EASE },
+                    scale: isExiting
+                      ? { delay: exitDelay + FILL_DURATION * 0.8 + STROKE_DURATION * 1.2, duration: STROKE_DURATION * 0.5, ease: EXIT_EASE }
+                      : { delay: emergeStart, duration: EMERGE_DURATION, ease: SETTLE_EASE },
                   }}
                 >
                   <motion.path

@@ -248,23 +248,10 @@
   bottom: 0;
 }
 
-/* Category image styling */
+/* Category image styling - Framer Motion handles transforms */
 .blueprint-image {
-  cursor: pointer;
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(0.9);
-  transition:
-    opacity 0.5s ease-out,
-    transform 0.5s ease-out;
-}
-
-.blueprint-image--visible {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-}
-
-.blueprint-image--visible:hover {
-  transform: translate(-50%, -50%) scale(1.05);
+  /* Center the element on its position point */
+  transform: translate(-50%, -50%);
 }
 
 .blueprint-image__frame {
