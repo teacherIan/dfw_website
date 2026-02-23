@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useControls } from 'leva';
 import { getCategoriesWithPreview } from '../../utils/gallery';
 import BlueprintButtonSVG from '../navigation/BlueprintButtonSVG';
@@ -55,19 +56,43 @@ const CategoryImage = ({
   index = 0,
 }: CategoryImageProps) => {
   return (
+    // Outer div handles positioning and centering
     <div
-      className={`blueprint-image ${isVisible ? 'blueprint-image--visible' : ''}`}
-      onClick={onClick}
+      className="blueprint-image"
       style={{
         position: 'absolute',
         left: `${position.x}%`,
         top: `${position.y}%`,
-        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
         width: `${size}%`,
         maxWidth: '300px',
-        transitionDelay: `${index * 150}ms`,
       }}
     >
+      {/* Inner motion.div handles animation */}
+      <motion.div
+        onClick={onClick}
+        style={{ cursor: 'pointer' }}
+        initial={{ opacity: 0, scale: 0.9, rotate: rotation - 2 }}
+        animate={isVisible ? {
+          opacity: 1,
+          scale: 1,
+          rotate: rotation,
+        } : {
+          opacity: 0,
+          scale: 0.9,
+          rotate: rotation - 2,
+        }}
+        whileHover={{
+          scale: 1.06,
+          rotate: rotation + 3,
+        }}
+        whileTap={{ scale: 0.98 }}
+        transition={{
+          type: 'spring',
+          stiffness: 200,
+          damping: 15,
+          delay: isVisible ? index * 0.1 : 0,
+        }}
+      >
       {/* Image frame with blueprint styling */}
       <div className="blueprint-image__frame">
         <img
@@ -95,6 +120,7 @@ const CategoryImage = ({
       >
         {label}
       </div>
+      </motion.div>
     </div>
   );
 };
