@@ -1,0 +1,415 @@
+/* EthosOverlay - Faithful recreation of Bangor Daily News article */
+/* "THE HOUSE THAT DOUG BUILT" - Living Section, April 15-16, 2006 */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  background: #f8f5ef; /* Newsprint cream */
+}
+
+.newspaper {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px 30px 40px;
+  min-height: 100%;
+}
+
+/* ========== MASTHEAD ========== */
+.masthead {
+  border-bottom: 1px solid #333;
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+}
+
+.mastheadRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.websiteUrl {
+  font-family: Arial, sans-serif;
+  font-size: 0.65rem;
+  color: #666;
+  align-self: flex-start;
+}
+
+.sectionTitle {
+  font-family: 'Times New Roman', Georgia, serif;
+  font-size: 4.5rem;
+  font-style: italic;
+  font-weight: normal;
+  color: #1a1a1a;
+  line-height: 1;
+  margin: 0;
+  letter-spacing: -0.02em;
+  position: relative;
+}
+
+.sectionTitle::after {
+  content: 'BANGOR DAILY NEWS';
+  display: block;
+  font-family: 'Times New Roman', Georgia, serif;
+  font-size: 0.85rem;
+  font-style: normal;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+.mastheadRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-family: 'Times New Roman', Georgia, serif;
+  font-size: 0.7rem;
+  color: #1a1a1a;
+  gap: 1px;
+}
+
+.mastheadRight strong {
+  font-weight: bold;
+}
+
+.mastheadSub {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 3px;
+  font-family: 'Times New Roman', Georgia, serif;
+  font-size: 0.7rem;
+  color: #333;
+}
+
+.dateLine {
+  font-style: normal;
+}
+
+.publication {
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+
+.sectionLetter {
+  font-style: normal;
+}
+
+/* ========== ARTICLE ========== */
+.article {
+  font-family: 'Times New Roman', Georgia, serif;
+  color: #1a1a1a;
+  overflow: hidden; /* Clear floats */
+}
+
+/* ========== FLOATED HOUSE IMAGE (LEFT) ========== */
+.houseImageFloat {
+  float: left;
+  margin: 0 20px 15px 0;
+  display: flex;
+  gap: 8px;
+}
+
+.houseImageFloat img {
+  width: 550px;
+  height: auto;
+  display: block;
+  border: 1px solid #ccc;
+}
+
+.sideCaption {
+  font-size: 0.65rem;
+  font-style: italic;
+  color: #333;
+  line-height: 1.3;
+  padding-top: 10px;
+  max-width: 70px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-align: right;
+}
+
+/* ========== HEADLINE AREA ========== */
+.headlineArea {
+  text-align: right;
+  margin-bottom: 10px;
+  padding-top: 20px;
+}
+
+.headline {
+  font-family: 'Times New Roman', Georgia, serif;
+  font-weight: normal;
+  margin: 0;
+  line-height: 1;
+}
+
+.headlineSmall {
+  display: block;
+  font-size: 1.1rem;
+  letter-spacing: 0.25em;
+  font-weight: normal;
+  margin-bottom: 0;
+}
+
+.headlineLarge {
+  display: block;
+  font-size: 5.5rem;
+  font-weight: bold;
+  letter-spacing: -0.02em;
+  line-height: 0.85;
+}
+
+.headlineMedium {
+  display: block;
+  font-size: 2.2rem;
+  letter-spacing: 0.2em;
+  font-weight: normal;
+  margin-top: 0;
+}
+
+/* ========== BYLINE ========== */
+.byline {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 10px 0 12px 0;
+  clear: right;
+}
+
+/* ========== FLOATED SUBTITLE (RIGHT) ========== */
+.subtitleFloat {
+  float: right;
+  margin: 0 0 15px 20px;
+  max-width: 180px;
+}
+
+.subtitle {
+  font-family: 'Times New Roman', Georgia, serif;
+  font-size: 1.15rem;
+  font-style: italic;
+  color: #1a1a1a;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.subtitle em {
+  font-style: italic;
+}
+
+/* ========== ARTICLE BODY ========== */
+.articleBody {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  text-align: justify;
+}
+
+.articleBody p {
+  margin: 0 0 0.9em 0;
+}
+
+.dropCap {
+  float: left;
+  font-size: 3.5rem;
+  line-height: 0.75;
+  padding-right: 6px;
+  padding-top: 6px;
+  font-family: 'Times New Roman', Georgia, serif;
+  font-weight: normal;
+  color: #1a1a1a;
+}
+
+/* ========== FLOATED INTERIOR IMAGE (LEFT) ========== */
+.interiorImageFloat {
+  float: left;
+  margin: 5px 20px 15px 0;
+  width: 280px;
+}
+
+.interiorImageFloat img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid #ccc;
+}
+
+.interiorImageFloat figcaption {
+  font-size: 0.65rem;
+  font-style: italic;
+  color: #333;
+  line-height: 1.3;
+  margin-top: 5px;
+}
+
+/* ========== FLOATED LATCH IMAGE (RIGHT) ========== */
+.latchImageFloat {
+  float: right;
+  margin: 5px 0 15px 20px;
+  width: 180px;
+}
+
+.photoCredit {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  line-height: 1.3;
+}
+
+.latchImageFloat img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid #ccc;
+  margin-bottom: 5px;
+}
+
+.latchImageFloat figcaption {
+  font-size: 0.65rem;
+  font-style: normal;
+  color: #333;
+  line-height: 1.3;
+}
+
+/* ========== FOOTER ========== */
+.footer {
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid #ccc;
+  font-size: 0.7rem;
+  font-style: italic;
+  color: #444;
+  clear: both;
+}
+
+.footer p {
+  margin: 0;
+}
+
+/* ========== RESPONSIVE - Tablet ========== */
+@media (max-width: 800px) {
+  .newspaper {
+    padding: 15px 20px 30px;
+  }
+
+  .sectionTitle {
+    font-size: 3.5rem;
+  }
+
+  .houseImageFloat {
+    float: none;
+    margin: 0 auto 15px;
+    justify-content: center;
+  }
+
+  .houseImageFloat img {
+    width: 100%;
+    max-width: 550px;
+  }
+
+  .sideCaption {
+    writing-mode: horizontal-tb;
+    transform: none;
+    text-align: left;
+    max-width: 80px;
+  }
+
+  .headlineArea {
+    text-align: center;
+    padding-top: 10px;
+  }
+
+  .headlineLarge {
+    font-size: 4rem;
+  }
+
+  .subtitleFloat {
+    float: none;
+    margin: 0 0 15px 0;
+    max-width: none;
+    text-align: center;
+  }
+
+  .byline {
+    text-align: center;
+  }
+
+  .interiorImageFloat {
+    float: none;
+    margin: 15px auto;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .latchImageFloat {
+    float: none;
+    clear: none;
+    margin: 15px auto;
+    width: 100%;
+    max-width: 220px;
+  }
+
+  .articleBody {
+    text-align: left;
+  }
+}
+
+/* ========== RESPONSIVE - Mobile ========== */
+@media (max-width: 550px) {
+  .newspaper {
+    padding: 12px 15px 25px;
+  }
+
+  .mastheadRow {
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .websiteUrl {
+    order: -1;
+  }
+
+  .mastheadRight {
+    display: none;
+  }
+
+  .sectionTitle {
+    font-size: 2.8rem;
+  }
+
+  .mastheadSub {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .sideCaption {
+    display: none;
+  }
+
+  .houseImageFloat img {
+    max-width: none;
+  }
+
+  .headlineSmall {
+    font-size: 0.9rem;
+    letter-spacing: 0.15em;
+  }
+
+  .headlineLarge {
+    font-size: 2.8rem;
+  }
+
+  .headlineMedium {
+    font-size: 1.5rem;
+    letter-spacing: 0.15em;
+  }
+
+  .articleBody {
+    font-size: 0.9rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+}

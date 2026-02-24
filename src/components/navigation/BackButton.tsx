@@ -1,43 +1,94 @@
 import clsx from 'clsx';
+import { motion } from 'framer-motion';
+import BlueprintButtonSVG from './BlueprintButtonSVG';
+import './navigation.css';
 
 interface BackButtonProps {
   onClick: () => void;
 }
 
 /**
- * Simple back button to return to home scene
+ * Blueprint-style circular back button with Exit label and arrow
  * Appears when viewing Ethos, Contact, or Gallery scenes
+ * On mobile: just the button. On desktop: button + arrow + Exit label
  */
 const BackButton = ({ onClick }: BackButtonProps) => {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={clsx(
-        'fixed top-6 left-6 z-50',
-        'px-4 py-2 rounded-full',
-        'bg-black/10 backdrop-blur-sm',
-        'border border-black/30',
-        'text-black font-medium',
-        'hover:bg-black/20 transition-colors',
-        'flex items-center gap-2'
-      )}
+    <motion.div
+      className="flex items-center gap-2"
+      style={{
+        position: 'fixed',
+        top: '1.5rem',
+        left: '1.5rem',
+        zIndex: 60,
+      }}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+      {/* Circular Blueprint Button */}
+      <button
+        type="button"
+        onClick={onClick}
+        className={clsx(
+          'nav-button-circle',
+          'pointer-events-auto'
+        )}
+        style={{
+          width: '60px',
+          height: '60px',
+        }}
+        aria-label="Go back to home"
       >
-        <path d="M19 12H5M12 19l-7-7 7-7" />
+        <BlueprintButtonSVG />
+      </button>
+
+      {/* Arrow pointing to button - hidden on mobile */}
+      <svg
+        className="hidden md:block"
+        viewBox="0 0 50 30"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{
+          width: '50px',
+          height: '30px',
+          overflow: 'visible',
+        }}
+      >
+        {/* Curved arrow line */}
+        <path
+          d="M48 15 C 35 15, 25 8, 15 10 C 8 12, 4 15, 2 15"
+          stroke="#333"
+          strokeWidth="1"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.8"
+        />
+        {/* Arrowhead pointing left */}
+        <path
+          d="M6 11 L2 15 L6 19"
+          stroke="#333"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+          opacity="0.8"
+        />
       </svg>
-      Back
-    </button>
+
+      {/* Exit label - hidden on mobile */}
+      <span
+        className="hidden md:block"
+        style={{
+          fontFamily: "'Caveat', cursive",
+          fontSize: '1.4rem',
+          color: '#333',
+        }}
+      >
+        Exit
+      </span>
+    </motion.div>
   );
 };
 

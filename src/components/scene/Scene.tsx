@@ -31,6 +31,7 @@ const Scene = ({ controlsStore }: SceneProps) => {
     returnAnimationDuration,
     exitTypeOverride,
     loadingComplete,
+    setStreamingStarted,
   } = useAnimationStore();
   const renderer = useThree((state) => state.gl);
   const camera = useThree((state) => state.camera);
@@ -41,10 +42,10 @@ const Scene = ({ controlsStore }: SceneProps) => {
     meshRef.current = node;
     if (node) {
       setMeshReady(node);
-      // Dispatch event when mesh is mounted (streaming begins)
-      window.dispatchEvent(new Event('splatStreamingStarted'));
+      // Signal that streaming has started via store action
+      setStreamingStarted();
     }
-  }, []);
+  }, [setStreamingStarted]);
 
   const animateT = useRef(dyno.dynoFloat(0));
   const depthOffsetRef = useRef(dyno.dynoFloat(15.0));
@@ -175,6 +176,7 @@ const Scene = ({ controlsStore }: SceneProps) => {
   const effectSetupRef = useRef(false);
   const cameraAnimationComplete = useRef(false);
   const cameraHoldRef = useRef<{ x: number; y: number; z: number } | null>(null);
+  const cameraReturnProgressRef = useRef(0); // 0 = at hold, 1 = fully returned to natural position
   const swayFactorRef = useRef(1); // Smoothly transitions sway on/off for gallery
 
 
@@ -195,13 +197,16 @@ const Scene = ({ controlsStore }: SceneProps) => {
     const isGalleryTransition = targetScene === 'gallery' || activeScene === 'gallery';
 
     if (animationPhase !== 'idle' && !isGalleryTransition) {
+      // Entering non-idle state - capture camera position and reset return progress
       cameraHoldRef.current = {
         x: camera.position.x,
         y: camera.position.y,
         z: camera.position.z,
       };
+      cameraReturnProgressRef.current = 0;
     } else if (animationPhase === 'idle' || isGalleryTransition) {
-      cameraHoldRef.current = null;
+      // Going to idle - don't immediately release hold, let useFrame lerp back
+      // The hold will be released once return progress reaches 1
     }
   }, [animationPhase, activeScene, targetScene, camera]);
 
@@ -994,13 +999,18 @@ const Scene = ({ controlsStore }: SceneProps) => {
     // Only hold camera for non-gallery animations
     const isGalleryTransition = targetScene === 'gallery' || activeScene === 'gallery';
 
+    // Capture camera position when entering non-idle state
+    // Don't immediately release - let the lerp code handle gradual return
     if (animationPhase !== 'idle' && !cameraHoldRef.current && !isGalleryTransition) {
       cameraHoldRef.current = {
         x: camera.position.x,
         y: camera.position.y,
         z: camera.position.z,
       };
-    } else if ((animationPhase === 'idle' || isGalleryTransition) && cameraHoldRef.current) {
+      cameraReturnProgressRef.current = 0; // Reset lerp progress
+    }
+    // For gallery transitions, release hold immediately
+    if (isGalleryTransition && cameraHoldRef.current) {
       cameraHoldRef.current = null;
     }
 
@@ -1191,9 +1201,36 @@ const Scene = ({ controlsStore }: SceneProps) => {
       camera.position.set(cameraX, cameraY, cameraZ);
     }
 
+    // Handle camera hold with smooth return transition
     if (cameraHoldRef.current) {
       const hold = cameraHoldRef.current;
-      camera.position.set(hold.x, hold.y, hold.z);
+      const isGalleryTransition = targetScene === 'gallery' || activeScene === 'gallery';
+
+      if (animationPhase === 'idle' && !isGalleryTransition) {
+        // Returning to idle - lerp camera back to natural position
+        cameraReturnProgressRef.current = Math.min(cameraReturnProgressRef.current + delta * 2.5, 1);
+        const progress = easeOutCubic(cameraReturnProgressRef.current);
+
+        // Get current natural position (with sway if enabled)
+        const naturalX = ambientSway ? cameraX + swayX * effectiveSway : cameraX;
+        const naturalY = ambientSway ? cameraY + swayY * effectiveSway : cameraY;
+        const naturalZ = cameraZ;
+
+        // Lerp from held to natural
+        camera.position.set(
+          lerp(hold.x, naturalX, progress),
+          lerp(hold.y, naturalY, progress),
+          lerp(hold.z, naturalZ, progress)
+        );
+
+        // Release hold once transition is complete
+        if (cameraReturnProgressRef.current >= 1) {
+          cameraHoldRef.current = null;
+        }
+      } else {
+        // Still in non-idle state - hold camera at captured position
+        camera.position.set(hold.x, hold.y, hold.z);
+      }
     }
 
     // Camera movement for gallery transition - pull back and lower for wall view

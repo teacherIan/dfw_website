@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useControls, useCreateStore, LevaPanel, Leva, folder } from 'leva';
 import Scene from './components/scene/Scene';
@@ -18,6 +18,7 @@ import {
   ENTRANCE_ANIMATION_DURATION,
 } from './constants';
 import ContactOverlay from './components/contact/ContactOverlay';
+import EthosOverlay from './components/ethos/EthosOverlay';
 import { GalleryProvider, useGallery } from './contexts/GalleryContext';
 import { DragDisplacementProvider } from './contexts/DragDisplacementContext';
 import { useAnimationStore, useIsContactOverlayOpen } from './stores';
@@ -43,7 +44,6 @@ function AppContent() {
     navigateTo,
     returnHome,
     setShowText,
-    setStreamingStarted,
     setLoadingComplete,
     setExitAnimationDuration,
     setReturnAnimationDuration,
@@ -107,6 +107,9 @@ function AppContent() {
 
   // Track previous activeScene to detect when returning from gallery
   const prevActiveSceneRef = useRef(activeScene);
+
+  // Track when Ethos overlay fade-in completes (for BackButton visibility)
+  const [ethosReady, setEthosReady] = useState(false);
   useEffect(() => {
     // When we return from gallery to home, reset gallery state
     if (prevActiveSceneRef.current === 'gallery' && activeScene === 'home' && animationPhase === 'idle') {
@@ -133,26 +136,19 @@ function AppContent() {
   const loadingComplete = useAnimationStore((state) => state.loadingComplete);
   const isContactOverlayOpen = useIsContactOverlayOpen();
 
-  // Track when streaming starts and when splat is loaded
+  // Track when splat is fully loaded (for debugging)
   useEffect(() => {
-    const handleStreamingStarted = () => {
-      setStreamingStarted();
-    };
-
     const handleSplatLoaded = () => {
-      // Splat fully loaded - could use this for additional timing if needed
       if (import.meta.env.DEV) {
         console.log('Splat fully loaded');
       }
     };
 
-    window.addEventListener('splatStreamingStarted', handleStreamingStarted);
     window.addEventListener('splatLoaded', handleSplatLoaded);
     return () => {
-      window.removeEventListener('splatStreamingStarted', handleStreamingStarted);
       window.removeEventListener('splatLoaded', handleSplatLoaded);
     };
-  }, [setStreamingStarted]);
+  }, []);
 
   useEffect(() => {
     // Start showing the text after loading screen completes
@@ -173,10 +169,20 @@ function AppContent() {
     return () => window.removeEventListener('resetAnimation', handleReset);
   }, [resetAnimation]);
 
+  // Reset ethosReady when leaving ethos
+  useEffect(() => {
+    if (activeScene !== 'ethos' && animationPhase === 'idle') {
+      setEthosReady(false);
+    }
+  }, [activeScene, animationPhase]);
+
   // Determine when to show back button
   const shouldShowBackButton = useCallback(() => {
-    // Show during exit animations (except when going to gallery)
-    if (animationPhase === 'exiting' && targetScene !== 'gallery') return true;
+    // For Ethos: only show after overlay has faded in
+    if (activeScene === 'ethos' || targetScene === 'ethos') {
+      // Show only when ethos is active, idle, and fade-in complete
+      return activeScene === 'ethos' && animationPhase === 'idle' && ethosReady;
+    }
     // Show during contact transition
     if (animationPhase === 'transitioning') return true;
     // Show on non-home scenes in idle state
@@ -186,10 +192,10 @@ function AppContent() {
       return true;
     }
     return false;
-  }, [animationPhase, targetScene, activeScene]);
+  }, [animationPhase, targetScene, activeScene, ethosReady]);
 
   return (
-    <div className="relative h-svh w-screen overflow-hidden bg-white text-white">
+    <div className="relative h-svh w-screen overflow-hidden bg-[#f8f5ef] text-white">
       {/* Loading screen - signals when animation can start */}
       <LoadingScreen
         isReady={streamingStarted}
@@ -238,6 +244,19 @@ function AppContent() {
         )}
       </AnimatePresence>
 
+      {/* Ethos overlay - mount during exit animation, keep during return animation */}
+      {(activeScene === 'ethos' ||
+        (targetScene === 'ethos' && animationPhase === 'exiting') ||
+        (activeScene === 'home' && animationPhase === 'entering' && entranceType > 0)) && (
+        <EthosOverlay
+          isEntering={targetScene === 'ethos' && animationPhase === 'exiting'}
+          isReturning={activeScene === 'home' && animationPhase === 'entering'}
+          exitDuration={exitAnimationDuration ?? 5.9}
+          returnDuration={returnAnimationDuration ?? 2.6}
+          onFadeInComplete={() => setEthosReady(true)}
+        />
+      )}
+
       {/* Gallery picker - keep mounted while in gallery to prevent re-animation */}
       {(activeScene === 'gallery' || targetScene === 'gallery') && (
         <BlueprintPicker
@@ -259,9 +278,11 @@ function AppContent() {
       )}
 
       {/* Back button - show during exit/transition animations and when on other scenes */}
-      {shouldShowBackButton() && (
-        <BackButton onClick={handleReturnHome} />
-      )}
+      <AnimatePresence>
+        {shouldShowBackButton() && (
+          <BackButton onClick={handleReturnHome} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

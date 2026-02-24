@@ -245,10 +245,5 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
   },
 }));
 
-// Selector hooks for common patterns
-export const useActiveScene = () => useAnimationStore((state) => state.activeScene);
-export const useAnimationPhase = () => useAnimationStore((state) => state.animationPhase);
-export const useTargetScene = () => useAnimationStore((state) => state.targetScene);
-export const useShowText = () => useAnimationStore((state) => state.showText);
-export const useEntranceType = () => useAnimationStore((state) => state.entranceType);
+// Selector hook for contact overlay (used in App.tsx, MenuOverlay, MobileNavLayout)
 export const useIsContactOverlayOpen = () => useAnimationStore((state) => state.isContactOverlayOpen);

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import type { CategoryKey } from '../components/gallery/image_info';
 
 export type GalleryViewState = 'picker' | 'grid' | 'viewing';
@@ -28,10 +28,9 @@ const GalleryContext = createContext<GalleryContextValue | null>(null);
 
 interface GalleryProviderProps {
   children: ReactNode;
-  visible?: boolean;
 }
 
-export const GalleryProvider = ({ children, visible = true }: GalleryProviderProps) => {
+export const GalleryProvider = ({ children }: GalleryProviderProps) => {
   const [viewState, setViewState] = useState<GalleryViewState>('picker');
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey | null>(null);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
@@ -69,13 +68,6 @@ export const GalleryProvider = ({ children, visible = true }: GalleryProviderPro
     setSelectedImageIndex(null);
     setViewState('grid');
   }, []);
-
-  // Reset to picker when gallery becomes invisible
-  useEffect(() => {
-    if (!visible) {
-      resetGallery();
-    }
-  }, [visible, resetGallery]);
 
   return (
     <GalleryContext.Provider
