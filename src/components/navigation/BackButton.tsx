@@ -1,5 +1,6 @@
-import clsx from 'clsx';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
+import clsx from 'clsx';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
 import './navigation.css';
 
@@ -11,21 +12,16 @@ interface BackButtonProps {
  * Blueprint-style circular back button with Exit label and arrow
  * Appears when viewing Ethos, Contact, or Gallery scenes
  * On mobile: just the button. On desktop: button + arrow + Exit label
+ * Uses portal to render directly to body for reliable fixed positioning on mobile
  */
 const BackButton = ({ onClick }: BackButtonProps) => {
-  return (
+  return createPortal(
     <motion.div
-      className="flex items-center gap-2"
-      style={{
-        position: 'fixed',
-        top: '1.5rem',
-        left: '1.5rem',
-        zIndex: 60,
-      }}
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="fixed top-6 left-6 z-[60] flex items-center gap-2"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
     >
       {/* Circular Blueprint Button */}
       <button
@@ -88,7 +84,8 @@ const BackButton = ({ onClick }: BackButtonProps) => {
       >
         Exit
       </span>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 };
 

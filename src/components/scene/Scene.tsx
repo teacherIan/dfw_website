@@ -1207,8 +1207,8 @@ const Scene = ({ controlsStore }: SceneProps) => {
       const isGalleryTransition = targetScene === 'gallery' || activeScene === 'gallery';
 
       if (animationPhase === 'idle' && !isGalleryTransition) {
-        // Returning to idle - lerp camera back to natural position
-        cameraReturnProgressRef.current = Math.min(cameraReturnProgressRef.current + delta * 2.5, 1);
+        // Returning to idle - lerp camera back to natural position (slower for smooth transition)
+        cameraReturnProgressRef.current = Math.min(cameraReturnProgressRef.current + delta * 1.0, 1);
         const progress = easeOutCubic(cameraReturnProgressRef.current);
 
         // Get current natural position (with sway if enabled)

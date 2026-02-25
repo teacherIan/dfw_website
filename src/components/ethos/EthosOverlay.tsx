@@ -24,9 +24,9 @@ const FADE_IN_DURATION = 0.8;
  * By Sharon Kiley Mack - Complete article (both pages)
  */
 const EthosOverlay = ({ isEntering = false, isReturning = false, exitDuration = 5.9, returnDuration = 2.6, onFadeInComplete }: EthosOverlayProps) => {
-  // Delay fade-in so it completes exactly when exit animation finishes
-  // fadeDelay = exitDuration - fadeDuration
-  const fadeDelay = isEntering ? Math.max(0, exitDuration - FADE_IN_DURATION) : 0;
+  // Delay fade-in to start 0.5s before exit animation finishes (overlap for smoother transition)
+  // fadeDelay = exitDuration - fadeDuration - overlap
+  const fadeDelay = isEntering ? Math.max(0, exitDuration - FADE_IN_DURATION - 0.5) : 0;
   const controls = useAnimation();
   const [hasAnimatedIn, setHasAnimatedIn] = useState(false);
 
