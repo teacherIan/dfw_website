@@ -29,12 +29,9 @@ const BackButton = ({ onClick }: BackButtonProps) => {
         onClick={onClick}
         className={clsx(
           'nav-button-circle',
+          'nav-button-circle--size-sm',
           'pointer-events-auto'
         )}
-        style={{
-          width: '60px',
-          height: '60px',
-        }}
         aria-label="Go back to home"
       >
         <BlueprintButtonSVG />
