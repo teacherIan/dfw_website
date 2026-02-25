@@ -26,6 +26,7 @@
   letter-spacing: 0.05em;
   margin-bottom: 16px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  text-align: center;
 }
 
 .infoGrid {
