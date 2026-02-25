@@ -57,3 +57,58 @@
     --title-bottom-mobile: 21vh;
   }
 }
+
+/* ========================================
+   HEIGHT-BASED BREAKPOINTS
+   For handling mobile browser chrome
+   (address bar, navigation bar, etc.)
+   ======================================== */
+
+:root {
+  /* Arrow positioning - default (tall viewports, no browser chrome) */
+  --arrow-ethos-bottom: 8vh;
+  --arrow-contact-bottom: 4vh;
+  --arrow-gallery-bottom: 0vh;
+
+  /* Reference height for arrow compensation (height where coordinates were calibrated) */
+  --arrow-ref-height: 932px;
+}
+
+/* Small screens: calibrated for iPhone SE/mini height */
+@media (max-width: 399px) {
+  :root {
+    --arrow-ref-height: 812px;
+  }
+}
+
+/* Tablet: calibrated for typical tablet height */
+@media (min-width: 700px) and (max-width: 999px) {
+  :root {
+    --arrow-ref-height: 1024px;
+  }
+}
+
+/* iPad Pro: calibrated for iPad Pro height */
+@media (min-width: 1000px) and (max-width: 1199px) {
+  :root {
+    --arrow-ref-height: 1366px;
+  }
+}
+
+/* Short portrait (mobile with browser chrome visible, ~750px or less) */
+@media (max-height: 750px) and (orientation: portrait) {
+  :root {
+    --arrow-ethos-bottom: 10svh;
+    --arrow-contact-bottom: 6svh;
+    --arrow-gallery-bottom: 2svh;
+  }
+}
+
+/* Very short portrait (older iPhones, heavy browser chrome) */
+@media (max-height: 600px) and (orientation: portrait) {
+  :root {
+    --arrow-ethos-bottom: 12svh;
+    --arrow-contact-bottom: 8svh;
+    --arrow-gallery-bottom: 4svh;
+  }
+}

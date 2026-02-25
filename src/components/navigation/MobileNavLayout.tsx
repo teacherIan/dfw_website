@@ -69,6 +69,7 @@ interface MobileNavLayoutProps {
   isVisible: boolean;
   onNavigate: (scene: SceneId) => void;
   controlsStore?: LevaStore;
+  arrowControlsStore?: LevaStore;
 }
 
 // Mobile button with spring rotation
@@ -144,6 +145,7 @@ const MobileNavLayout = ({
   isVisible,
   onNavigate,
   controlsStore,
+  arrowControlsStore,
 }: MobileNavLayoutProps) => {
   // Contact toggle state
   const toggleContactOverlay = useAnimationStore((state) => state.toggleContactOverlay);
@@ -331,7 +333,8 @@ const MobileNavLayout = ({
         delay={MOBILE_NAV_DELAYS.ETHOS_ARROW}
         springTransform={ethosUnravel.hasCompletedInitialAnimation ? ethosUnravel.transform : undefined}
         curveOffset={ethosUnravel.hasCompletedInitialAnimation ? ethosUnravel.curveOffset : undefined}
-        controlsStore={controlsStore}
+        controlsStore={arrowControlsStore}
+        buttonPosition={{ left: btnPositionsMid.ethosLeft, bottom: btnPositionsMid.ethosBottom }}
       />
 
       {/* ============================================
@@ -496,7 +499,8 @@ const MobileNavLayout = ({
         delay={MOBILE_NAV_DELAYS.CONTACT_ARROW}
         springTransform={contactUnravel.hasCompletedInitialAnimation ? contactUnravel.transform : undefined}
         curveOffset={contactUnravel.hasCompletedInitialAnimation ? contactUnravel.curveOffset : undefined}
-        controlsStore={controlsStore}
+        controlsStore={arrowControlsStore}
+        buttonPosition={{ left: btnPositionsMid.contactLeft, bottom: btnPositionsMid.contactBottom, isCentered: true }}
       />
 
       {/* ============================================
@@ -653,7 +657,8 @@ const MobileNavLayout = ({
         delay={MOBILE_NAV_DELAYS.GALLERY_ARROW}
         springTransform={galleryUnravel.hasCompletedInitialAnimation ? galleryUnravel.transform : undefined}
         curveOffset={galleryUnravel.hasCompletedInitialAnimation ? galleryUnravel.curveOffset : undefined}
-        controlsStore={controlsStore}
+        controlsStore={arrowControlsStore}
+        buttonPosition={{ right: btnPositionsMid.galleryRight, bottom: btnPositionsMid.galleryBottom }}
       />
     </div>
   );

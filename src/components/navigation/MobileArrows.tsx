@@ -1,5 +1,101 @@
-import { useControls } from 'leva';
-import { AnimatedArrowhead, AnimatedDot, getArrowAngle } from './ArrowComponents';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { useControls, folder } from 'leva';
+import { AnimatedArrowhead, AnimatedDot } from './ArrowComponents';
+import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls } from '../../hooks/useMobileArrowControls';
+
+type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
+
+// Shared Leva control for arrow targeting offset
+const useArrowTargetingControls = (controlsStore?: LevaStore) => {
+  return useControls({
+    '🎯 Arrow Targeting': folder({
+      centerYOffset: { value: -5, min: -50, max: 50, step: 1, label: 'Y Offset (px)' },
+    }, { collapsed: false }),
+  }, { store: controlsStore });
+};
+
+// Button position in CSS units (passed from MobileNavLayout)
+interface ButtonPosition {
+  left?: number;  // percentage of viewport width
+  right?: number; // percentage of viewport width (for gallery)
+  bottom: number; // vh units
+  isCentered?: boolean; // true for contact (has translateX(-50%))
+}
+
+/**
+ * Hook to calculate arrow endpoint from known CSS positions
+ * No DOM queries needed - uses viewport dimensions + CSS values
+ */
+const useCalculatedEndpoint = (
+  svgRef: React.RefObject<SVGSVGElement | null>,
+  buttonPos: ButtonPosition,
+  viewBox: { width: number; height: number },
+  buttonSize: number, // pixels
+  marginX: number, // horizontal margin offset in pixels
+  marginY: number = 0, // vertical margin offset in pixels (for contact)
+  centerYOffset: number = 0 // visual adjustment for crosshair targeting
+) => {
+  const [endpoint, setEndpoint] = useState<{ x: number; y: number } | null>(null);
+
+  // Extract primitives to avoid object reference issues in dependencies
+  const buttonLeft = buttonPos.left;
+  const buttonRight = buttonPos.right;
+  const buttonBottom = buttonPos.bottom;
+  const isCentered = buttonPos.isCentered ?? false;
+  const viewBoxWidth = viewBox.width;
+  const viewBoxHeight = viewBox.height;
+
+  useEffect(() => {
+    const calculate = () => {
+      const svg = svgRef.current;
+      if (!svg) return;
+
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const svgRect = svg.getBoundingClientRect();
+
+      if (svgRect.width === 0 || svgRect.height === 0) return;
+
+      // Calculate button center in screen coords (from top-left)
+      let buttonCenterX: number;
+      if (buttonLeft !== undefined) {
+        if (isCentered) {
+          // Contact: left% with translateX(-50%), so center is at exactly left%
+          buttonCenterX = (buttonLeft / 100) * vw;
+        } else {
+          // Ethos: left% + negative margin shifts left
+          buttonCenterX = (buttonLeft / 100) * vw + marginX + buttonSize / 2;
+        }
+      } else {
+        // Gallery: right% + negative margin-right shifts RIGHT (adds to X)
+        // right: 17% means right edge at 83% of vw, then margin pushes it further right
+        const rightEdge = vw - (buttonRight! / 100) * vw;
+        buttonCenterX = rightEdge + Math.abs(marginX) - buttonSize / 2;
+      }
+
+      // Button Y: bottom in vh, with optional margin-bottom offset
+      // marginY is negative for margin-bottom (shifts down = higher screen Y), so we SUBTRACT it
+      // centerYOffset allows fine-tuning to point at crosshair center
+      const buttonCenterY = vh - (buttonBottom / 100) * vh - marginY - buttonSize / 2 + centerYOffset;
+
+      // Convert to viewBox coordinates relative to SVG position
+      const scaleX = viewBoxWidth / svgRect.width;
+      const scaleY = viewBoxHeight / svgRect.height;
+
+      setEndpoint({
+        x: (buttonCenterX - svgRect.left) * scaleX,
+        y: (buttonCenterY - svgRect.top) * scaleY,
+      });
+    };
+
+    // Calculate immediately and on resize
+    calculate();
+    window.addEventListener('resize', calculate);
+    return () => window.removeEventListener('resize', calculate);
+  }, [svgRef, buttonLeft, buttonRight, buttonBottom, isCentered, viewBoxWidth, viewBoxHeight, buttonSize, marginX, marginY, centerYOffset]);
+
+  return endpoint;
+};
 
 interface SpringTransform {
   rotate: number;
@@ -21,78 +117,110 @@ interface ArrowProps {
   unravelOffset?: number;
   springTransform?: SpringTransform;
   curveOffset?: CurveOffset;
+  controlsStore?: LevaStore;
+  // Button position for dynamic endpoint calculation
+  buttonPosition?: ButtonPosition;
 }
 
-type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
+/**
+ * Calculate arrowhead angle from the last control point to the endpoint
+ * For cubic bezier, use the second control point of the last C command
+ */
+const getArrowAngle = (lastControlX: number, lastControlY: number, endX: number, endY: number): number => {
+  const dx = endX - lastControlX;
+  const dy = endY - lastControlY;
+  return Math.atan2(dy, dx) * (180 / Math.PI);
+};
 
-export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffset, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
-  const ethosSmall = useControls('🏠 Base.📱 Mobile Arrows.Ethos Small (<400px)', {
-    startX: { value: 100, min: 0, max: 120, step: 1, label: 'Start X' },
-    startY: { value: 135, min: 0, max: 160, step: 1, label: 'Start Y' },
-    controlX: { value: -40, min: -50, max: 120, step: 1, label: 'Control X' },
-    controlY: { value: 70, min: 0, max: 160, step: 1, label: 'Control Y' },
-    endX: { value: 30, min: 0, max: 120, step: 1, label: 'End X' },
-    endY: { value: 0, min: -50, max: 160, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
+// =============================================================================
+// ETHOS ARROW - Left side, loops up-left toward button
+// ViewBox: 120×160, starts near label (bottom-right), ends pointing at button (upper-left)
+// =============================================================================
+export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffset, controlsStore, buttonPosition }: ArrowProps) => {
+  // Leva controls for live editing
+  const controls = useEthosArrowControls(controlsStore);
+  const { centerYOffset } = useArrowTargetingControls(controlsStore);
 
-  const ethosMid = useControls('🏠 Base.📱 Mobile Arrows.Ethos Mid (400-699px)', {
-    startX: { value: 100, min: 0, max: 120, step: 1, label: 'Start X' },
-    startY: { value: 135, min: 0, max: 160, step: 1, label: 'Start Y' },
-    controlX: { value: -40, min: -50, max: 120, step: 1, label: 'Control X' },
-    controlY: { value: 70, min: 0, max: 160, step: 1, label: 'Control Y' },
-    endX: { value: 30, min: 0, max: 120, step: 1, label: 'End X' },
-    endY: { value: -35, min: -50, max: 160, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
+  // Ref for dynamic endpoint calculation
+  const svgRef = useRef<SVGSVGElement>(null);
+  const viewBox = { width: 120, height: 160 };
 
-  const ethosTablet = useControls('🏠 Base.📱 Mobile Arrows.Ethos Tablet (700-999px)', {
-    startX: { value: 113, min: 0, max: 120, step: 1, label: 'Start X' },
-    startY: { value: 124, min: 0, max: 160, step: 1, label: 'Start Y' },
-    controlX: { value: -27, min: -50, max: 120, step: 1, label: 'Control X' },
-    controlY: { value: 98, min: 0, max: 160, step: 1, label: 'Control Y' },
-    endX: { value: 55, min: 0, max: 120, step: 1, label: 'End X' },
-    endY: { value: -30, min: -100, max: 160, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
+  // Calculate endpoint from button position (no DOM queries)
+  // Ethos: left-positioned with margin-left: -56px
+  const dynamicEndpoint = useCalculatedEndpoint(
+    svgRef,
+    buttonPosition ?? { left: 14, bottom: 26 },
+    viewBox,
+    80,  // button size in pixels
+    -56, // marginX: -ml-14 shifts left
+    0,   // marginY: none
+    centerYOffset // visual adjustment for crosshair targeting
+  );
 
-  const ethosIpadPro = useControls('🏠 Base.📱 Mobile Arrows.Ethos iPad Pro (1000-1199px)', {
-    startX: { value: 130, min: -100, max: 300, step: 1, label: 'Start X' },
-    startY: { value: 124, min: -100, max: 300, step: 1, label: 'Start Y' },
-    controlX: { value: -27, min: -200, max: 300, step: 1, label: 'Control X' },
-    controlY: { value: 98, min: -100, max: 300, step: 1, label: 'Control Y' },
-    endX: { value: 75, min: -100, max: 300, step: 1, label: 'End X' },
-    endY: { value: -80, min: -100, max: 300, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
-
-  // Static path definitions (no control point manipulation)
-  const smallPathD = `M ${ethosSmall.startX} ${ethosSmall.startY} Q ${ethosSmall.controlX} ${ethosSmall.controlY}, ${ethosSmall.endX} ${ethosSmall.endY}`;
-  const midPathD = `M ${ethosMid.startX} ${ethosMid.startY} Q ${ethosMid.controlX} ${ethosMid.controlY}, ${ethosMid.endX} ${ethosMid.endY}`;
-  const tabletPathD = `M ${ethosTablet.startX} ${ethosTablet.startY} Q ${ethosTablet.controlX} ${ethosTablet.controlY}, ${ethosTablet.endX} ${ethosTablet.endY}`;
-  const ipadProPathD = `M ${ethosIpadPro.startX} ${ethosIpadPro.startY} Q ${ethosIpadPro.controlX} ${ethosIpadPro.controlY}, ${ethosIpadPro.endX} ${ethosIpadPro.endY}`;
-
-  // Path style for draw animation
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
   };
 
-  // Delays: dot appears with line start, arrowhead appears when line finishes
   const dotDelay = delay;
-  const arrowheadDelay = delay + 500; // Appears near end of stroke animation
+  const arrowheadDelay = delay + 500;
 
-  // Use curveOffset for smooth whole-SVG deformation
+  // Curve offset for spring animation
   const ox = curveOffset?.x ?? 0;
   const oy = curveOffset?.y ?? 0;
 
-  // Build transform - Ethos arrow gets rotate + skewY for swooping effect (toned down)
   const svgTransform = springTransform || curveOffset
     ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.05}px, ${(springTransform?.translateY ?? 0) + oy * 0.08}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.1}deg) skewY(${oy * 0.15}deg)`
     : undefined;
 
+  // For Mid breakpoint, use dynamic endpoint if available
+  const midEndX = dynamicEndpoint?.x ?? controls.mid.endX;
+  const midEndY = dynamicEndpoint?.y ?? controls.mid.endY;
+  // Calculate control point to make arrow point at button: ctrl = 2*end - button
+  // Since end IS the button, we use the original control point direction
+  const midCtrlX = controls.mid.ctrlX;
+  const midCtrlY = controls.mid.ctrlY;
+
+  // Use Leva controls for path data (Mid uses dynamic endpoint)
+  const pathData = {
+    small: {
+      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${controls.small.endX} ${controls.small.endY}`,
+      startX: controls.small.startX, startY: controls.small.startY,
+      lastCtrlX: controls.small.ctrlX, lastCtrlY: controls.small.ctrlY,
+      endX: controls.small.endX, endY: controls.small.endY,
+      angleOffset: controls.small.angleOffset,
+    },
+    mid: {
+      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${midCtrlX} ${midCtrlY}, ${midEndX} ${midEndY}`,
+      startX: controls.mid.startX, startY: controls.mid.startY,
+      lastCtrlX: midCtrlX, lastCtrlY: midCtrlY,
+      endX: midEndX, endY: midEndY,
+      angleOffset: controls.mid.angleOffset,
+    },
+    tablet: {
+      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${controls.tablet.endX} ${controls.tablet.endY}`,
+      startX: controls.tablet.startX, startY: controls.tablet.startY,
+      lastCtrlX: controls.tablet.ctrlX, lastCtrlY: controls.tablet.ctrlY,
+      endX: controls.tablet.endX, endY: controls.tablet.endY,
+      angleOffset: controls.tablet.angleOffset,
+    },
+    ipadPro: {
+      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${controls.ipadPro.endX} ${controls.ipadPro.endY}`,
+      startX: controls.ipadPro.startX, startY: controls.ipadPro.startY,
+      lastCtrlX: controls.ipadPro.ctrlX, lastCtrlY: controls.ipadPro.ctrlY,
+      endX: controls.ipadPro.endX, endY: controls.ipadPro.endY,
+      angleOffset: controls.ipadPro.angleOffset,
+    },
+  };
+
   return (
     <svg
+      ref={svgRef}
       className="nav-mobile-ethos-arrow h-[160px] w-[120px] md:h-[220px] md:w-[165px]"
       style={{
         transform: svgTransform,
         transformOrigin: 'bottom left',
+        overflow: 'visible',
       }}
       viewBox="0 0 120 160"
       fill="none"
@@ -100,7 +228,7 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
       {/* iPad Pro (1000-1199px) */}
       <g className="hidden min-[1000px]:max-[1199px]:block">
         <path
-          d={ipadProPathD}
+          d={pathData.ipadPro.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -111,12 +239,12 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={ethosIpadPro.startX} y={ethosIpadPro.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.ipadPro.startX} y={pathData.ipadPro.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={ethosIpadPro.endX}
-          y={ethosIpadPro.endY}
-          angle={getArrowAngle(ethosIpadPro.controlX, ethosIpadPro.controlY, ethosIpadPro.endX, ethosIpadPro.endY)}
+          x={pathData.ipadPro.endX}
+          y={pathData.ipadPro.endY}
+          angle={getArrowAngle(pathData.ipadPro.lastCtrlX, pathData.ipadPro.lastCtrlY, pathData.ipadPro.endX, pathData.ipadPro.endY) + pathData.ipadPro.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />
@@ -125,7 +253,7 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
       {/* Tablet (700-999px) */}
       <g className="hidden min-[700px]:max-[999px]:block">
         <path
-          d={tabletPathD}
+          d={pathData.tablet.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -136,12 +264,12 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={ethosTablet.startX} y={ethosTablet.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.tablet.startX} y={pathData.tablet.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={ethosTablet.endX}
-          y={ethosTablet.endY}
-          angle={getArrowAngle(ethosTablet.controlX, ethosTablet.controlY, ethosTablet.endX, ethosTablet.endY)}
+          x={pathData.tablet.endX}
+          y={pathData.tablet.endY}
+          angle={getArrowAngle(pathData.tablet.lastCtrlX, pathData.tablet.lastCtrlY, pathData.tablet.endX, pathData.tablet.endY) + pathData.tablet.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />
@@ -150,7 +278,7 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
       {/* Mid (400-699px) */}
       <g className="hidden min-[400px]:max-[699px]:block">
         <path
-          d={midPathD}
+          d={pathData.mid.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -161,12 +289,12 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={ethosMid.startX} y={ethosMid.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.mid.startX} y={pathData.mid.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={ethosMid.endX}
-          y={ethosMid.endY}
-          angle={getArrowAngle(ethosMid.controlX, ethosMid.controlY, ethosMid.endX, ethosMid.endY)}
+          x={pathData.mid.endX}
+          y={pathData.mid.endY}
+          angle={getArrowAngle(pathData.mid.lastCtrlX, pathData.mid.lastCtrlY, pathData.mid.endX, pathData.mid.endY) + pathData.mid.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />
@@ -175,7 +303,7 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
       {/* Small (<400px) */}
       <g className="hidden max-[399px]:block">
         <path
-          d={smallPathD}
+          d={pathData.small.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -186,12 +314,12 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={ethosSmall.startX} y={ethosSmall.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.small.startX} y={pathData.small.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={ethosSmall.endX}
-          y={ethosSmall.endY}
-          angle={getArrowAngle(ethosSmall.controlX, ethosSmall.controlY, ethosSmall.endX, ethosSmall.endY)}
+          x={pathData.small.endX}
+          y={pathData.small.endY}
+          angle={getArrowAngle(pathData.small.lastCtrlX, pathData.small.lastCtrlY, pathData.small.endX, pathData.small.endY) + pathData.small.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />
@@ -200,82 +328,100 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
   );
 };
 
-export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOffset, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
-  const contactSmall = useControls('🏠 Base.📱 Mobile Arrows.Contact Small (<400px)', {
-    startX: { value: 93, min: 0, max: 150, step: 1, label: 'Start X' },
-    startY: { value: 37, min: 0, max: 200, step: 1, label: 'Start Y' },
-    controlX: { value: 80, min: -50, max: 150, step: 1, label: 'Control X' },
-    controlY: { value: 120, min: 0, max: 200, step: 1, label: 'Control Y' },
-    endX: { value: 15, min: 0, max: 150, step: 1, label: 'End X' },
-    endY: { value: 124, min: -50, max: 200, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
+// =============================================================================
+// CONTACT ARROW - Center, spirals down toward button below
+// ViewBox: 80×120, starts near top (label area), ends pointing down at button
+// =============================================================================
+export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOffset, controlsStore, buttonPosition }: ArrowProps) => {
+  // Leva controls for live editing
+  const controls = useContactArrowControls(controlsStore);
+  const { centerYOffset } = useArrowTargetingControls(controlsStore);
 
-  const contactMid = useControls('🏠 Base.📱 Mobile Arrows.Contact Mid (400-699px)', {
-    startX: { value: 100, min: 0, max: 150, step: 1, label: 'Start X' },
-    startY: { value: 0, min: 0, max: 200, step: 1, label: 'Start Y' },
-    controlX: { value: 149, min: -50, max: 150, step: 1, label: 'Control X' },
-    controlY: { value: 200, min: 0, max: 200, step: 1, label: 'Control Y' },
-    endX: { value: 15, min: 0, max: 150, step: 1, label: 'End X' },
-    endY: { value: 111, min: -50, max: 200, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
+  // Ref for dynamic endpoint calculation
+  const svgRef = useRef<SVGSVGElement>(null);
+  const viewBox = { width: 80, height: 120 };
 
-  const contactTablet = useControls('🏠 Base.📱 Mobile Arrows.Contact Tablet (700-999px)', {
-    startX: { value: 150, min: -100, max: 300, step: 1, label: 'Start X' },
-    startY: { value: 6, min: -100, max: 300, step: 1, label: 'Start Y' },
-    controlX: { value: -50, min: -200, max: 300, step: 1, label: 'Control X' },
-    controlY: { value: -44, min: -100, max: 300, step: 1, label: 'Control Y' },
-    endX: { value: -17, min: -100, max: 300, step: 1, label: 'End X' },
-    endY: { value: 105, min: -100, max: 300, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
+  // Calculate endpoint from button position (no DOM queries)
+  // Contact: centered with translateX(-50%) and margin-bottom: -56px
+  const dynamicEndpoint = useCalculatedEndpoint(
+    svgRef,
+    buttonPosition ?? { left: 45, bottom: 7, isCentered: true },
+    viewBox,
+    80, // button size in pixels
+    0,  // marginX: none (centered)
+    -56, // marginY: -mb-14 shifts down
+    centerYOffset // visual adjustment for crosshair targeting
+  );
 
-  const contactIpadPro = useControls('🏠 Base.📱 Mobile Arrows.Contact iPad Pro (1000-1199px)', {
-    startX: { value: 150, min: -100, max: 300, step: 1, label: 'Start X' },
-    startY: { value: -10, min: -100, max: 300, step: 1, label: 'Start Y' },
-    controlX: { value: -50, min: -200, max: 300, step: 1, label: 'Control X' },
-    controlY: { value: -60, min: -100, max: 300, step: 1, label: 'Control Y' },
-    endX: { value: -22, min: -100, max: 300, step: 1, label: 'End X' },
-    endY: { value: 105, min: -100, max: 300, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
-
-  // Static path definitions (no control point manipulation)
-  const smallPathD = `M ${contactSmall.startX} ${contactSmall.startY} Q ${contactSmall.controlX} ${contactSmall.controlY}, ${contactSmall.endX} ${contactSmall.endY}`;
-  const midPathD = `M ${contactMid.startX} ${contactMid.startY} Q ${contactMid.controlX} ${contactMid.controlY}, ${contactMid.endX} ${contactMid.endY}`;
-  const tabletPathD = `M ${contactTablet.startX} ${contactTablet.startY} Q ${contactTablet.controlX} ${contactTablet.controlY}, ${contactTablet.endX} ${contactTablet.endY}`;
-  const ipadProPathD = `M ${contactIpadPro.startX} ${contactIpadPro.startY} Q ${contactIpadPro.controlX} ${contactIpadPro.controlY}, ${contactIpadPro.endX} ${contactIpadPro.endY}`;
-
-  // Path style for draw animation
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
   };
 
-  // Delays: dot appears with line start, arrowhead appears when line finishes
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
-  // Use curveOffset for smooth whole-SVG deformation
   const ox = curveOffset?.x ?? 0;
   const oy = curveOffset?.y ?? 0;
 
-  // Build transform - Contact arrow gets skewX for a different feel (toned down)
   const svgTransform = springTransform || curveOffset
     ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.06}px, ${(springTransform?.translateY ?? 0) + oy * 0.05}px) rotate(${(springTransform?.rotate ?? 0) - ox * 0.12}deg) skewX(${ox * 0.18}deg)`
     : undefined;
 
+  // For Mid breakpoint, use dynamic endpoint if available
+  const midEndX = dynamicEndpoint?.x ?? controls.mid.endX;
+  const midEndY = dynamicEndpoint?.y ?? controls.mid.endY;
+  const midCtrlX = controls.mid.ctrlX;
+  const midCtrlY = controls.mid.ctrlY;
+
+  // Use Leva controls for path data (Mid uses dynamic endpoint)
+  const pathData = {
+    small: {
+      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${controls.small.endX} ${controls.small.endY}`,
+      startX: controls.small.startX, startY: controls.small.startY,
+      lastCtrlX: controls.small.ctrlX, lastCtrlY: controls.small.ctrlY,
+      endX: controls.small.endX, endY: controls.small.endY,
+      angleOffset: controls.small.angleOffset,
+    },
+    mid: {
+      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${midCtrlX} ${midCtrlY}, ${midEndX} ${midEndY}`,
+      startX: controls.mid.startX, startY: controls.mid.startY,
+      lastCtrlX: midCtrlX, lastCtrlY: midCtrlY,
+      endX: midEndX, endY: midEndY,
+      angleOffset: controls.mid.angleOffset,
+    },
+    tablet: {
+      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${controls.tablet.endX} ${controls.tablet.endY}`,
+      startX: controls.tablet.startX, startY: controls.tablet.startY,
+      lastCtrlX: controls.tablet.ctrlX, lastCtrlY: controls.tablet.ctrlY,
+      endX: controls.tablet.endX, endY: controls.tablet.endY,
+      angleOffset: controls.tablet.angleOffset,
+    },
+    ipadPro: {
+      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${controls.ipadPro.endX} ${controls.ipadPro.endY}`,
+      startX: controls.ipadPro.startX, startY: controls.ipadPro.startY,
+      lastCtrlX: controls.ipadPro.ctrlX, lastCtrlY: controls.ipadPro.ctrlY,
+      endX: controls.ipadPro.endX, endY: controls.ipadPro.endY,
+      angleOffset: controls.ipadPro.angleOffset,
+    },
+  };
+
   return (
     <svg
+      ref={svgRef}
       className="nav-mobile-contact-arrow h-[120px] w-[80px] md:h-[165px] md:w-[110px]"
       viewBox="0 0 80 120"
       fill="none"
       style={{
         transform: svgTransform,
         transformOrigin: 'top center',
+        overflow: 'visible',
       }}
     >
       {/* iPad Pro (1000-1199px) */}
       <g className="hidden min-[1000px]:max-[1199px]:block">
         <path
-          d={ipadProPathD}
+          d={pathData.ipadPro.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -286,12 +432,12 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={contactIpadPro.startX} y={contactIpadPro.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.ipadPro.startX} y={pathData.ipadPro.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={contactIpadPro.endX}
-          y={contactIpadPro.endY}
-          angle={getArrowAngle(contactIpadPro.controlX, contactIpadPro.controlY, contactIpadPro.endX, contactIpadPro.endY)}
+          x={pathData.ipadPro.endX}
+          y={pathData.ipadPro.endY}
+          angle={getArrowAngle(pathData.ipadPro.lastCtrlX, pathData.ipadPro.lastCtrlY, pathData.ipadPro.endX, pathData.ipadPro.endY) + pathData.ipadPro.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />
@@ -300,7 +446,7 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
       {/* Tablet (700-999px) */}
       <g className="hidden min-[700px]:max-[999px]:block">
         <path
-          d={tabletPathD}
+          d={pathData.tablet.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -311,12 +457,12 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={contactTablet.startX} y={contactTablet.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.tablet.startX} y={pathData.tablet.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={contactTablet.endX}
-          y={contactTablet.endY}
-          angle={getArrowAngle(contactTablet.controlX, contactTablet.controlY, contactTablet.endX, contactTablet.endY)}
+          x={pathData.tablet.endX}
+          y={pathData.tablet.endY}
+          angle={getArrowAngle(pathData.tablet.lastCtrlX, pathData.tablet.lastCtrlY, pathData.tablet.endX, pathData.tablet.endY) + pathData.tablet.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />
@@ -325,7 +471,7 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
       {/* Mid (400-699px) */}
       <g className="hidden min-[400px]:max-[699px]:block">
         <path
-          d={midPathD}
+          d={pathData.mid.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -336,12 +482,12 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={contactMid.startX} y={contactMid.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.mid.startX} y={pathData.mid.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={contactMid.endX}
-          y={contactMid.endY}
-          angle={getArrowAngle(contactMid.controlX, contactMid.controlY, contactMid.endX, contactMid.endY)}
+          x={pathData.mid.endX}
+          y={pathData.mid.endY}
+          angle={getArrowAngle(pathData.mid.lastCtrlX, pathData.mid.lastCtrlY, pathData.mid.endX, pathData.mid.endY) + pathData.mid.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />
@@ -350,7 +496,7 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
       {/* Small (<400px) */}
       <g className="hidden max-[399px]:block">
         <path
-          d={smallPathD}
+          d={pathData.small.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -361,12 +507,12 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={contactSmall.startX} y={contactSmall.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.small.startX} y={pathData.small.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={contactSmall.endX}
-          y={contactSmall.endY}
-          angle={getArrowAngle(contactSmall.controlX, contactSmall.controlY, contactSmall.endX, contactSmall.endY)}
+          x={pathData.small.endX}
+          y={pathData.small.endY}
+          angle={getArrowAngle(pathData.small.lastCtrlX, pathData.small.lastCtrlY, pathData.small.endX, pathData.small.endY) + pathData.small.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />
@@ -375,74 +521,92 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
   );
 };
 
-export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOffset, controlsStore }: ArrowProps & { controlsStore?: LevaStore }) => {
-  const gallerySmall = useControls('🏠 Base.📱 Mobile Arrows.Gallery Small (<400px)', {
-    startX: { value: 92, min: 0, max: 250, step: 1, label: 'Start X' },
-    startY: { value: 100, min: 0, max: 200, step: 1, label: 'Start Y' },
-    controlX: { value: 220, min: 0, max: 300, step: 1, label: 'Control X' },
-    controlY: { value: 110, min: 0, max: 200, step: 1, label: 'Control Y' },
-    endX: { value: 145, min: 0, max: 250, step: 1, label: 'End X' },
-    endY: { value: 15, min: 0, max: 200, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
+// =============================================================================
+// GALLERY ARROW - Right side, waves right toward button
+// ViewBox: 180×110, starts left, loops/waves, ends pointing right at button
+// =============================================================================
+export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOffset, controlsStore, buttonPosition }: ArrowProps) => {
+  // Leva controls for live editing
+  const controls = useGalleryArrowControls(controlsStore);
+  const { centerYOffset } = useArrowTargetingControls(controlsStore);
 
-  const galleryMid = useControls('🏠 Base.📱 Mobile Arrows.Gallery Mid (400-699px)', {
-    startX: { value: 92, min: 0, max: 250, step: 1, label: 'Start X' },
-    startY: { value: 100, min: 0, max: 200, step: 1, label: 'Start Y' },
-    controlX: { value: 220, min: 0, max: 300, step: 1, label: 'Control X' },
-    controlY: { value: 110, min: 0, max: 200, step: 1, label: 'Control Y' },
-    endX: { value: 145, min: 0, max: 250, step: 1, label: 'End X' },
-    endY: { value: 15, min: 0, max: 200, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
+  // Ref for dynamic endpoint calculation
+  const svgRef = useRef<SVGSVGElement>(null);
+  const viewBox = { width: 180, height: 110 };
 
-  const galleryTablet = useControls('🏠 Base.📱 Mobile Arrows.Gallery Tablet (700-999px)', {
-    startX: { value: -68, min: -100, max: 300, step: 1, label: 'Start X' },
-    startY: { value: 95, min: -100, max: 300, step: 1, label: 'Start Y' },
-    controlX: { value: 203, min: -200, max: 400, step: 1, label: 'Control X' },
-    controlY: { value: 137, min: -100, max: 300, step: 1, label: 'Control Y' },
-    endX: { value: 150, min: -100, max: 300, step: 1, label: 'End X' },
-    endY: { value: 15, min: -100, max: 300, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
+  // Calculate endpoint from button position (no DOM queries)
+  // Gallery: right-positioned with margin-right: -56px (shifts right)
+  const dynamicEndpoint = useCalculatedEndpoint(
+    svgRef,
+    buttonPosition ?? { right: 17, bottom: 8 },
+    viewBox,
+    80, // button size in pixels
+    -56, // marginX: -mr-14 shifts right (handled specially for right-positioned)
+    0,   // marginY: none
+    centerYOffset // visual adjustment for crosshair targeting
+  );
 
-  const galleryIpadPro = useControls('🏠 Base.📱 Mobile Arrows.Gallery iPad Pro (1000-1199px)', {
-    startX: { value: -68, min: -100, max: 300, step: 1, label: 'Start X' },
-    startY: { value: 95, min: -100, max: 300, step: 1, label: 'Start Y' },
-    controlX: { value: 203, min: -200, max: 400, step: 1, label: 'Control X' },
-    controlY: { value: 137, min: -100, max: 300, step: 1, label: 'Control Y' },
-    endX: { value: 140, min: -100, max: 300, step: 1, label: 'End X' },
-    endY: { value: 0, min: -100, max: 300, step: 1, label: 'End Y' },
-  }, { collapsed: true }, { store: controlsStore });
-
-  // Static path definitions (no control point manipulation)
-  const smallPathD = `M ${gallerySmall.startX} ${gallerySmall.startY} Q ${gallerySmall.controlX} ${gallerySmall.controlY}, ${gallerySmall.endX} ${gallerySmall.endY}`;
-  const midPathD = `M ${galleryMid.startX} ${galleryMid.startY} Q ${galleryMid.controlX} ${galleryMid.controlY}, ${galleryMid.endX} ${galleryMid.endY}`;
-  const tabletPathD = `M ${galleryTablet.startX} ${galleryTablet.startY} Q ${galleryTablet.controlX} ${galleryTablet.controlY}, ${galleryTablet.endX} ${galleryTablet.endY}`;
-  const ipadProPathD = `M ${galleryIpadPro.startX} ${galleryIpadPro.startY} Q ${galleryIpadPro.controlX} ${galleryIpadPro.controlY}, ${galleryIpadPro.endX} ${galleryIpadPro.endY}`;
-
-  // Path style for draw animation
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
   };
 
-  // Delays: dot appears with line start, arrowhead appears when line finishes
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
-  // Use curveOffset for smooth whole-SVG deformation
   const ox = curveOffset?.x ?? 0;
   const oy = curveOffset?.y ?? 0;
 
-  // Build transform - Gallery arrow gets skewY + scaleX for a stretchy wave effect (toned down)
   const svgTransform = springTransform || curveOffset
     ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.04}px, ${(springTransform?.translateY ?? 0) + oy * 0.06}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.08}deg) skewY(${-oy * 0.2}deg) scaleX(${1 + Math.abs(ox) * 0.004})`
     : undefined;
 
+  // For Mid breakpoint, use dynamic endpoint if available
+  const midEndX = dynamicEndpoint?.x ?? controls.mid.endX;
+  const midEndY = dynamicEndpoint?.y ?? controls.mid.endY;
+  const midCtrlX = controls.mid.ctrlX;
+  const midCtrlY = controls.mid.ctrlY;
+
+  // Use Leva controls for path data (Mid uses dynamic endpoint)
+  const pathData = {
+    small: {
+      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${controls.small.endX} ${controls.small.endY}`,
+      startX: controls.small.startX, startY: controls.small.startY,
+      lastCtrlX: controls.small.ctrlX, lastCtrlY: controls.small.ctrlY,
+      endX: controls.small.endX, endY: controls.small.endY,
+      angleOffset: controls.small.angleOffset,
+    },
+    mid: {
+      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${midCtrlX} ${midCtrlY}, ${midEndX} ${midEndY}`,
+      startX: controls.mid.startX, startY: controls.mid.startY,
+      lastCtrlX: midCtrlX, lastCtrlY: midCtrlY,
+      endX: midEndX, endY: midEndY,
+      angleOffset: controls.mid.angleOffset,
+    },
+    tablet: {
+      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${controls.tablet.endX} ${controls.tablet.endY}`,
+      startX: controls.tablet.startX, startY: controls.tablet.startY,
+      lastCtrlX: controls.tablet.ctrlX, lastCtrlY: controls.tablet.ctrlY,
+      endX: controls.tablet.endX, endY: controls.tablet.endY,
+      angleOffset: controls.tablet.angleOffset,
+    },
+    ipadPro: {
+      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${controls.ipadPro.endX} ${controls.ipadPro.endY}`,
+      startX: controls.ipadPro.startX, startY: controls.ipadPro.startY,
+      lastCtrlX: controls.ipadPro.ctrlX, lastCtrlY: controls.ipadPro.ctrlY,
+      endX: controls.ipadPro.endX, endY: controls.ipadPro.endY,
+      angleOffset: controls.ipadPro.angleOffset,
+    },
+  };
+
   return (
     <svg
+      ref={svgRef}
       className="nav-mobile-gallery-arrow h-[110px] w-[180px] md:h-[151px] md:w-[247px]"
       style={{
         transform: svgTransform,
         transformOrigin: 'left center',
+        overflow: 'visible',
       }}
       viewBox="0 0 180 110"
       fill="none"
@@ -450,7 +614,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
       {/* iPad Pro (1000-1199px) */}
       <g className="hidden min-[1000px]:max-[1199px]:block">
         <path
-          d={ipadProPathD}
+          d={pathData.ipadPro.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -461,12 +625,12 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={galleryIpadPro.startX} y={galleryIpadPro.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.ipadPro.startX} y={pathData.ipadPro.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={galleryIpadPro.endX}
-          y={galleryIpadPro.endY}
-          angle={getArrowAngle(galleryIpadPro.controlX, galleryIpadPro.controlY, galleryIpadPro.endX, galleryIpadPro.endY)}
+          x={pathData.ipadPro.endX}
+          y={pathData.ipadPro.endY}
+          angle={getArrowAngle(pathData.ipadPro.lastCtrlX, pathData.ipadPro.lastCtrlY, pathData.ipadPro.endX, pathData.ipadPro.endY) + pathData.ipadPro.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />
@@ -475,7 +639,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
       {/* Tablet (700-999px) */}
       <g className="hidden min-[700px]:max-[999px]:block">
         <path
-          d={tabletPathD}
+          d={pathData.tablet.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -486,12 +650,12 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={galleryTablet.startX} y={galleryTablet.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.tablet.startX} y={pathData.tablet.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={galleryTablet.endX}
-          y={galleryTablet.endY}
-          angle={getArrowAngle(galleryTablet.controlX, galleryTablet.controlY, galleryTablet.endX, galleryTablet.endY)}
+          x={pathData.tablet.endX}
+          y={pathData.tablet.endY}
+          angle={getArrowAngle(pathData.tablet.lastCtrlX, pathData.tablet.lastCtrlY, pathData.tablet.endX, pathData.tablet.endY) + pathData.tablet.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />
@@ -500,7 +664,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
       {/* Mid (400-699px) */}
       <g className="hidden min-[400px]:max-[699px]:block">
         <path
-          d={midPathD}
+          d={pathData.mid.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -511,12 +675,12 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={galleryMid.startX} y={galleryMid.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.mid.startX} y={pathData.mid.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={galleryMid.endX}
-          y={galleryMid.endY}
-          angle={getArrowAngle(galleryMid.controlX, galleryMid.controlY, galleryMid.endX, galleryMid.endY)}
+          x={pathData.mid.endX}
+          y={pathData.mid.endY}
+          angle={getArrowAngle(pathData.mid.lastCtrlX, pathData.mid.lastCtrlY, pathData.mid.endX, pathData.mid.endY) + pathData.mid.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />
@@ -525,7 +689,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
       {/* Small (<400px) */}
       <g className="hidden max-[399px]:block">
         <path
-          d={smallPathD}
+          d={pathData.small.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
@@ -536,12 +700,12 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
         />
-        <AnimatedDot x={gallerySmall.startX} y={gallerySmall.startY} isVisible={isVisible} delay={dotDelay} />
+        <AnimatedDot x={pathData.small.startX} y={pathData.small.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
           size="mobile"
-          x={gallerySmall.endX}
-          y={gallerySmall.endY}
-          angle={getArrowAngle(gallerySmall.controlX, gallerySmall.controlY, gallerySmall.endX, gallerySmall.endY)}
+          x={pathData.small.endX}
+          y={pathData.small.endY}
+          angle={getArrowAngle(pathData.small.lastCtrlX, pathData.small.lastCtrlY, pathData.small.endX, pathData.small.endY) + pathData.small.angleOffset}
           isVisible={isVisible}
           delay={arrowheadDelay}
         />

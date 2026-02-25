@@ -16,6 +16,7 @@ interface MenuOverlayProps {
   skipDelay?: boolean;
   isExiting?: boolean;
   controlsStore?: LevaStore;
+  arrowControlsStore?: LevaStore;
 }
 
 // Arrow component mapping for desktop navigation
@@ -139,6 +140,7 @@ const MenuOverlay = ({
   skipDelay = false,
   isExiting = false,
   controlsStore,
+  arrowControlsStore,
 }: MenuOverlayProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
@@ -223,6 +225,7 @@ const MenuOverlay = ({
           isVisible={isVisible}
           onNavigate={onNavigate}
           controlsStore={controlsStore}
+          arrowControlsStore={arrowControlsStore}
         />
       </div>
 

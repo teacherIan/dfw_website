@@ -29,7 +29,9 @@ function AppContent() {
   const { viewState: galleryViewState, goToCategory, resetGallery, isViewerOpen } = useGallery();
 
   const controlsStore = useCreateStore();
-  const showLeva = import.meta.env.DEV;
+  const arrowControlsStore = useCreateStore();
+  const showLeva = false; // Hidden for scene controls
+  const showArrowControls = true; // Show arrow controls for targeting adjustment
 
   // Get state and actions from Zustand store
   const {
@@ -207,6 +209,18 @@ function AppContent() {
       <Leva hidden={!showLeva} />
       {showLeva && activeScene !== 'gallery' && <LevaPanel store={controlsStore} />}
 
+      {/* Mobile arrow controls - separate panel for arrow positioning */}
+      {showArrowControls && (
+        <LevaPanel
+          store={arrowControlsStore}
+          flat
+          titleBar={{ title: 'Mobile Arrow Controls' }}
+          theme={{
+            sizes: { rootWidth: '320px' },
+          }}
+        />
+      )}
+
       {/* Main 3D Canvas */}
       <div className="relative z-0 h-full w-full bg-transparent" style={{ touchAction: 'none' }}>
         <ErrorBoundary>
@@ -223,6 +237,7 @@ function AppContent() {
           skipDelay={hasNavigated}
           isExiting={animationPhase === 'exiting'}
           controlsStore={controlsStore}
+          arrowControlsStore={arrowControlsStore}
         />
       )}
       {showOverlays && activeScene === 'home' && !useHandDrawn && (

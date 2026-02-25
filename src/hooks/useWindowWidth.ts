@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
 
+// Width breakpoints
 export const PORTRAIT_BREAKPOINT = 400;
 export const TABLET_BREAKPOINT = 700;
 export const IPAD_PRO_BREAKPOINT = 1000;
 export const DESKTOP_BREAKPOINT = 1200;
+
+// Height breakpoints (for browser chrome handling)
+export const SHORT_HEIGHT_BREAKPOINT = 750;      // Mobile with browser chrome
+export const VERY_SHORT_HEIGHT_BREAKPOINT = 600; // With keyboard or very old phone
 
 /**
  * Hook to track window width and provide responsive breakpoint detection.
