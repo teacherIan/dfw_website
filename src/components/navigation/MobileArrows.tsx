@@ -89,11 +89,8 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
 
   return (
     <svg
-      className="pointer-events-none absolute h-[160px] w-[120px] md:h-[220px] md:w-[165px]"
+      className="nav-mobile-ethos-arrow h-[160px] w-[120px] md:h-[220px] md:w-[165px]"
       style={{
-        left: '0%',
-        bottom: '8vh',
-        overflow: 'visible',
         transform: svgTransform,
         transformOrigin: 'bottom left',
       }}
@@ -271,7 +268,6 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
       viewBox="0 0 80 120"
       fill="none"
       style={{
-        overflow: 'visible',
         transform: svgTransform,
         transformOrigin: 'top center',
       }}
@@ -443,11 +439,8 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
 
   return (
     <svg
-      className="pointer-events-none absolute h-[110px] w-[180px] md:h-[151px] md:w-[247px]"
+      className="nav-mobile-gallery-arrow h-[110px] w-[180px] md:h-[151px] md:w-[247px]"
       style={{
-        right: '2%',
-        bottom: '0vh',
-        overflow: 'visible',
         transform: svgTransform,
         transformOrigin: 'left center',
       }}

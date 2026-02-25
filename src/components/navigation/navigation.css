@@ -385,6 +385,14 @@
 }
 
 /* Mobile Arrows - Responsive positioning */
+.nav-mobile-ethos-arrow {
+  position: absolute;
+  pointer-events: none;
+  left: 0%;
+  bottom: 8vh;
+  overflow: visible;
+}
+
 .nav-mobile-contact-arrow {
   position: absolute;
   pointer-events: none;
@@ -393,11 +401,35 @@
   overflow: visible;
 }
 
+.nav-mobile-gallery-arrow {
+  position: absolute;
+  pointer-events: none;
+  right: 2%;
+  bottom: 0vh;
+  overflow: visible;
+}
+
 /* Small screen adjustments for Contact arrow */
 @media (max-width: 375px) {
   .nav-mobile-contact-arrow {
     left: 46%;
     bottom: 6vh;
+  }
+}
+
+/* Height breakpoint for phones with browser chrome (svh vs vh difference) */
+/* When viewport height is reduced by browser bar, adjust arrow positions */
+@media (max-height: 750px) and (orientation: portrait) {
+  .nav-mobile-ethos-arrow {
+    bottom: 10svh;
+  }
+
+  .nav-mobile-contact-arrow {
+    bottom: 6svh;
+  }
+
+  .nav-mobile-gallery-arrow {
+    bottom: 2svh;
   }
 }
 
