@@ -364,7 +364,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
           {/* Blueprint button */}
           <button
             type="button"
-            className={`nav-button-circle ${styles.exitButton}`}
+            className={`nav-button-circle nav-button-circle--size-sm ${styles.exitButton}`}
             aria-label="Exit gallery"
             onClick={handleBack}
           >

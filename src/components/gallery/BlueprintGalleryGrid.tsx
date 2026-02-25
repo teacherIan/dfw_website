@@ -174,7 +174,7 @@ export const BlueprintGalleryGrid = () => {
         >
           <button
             type="button"
-            className={`nav-button-circle ${styles.exitButton}`}
+            className={`nav-button-circle nav-button-circle--size-sm ${styles.exitButton}`}
             onClick={handleBack}
             aria-label="Back to categories"
           >
