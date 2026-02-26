@@ -30,8 +30,8 @@ function AppContent() {
 
   const controlsStore = useCreateStore();
   const arrowControlsStore = useCreateStore();
-  const showLeva = false; // Hidden for scene controls
-  const showArrowControls = true; // Show arrow controls for targeting adjustment
+  const showLeva = import.meta.env.DEV; // Hidden in production
+  const showArrowControls = import.meta.env.DEV; // Arrow controls only in dev
 
   // Get state and actions from Zustand store
   const {

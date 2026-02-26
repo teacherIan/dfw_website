@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef } from 'react';
 import { useControls, folder } from 'leva';
 import { AnimatedArrowhead, AnimatedDot } from './ArrowComponents';
 import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls } from '../../hooks/useMobileArrowControls';
@@ -30,76 +30,24 @@ interface ButtonPosition {
 /**
  * Hook to calculate arrow endpoint from known CSS positions
  * No DOM queries needed - uses viewport dimensions + CSS values
+ *
+ * NOTE: Currently disabled because getBoundingClientRect() returns the TRANSFORMED
+ * bounding box, which causes incorrect calculations when spring animations apply
+ * rotation/skew transforms to the SVG. The arrows move to wrong positions after
+ * the initial render. Using static Leva-tuned values instead.
  */
 const useCalculatedEndpoint = (
-  svgRef: React.RefObject<SVGSVGElement | null>,
-  buttonPos: ButtonPosition,
-  viewBox: { width: number; height: number },
-  buttonSize: number, // pixels
-  marginX: number, // horizontal margin offset in pixels
-  marginY: number = 0, // vertical margin offset in pixels (for contact)
-  centerYOffset: number = 0 // visual adjustment for crosshair targeting
-) => {
-  const [endpoint, setEndpoint] = useState<{ x: number; y: number } | null>(null);
-
-  // Extract primitives to avoid object reference issues in dependencies
-  const buttonLeft = buttonPos.left;
-  const buttonRight = buttonPos.right;
-  const buttonBottom = buttonPos.bottom;
-  const isCentered = buttonPos.isCentered ?? false;
-  const viewBoxWidth = viewBox.width;
-  const viewBoxHeight = viewBox.height;
-
-  useEffect(() => {
-    const calculate = () => {
-      const svg = svgRef.current;
-      if (!svg) return;
-
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const svgRect = svg.getBoundingClientRect();
-
-      if (svgRect.width === 0 || svgRect.height === 0) return;
-
-      // Calculate button center in screen coords (from top-left)
-      let buttonCenterX: number;
-      if (buttonLeft !== undefined) {
-        if (isCentered) {
-          // Contact: left% with translateX(-50%), so center is at exactly left%
-          buttonCenterX = (buttonLeft / 100) * vw;
-        } else {
-          // Ethos: left% + negative margin shifts left
-          buttonCenterX = (buttonLeft / 100) * vw + marginX + buttonSize / 2;
-        }
-      } else {
-        // Gallery: right% + negative margin-right shifts RIGHT (adds to X)
-        // right: 17% means right edge at 83% of vw, then margin pushes it further right
-        const rightEdge = vw - (buttonRight! / 100) * vw;
-        buttonCenterX = rightEdge + Math.abs(marginX) - buttonSize / 2;
-      }
-
-      // Button Y: bottom in vh, with optional margin-bottom offset
-      // marginY is negative for margin-bottom (shifts down = higher screen Y), so we SUBTRACT it
-      // centerYOffset allows fine-tuning to point at crosshair center
-      const buttonCenterY = vh - (buttonBottom / 100) * vh - marginY - buttonSize / 2 + centerYOffset;
-
-      // Convert to viewBox coordinates relative to SVG position
-      const scaleX = viewBoxWidth / svgRect.width;
-      const scaleY = viewBoxHeight / svgRect.height;
-
-      setEndpoint({
-        x: (buttonCenterX - svgRect.left) * scaleX,
-        y: (buttonCenterY - svgRect.top) * scaleY,
-      });
-    };
-
-    // Calculate immediately and on resize
-    calculate();
-    window.addEventListener('resize', calculate);
-    return () => window.removeEventListener('resize', calculate);
-  }, [svgRef, buttonLeft, buttonRight, buttonBottom, isCentered, viewBoxWidth, viewBoxHeight, buttonSize, marginX, marginY, centerYOffset]);
-
-  return endpoint;
+  _svgRef: React.RefObject<SVGSVGElement | null>,
+  _buttonPos: ButtonPosition,
+  _viewBox: { width: number; height: number },
+  _buttonSize: number, // pixels
+  _marginX: number, // horizontal margin offset in pixels
+  _marginY: number = 0, // vertical margin offset in pixels (for contact)
+  _centerYOffset: number = 0 // visual adjustment for crosshair targeting
+): { x: number; y: number } | null => {
+  // Disabled - return null to use static Leva values
+  // See comment above for explanation
+  return null;
 };
 
 interface SpringTransform {
