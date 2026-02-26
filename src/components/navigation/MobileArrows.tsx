@@ -23,7 +23,7 @@ const useArrowTargetingControls = (controlsStore?: LevaStore) => {
 interface ButtonPosition {
   left?: number;  // percentage of viewport width
   right?: number; // percentage of viewport width (for gallery)
-  bottom: number; // vh units
+  bottom: number; // svh units
   isCentered?: boolean; // true for contact (has translateX(-50%))
 }
 

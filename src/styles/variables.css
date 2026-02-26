@@ -17,18 +17,18 @@
 
   /* Mobile Navigation - Default (base) values */
   --nav-mobile-ethos-btn-left: 0%;
-  --nav-mobile-ethos-btn-bottom: 26vh;
+  --nav-mobile-ethos-btn-bottom: 26svh;
   --nav-mobile-contact-btn-left: 56%;
-  --nav-mobile-contact-btn-bottom: -0.8vh;
+  --nav-mobile-contact-btn-bottom: -0.8svh;
   --nav-mobile-gallery-btn-right: 0%;
-  --nav-mobile-gallery-btn-bottom: 9vh;
+  --nav-mobile-gallery-btn-bottom: 9svh;
 
   --nav-mobile-ethos-label-left: 8%;
-  --nav-mobile-ethos-label-bottom: 7vh;
+  --nav-mobile-ethos-label-bottom: 7svh;
   --nav-mobile-contact-label-left: 45%;
-  --nav-mobile-contact-label-bottom: 12vh;
+  --nav-mobile-contact-label-bottom: 12svh;
   --nav-mobile-gallery-label-right: 10%;
-  --nav-mobile-gallery-label-bottom: 2vh;
+  --nav-mobile-gallery-label-bottom: 2svh;
 
   /* Desktop Navigation */
   --nav-desktop-right: 1rem;
@@ -44,17 +44,17 @@
   --transition-nav: 0.4s ease-out;
 
   /* Title Positioning */
-  --title-bottom-mobile: 19vh;
-  --title-bottom-landscape-small: 2vh;
-  --title-bottom-desktop: 10vh;
+  --title-bottom-mobile: 19svh;
+  --title-bottom-landscape-small: 2svh;
+  --title-bottom-desktop: 10svh;
 }
 
 /* Small screen adjustments (Mobile < 400px, includes iPhone SE 375px) */
 @media (max-width: 399px) {
   :root {
     --nav-mobile-contact-btn-left: 50%;
-    --nav-mobile-gallery-btn-bottom: 11vh;
-    --title-bottom-mobile: 21vh;
+    --nav-mobile-gallery-btn-bottom: 11svh;
+    --title-bottom-mobile: 21svh;
   }
 }
 
@@ -66,9 +66,9 @@
 
 :root {
   /* Arrow positioning - default (tall viewports, no browser chrome) */
-  --arrow-ethos-bottom: 8vh;
-  --arrow-contact-bottom: 4vh;
-  --arrow-gallery-bottom: 0vh;
+  --arrow-ethos-bottom: 8svh;
+  --arrow-contact-bottom: 4svh;
+  --arrow-gallery-bottom: 0svh;
 
   /* Reference height for arrow compensation (height where coordinates were calibrated) */
   --arrow-ref-height: 932px;

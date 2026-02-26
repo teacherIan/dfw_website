@@ -411,7 +411,7 @@
    Bottom values controlled via CSS variables in variables.css
    for height-based breakpoint adjustments.
 
-   Height compensation: Buttons use vh units, so they move proportionally
+   Height compensation: Buttons use svh units, so they move proportionally
    with viewport height. Arrows need to compensate for height differences
    from reference heights (where coordinates were calibrated).
 
@@ -421,7 +421,7 @@
    - Tablet (700-999px): 1024px
    - iPad Pro (1000-1199px): 1366px
 
-   Factor = button's vh value (e.g., ethos uses 26vh → 0.26)
+   Factor = button's svh value (e.g., ethos uses 26svh → 0.26)
 */
 .nav-mobile-ethos-arrow {
   position: absolute;
@@ -429,9 +429,9 @@
   left: 0%;
   bottom: var(--arrow-ethos-bottom);
   overflow: visible;
-  /* Compensate for height: button at 26vh, reference 932px for mid breakpoint
+  /* Compensate for height: button at 26svh, reference 932px for mid breakpoint
      When viewport is shorter, buttons move UP, so arrows shift UP (negative Y) */
-  transform: translateY(calc((100vh - var(--arrow-ref-height, 932px)) * 0.26));
+  transform: translateY(calc((100svh - var(--arrow-ref-height, 932px)) * 0.26));
 }
 
 .nav-mobile-contact-arrow {
@@ -440,8 +440,8 @@
   left: 43%;
   bottom: var(--arrow-contact-bottom);
   overflow: visible;
-  /* Contact button near bottom (-0.8vh), minimal compensation needed */
-  transform: translateY(calc((100vh - var(--arrow-ref-height, 932px)) * 0.05));
+  /* Contact button near bottom (-0.8svh), minimal compensation needed */
+  transform: translateY(calc((100svh - var(--arrow-ref-height, 932px)) * 0.05));
 }
 
 .nav-mobile-gallery-arrow {
@@ -450,15 +450,15 @@
   right: 2%;
   bottom: var(--arrow-gallery-bottom);
   overflow: visible;
-  /* Gallery button at 9vh */
-  transform: translateY(calc((100vh - var(--arrow-ref-height, 932px)) * 0.09));
+  /* Gallery button at 9svh */
+  transform: translateY(calc((100svh - var(--arrow-ref-height, 932px)) * 0.09));
 }
 
 /* Small screen adjustments for Contact arrow */
 @media (max-width: 375px) {
   .nav-mobile-contact-arrow {
     left: 46%;
-    bottom: 6vh;
+    bottom: 6svh;
   }
 }
 

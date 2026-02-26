@@ -40,11 +40,11 @@ type BreakpointKey = keyof typeof BREAKPOINT_CONFIGS;
 // Generate Leva control schema for position controls
 const createPositionControls = (defaults: typeof BREAKPOINT_CONFIGS.small.buttons) => ({
   ethosLeft: { value: defaults.ethosLeft, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
-  ethosBottom: { value: defaults.ethosBottom, min: -20, max: 100, step: 1, label: 'Ethos Bottom (vh)' },
+  ethosBottom: { value: defaults.ethosBottom, min: -20, max: 100, step: 1, label: 'Ethos Bottom (svh)' },
   contactLeft: { value: defaults.contactLeft, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
-  contactBottom: { value: defaults.contactBottom, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (vh)' },
+  contactBottom: { value: defaults.contactBottom, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (svh)' },
   galleryRight: { value: defaults.galleryRight, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
-  galleryBottom: { value: defaults.galleryBottom, min: -20, max: 100, step: 1, label: 'Gallery Bottom (vh)' },
+  galleryBottom: { value: defaults.galleryBottom, min: -20, max: 100, step: 1, label: 'Gallery Bottom (svh)' },
 });
 
 // Hook to get all position controls for a breakpoint
@@ -189,7 +189,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsSmall.ethosLeft}%`,
-          bottom: `${btnPositionsSmall.ethosBottom}vh`,
+          bottom: `${btnPositionsSmall.ethosBottom}svh`,
         }}
       >
         <MobileButton
@@ -208,7 +208,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsMid.ethosLeft}%`,
-          bottom: `${btnPositionsMid.ethosBottom}vh`,
+          bottom: `${btnPositionsMid.ethosBottom}svh`,
         }}
       >
         <MobileButton
@@ -227,7 +227,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsTablet.ethosLeft}%`,
-          bottom: `${btnPositionsTablet.ethosBottom}vh`,
+          bottom: `${btnPositionsTablet.ethosBottom}svh`,
         }}
       >
         <MobileButton
@@ -246,7 +246,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsIpadPro.ethosLeft}%`,
-          bottom: `${btnPositionsIpadPro.ethosBottom}vh`,
+          bottom: `${btnPositionsIpadPro.ethosBottom}svh`,
         }}
       >
         <MobileButton
@@ -265,7 +265,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.ETHOS_LABEL),
           left: `${labelPositionsSmall.ethosLeft}%`,
-          bottom: `${labelPositionsSmall.ethosBottom}vh`,
+          bottom: `${labelPositionsSmall.ethosBottom}svh`,
         }}
       >
         <MobileLabel
@@ -282,7 +282,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.ETHOS_LABEL),
           left: `${labelPositionsMid.ethosLeft}%`,
-          bottom: `${labelPositionsMid.ethosBottom}vh`,
+          bottom: `${labelPositionsMid.ethosBottom}svh`,
         }}
       >
         <MobileLabel
@@ -299,7 +299,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.ETHOS_LABEL),
           left: `${labelPositionsTablet.ethosLeft}%`,
-          bottom: `${labelPositionsTablet.ethosBottom}vh`,
+          bottom: `${labelPositionsTablet.ethosBottom}svh`,
         }}
       >
         <MobileLabel
@@ -316,7 +316,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.ETHOS_LABEL),
           left: `${labelPositionsIpadPro.ethosLeft}%`,
-          bottom: `${labelPositionsIpadPro.ethosBottom}vh`,
+          bottom: `${labelPositionsIpadPro.ethosBottom}svh`,
         }}
       >
         <MobileLabel
@@ -347,7 +347,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsSmall.contactLeft}%`,
-          bottom: `${btnPositionsSmall.contactBottom}vh`,
+          bottom: `${btnPositionsSmall.contactBottom}svh`,
         }}
       >
         <MobileButton
@@ -368,7 +368,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsMid.contactLeft}%`,
-          bottom: `${btnPositionsMid.contactBottom}vh`,
+          bottom: `${btnPositionsMid.contactBottom}svh`,
         }}
       >
         <MobileButton
@@ -389,7 +389,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsTablet.contactLeft}%`,
-          bottom: `${btnPositionsTablet.contactBottom}vh`,
+          bottom: `${btnPositionsTablet.contactBottom}svh`,
         }}
       >
         <MobileButton
@@ -410,7 +410,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsIpadPro.contactLeft}%`,
-          bottom: `${btnPositionsIpadPro.contactBottom}vh`,
+          bottom: `${btnPositionsIpadPro.contactBottom}svh`,
         }}
       >
         <MobileButton
@@ -431,7 +431,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.CONTACT_LABEL),
           left: `${labelPositionsSmall.contactLeft}%`,
-          bottom: `${labelPositionsSmall.contactBottom}vh`,
+          bottom: `${labelPositionsSmall.contactBottom}svh`,
         }}
       >
         <MobileLabel
@@ -448,7 +448,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.CONTACT_LABEL),
           left: `${labelPositionsMid.contactLeft}%`,
-          bottom: `${labelPositionsMid.contactBottom}vh`,
+          bottom: `${labelPositionsMid.contactBottom}svh`,
         }}
       >
         <MobileLabel
@@ -465,7 +465,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.CONTACT_LABEL),
           left: `${labelPositionsTablet.contactLeft}%`,
-          bottom: `${labelPositionsTablet.contactBottom}vh`,
+          bottom: `${labelPositionsTablet.contactBottom}svh`,
         }}
       >
         <MobileLabel
@@ -482,7 +482,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.CONTACT_LABEL),
           left: `${labelPositionsIpadPro.contactLeft}%`,
-          bottom: `${labelPositionsIpadPro.contactBottom}vh`,
+          bottom: `${labelPositionsIpadPro.contactBottom}svh`,
         }}
       >
         <MobileLabel
@@ -513,7 +513,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           right: `${btnPositionsSmall.galleryRight}%`,
-          bottom: `${btnPositionsSmall.galleryBottom}vh`,
+          bottom: `${btnPositionsSmall.galleryBottom}svh`,
         }}
       >
         <MobileButton
@@ -532,7 +532,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           right: `${btnPositionsMid.galleryRight}%`,
-          bottom: `${btnPositionsMid.galleryBottom}vh`,
+          bottom: `${btnPositionsMid.galleryBottom}svh`,
         }}
       >
         <MobileButton
@@ -551,7 +551,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           right: `${btnPositionsTablet.galleryRight}%`,
-          bottom: `${btnPositionsTablet.galleryBottom}vh`,
+          bottom: `${btnPositionsTablet.galleryBottom}svh`,
         }}
       >
         <MobileButton
@@ -570,7 +570,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           right: `${btnPositionsIpadPro.galleryRight}%`,
-          bottom: `${btnPositionsIpadPro.galleryBottom}vh`,
+          bottom: `${btnPositionsIpadPro.galleryBottom}svh`,
         }}
       >
         <MobileButton
@@ -589,7 +589,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
           right: `${labelPositionsSmall.galleryRight}%`,
-          bottom: `${labelPositionsSmall.galleryBottom}vh`,
+          bottom: `${labelPositionsSmall.galleryBottom}svh`,
         }}
       >
         <MobileLabel
@@ -606,7 +606,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
           right: `${labelPositionsMid.galleryRight}%`,
-          bottom: `${labelPositionsMid.galleryBottom}vh`,
+          bottom: `${labelPositionsMid.galleryBottom}svh`,
         }}
       >
         <MobileLabel
@@ -623,7 +623,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
           right: `${labelPositionsTablet.galleryRight}%`,
-          bottom: `${labelPositionsTablet.galleryBottom}vh`,
+          bottom: `${labelPositionsTablet.galleryBottom}svh`,
         }}
       >
         <MobileLabel
@@ -640,7 +640,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
           right: `${labelPositionsIpadPro.galleryRight}%`,
-          bottom: `${labelPositionsIpadPro.galleryBottom}vh`,
+          bottom: `${labelPositionsIpadPro.galleryBottom}svh`,
         }}
       >
         <MobileLabel
