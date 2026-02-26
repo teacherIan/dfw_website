@@ -5,11 +5,16 @@ import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
+// Detect Safari/iOS for browser-specific Y offset
+// Safari renders strokeLinecap="round" differently, requiring a different offset
+const isSafari = typeof navigator !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+const defaultCenterYOffset = isSafari ? -3 : -5;
+
 // Shared Leva control for arrow targeting offset
 const useArrowTargetingControls = (controlsStore?: LevaStore) => {
   return useControls({
     '🎯 Arrow Targeting': folder({
-      centerYOffset: { value: -5, min: -50, max: 50, step: 1, label: 'Y Offset (px)' },
+      centerYOffset: { value: defaultCenterYOffset, min: -50, max: 50, step: 1, label: 'Y Offset (px)' },
     }, { collapsed: false }),
   }, { store: controlsStore });
 };

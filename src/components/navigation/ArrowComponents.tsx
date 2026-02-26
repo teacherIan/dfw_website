@@ -27,6 +27,9 @@ export const AnimatedArrowhead = ({
   size = 'desktop',
 }: AnimatedArrowheadProps) => {
   const isMobile = size === 'mobile';
+  // Path endpoints pulled back by strokeWidth/2 to compensate for round linecap extension
+  // This ensures the visual tip lands at the transform origin (0,0) rather than extending past it
+  // Mobile: strokeWidth=2 → pull back 1px; Desktop: strokeWidth=1.5 → pull back 0.75px
   const pathD = isMobile ? 'M-8,-4 L0,0 L-8,4' : 'M-7,-3 L0,0 L-7,3';
   const strokeWidth = isMobile ? 2 : 1.5;
   const shadowOpacity = isMobile ? 0.7 : 0.6;
@@ -37,6 +40,7 @@ export const AnimatedArrowhead = ({
       style={{
         opacity: isVisible ? 1 : 0,
         transition: `opacity 0.3s ease-out ${delay}ms`,
+        willChange: 'transform', // Stabilize Safari's GPU layer compositing for sub-pixel precision
       }}
       className={className}
     >
