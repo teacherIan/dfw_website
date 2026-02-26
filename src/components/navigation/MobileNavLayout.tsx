@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useLayoutEffect, useRef, useState, type MutableRefObject, type Ref } from 'react';
 import { useControls, folder } from 'leva';
 import { EthosArrow, ContactArrow, GalleryArrow } from './MobileArrows';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
@@ -79,6 +79,7 @@ interface MobileButtonProps {
   springRotation?: number;
   hasCompletedAnimation: boolean;
   className?: string;
+  buttonRef?: Ref<HTMLButtonElement>;
   onNavigate: (scene: SceneId) => void;
   onClick?: () => void;
   isActive?: boolean;
@@ -90,6 +91,7 @@ const MobileButton = ({
   springRotation = 0,
   hasCompletedAnimation,
   className = '',
+  buttonRef,
   onNavigate,
   onClick,
   isActive = false,
@@ -106,6 +108,7 @@ const MobileButton = ({
       className={`nav-button-circle nav-button-circle--mobile-large pointer-events-auto ${className} ${isActive ? 'nav-button-circle--active' : ''}`}
       aria-label={`Open ${label}`}
       onClick={onClick ?? (() => onNavigate(scene))}
+      ref={buttonRef}
     >
       <BlueprintButtonSVG />
       <span className="sr-only">View {label}</span>
@@ -140,6 +143,45 @@ const MobileLabel = ({
   </span>
 );
 
+const findVisibleButton = (elements: Array<HTMLButtonElement | null>) => {
+  for (const element of elements) {
+    if (!element) {
+      continue;
+    }
+
+    if (element.offsetParent !== null || element.getClientRects().length > 0) {
+      return element;
+    }
+  }
+
+  return null;
+};
+
+const useVisibleButtonElement = (elementsRef: MutableRefObject<Array<HTMLButtonElement | null>>) => {
+  const [visibleElement, setVisibleElement] = useState<HTMLButtonElement | null>(null);
+
+  useLayoutEffect(() => {
+    const update = () => {
+      const next = findVisibleButton(elementsRef.current);
+      setVisibleElement((prev) => (prev === next ? prev : next));
+    };
+
+    update();
+    const frame = requestAnimationFrame(update);
+
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, [elementsRef]);
+
+  return visibleElement;
+};
+
 const MobileNavLayout = ({
   font,
   isVisible,
@@ -164,6 +206,14 @@ const MobileNavLayout = ({
     isVisible,
     delay: MOBILE_NAV_DELAYS.GALLERY_ARROW,
   });
+
+  const ethosButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const contactButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const galleryButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const ethosButtonElement = useVisibleButtonElement(ethosButtonRefs);
+  const contactButtonElement = useVisibleButtonElement(contactButtonRefs);
+  const galleryButtonElement = useVisibleButtonElement(galleryButtonRefs);
 
   // Button positions for each breakpoint
   const btnPositionsSmall = useBreakpointControls('small', 'buttons', controlsStore);
@@ -198,6 +248,9 @@ const MobileNavLayout = ({
           springRotation={ethosUnravel.curveOffset.x}
           hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
           className="-ml-14 md:-ml-[55px]"
+          buttonRef={(element) => {
+            ethosButtonRefs.current[0] = element;
+          }}
           onNavigate={onNavigate}
         />
       </div>
@@ -217,6 +270,9 @@ const MobileNavLayout = ({
           springRotation={ethosUnravel.curveOffset.x}
           hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
           className="-ml-14 md:-ml-[55px]"
+          buttonRef={(element) => {
+            ethosButtonRefs.current[1] = element;
+          }}
           onNavigate={onNavigate}
         />
       </div>
@@ -236,6 +292,9 @@ const MobileNavLayout = ({
           springRotation={ethosUnravel.curveOffset.x}
           hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
           className="-ml-14 md:-ml-[55px]"
+          buttonRef={(element) => {
+            ethosButtonRefs.current[2] = element;
+          }}
           onNavigate={onNavigate}
         />
       </div>
@@ -255,6 +314,9 @@ const MobileNavLayout = ({
           springRotation={ethosUnravel.curveOffset.x}
           hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
           className="-ml-14 md:-ml-[55px]"
+          buttonRef={(element) => {
+            ethosButtonRefs.current[3] = element;
+          }}
           onNavigate={onNavigate}
         />
       </div>
@@ -334,7 +396,7 @@ const MobileNavLayout = ({
         springTransform={ethosUnravel.hasCompletedInitialAnimation ? ethosUnravel.transform : undefined}
         curveOffset={ethosUnravel.hasCompletedInitialAnimation ? ethosUnravel.curveOffset : undefined}
         controlsStore={arrowControlsStore}
-        buttonPosition={{ left: btnPositionsMid.ethosLeft, bottom: btnPositionsMid.ethosBottom }}
+        buttonElement={ethosButtonElement}
       />
 
       {/* ============================================
@@ -356,6 +418,9 @@ const MobileNavLayout = ({
           springRotation={contactUnravel.curveOffset.x}
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
           className="-mb-14 md:-mb-[55px]"
+          buttonRef={(element) => {
+            contactButtonRefs.current[0] = element;
+          }}
           onNavigate={onNavigate}
           onClick={toggleContactOverlay}
           isActive={isContactOverlayOpen}
@@ -377,6 +442,9 @@ const MobileNavLayout = ({
           springRotation={contactUnravel.curveOffset.x}
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
           className="-mb-14 md:-mb-[55px]"
+          buttonRef={(element) => {
+            contactButtonRefs.current[1] = element;
+          }}
           onNavigate={onNavigate}
           onClick={toggleContactOverlay}
           isActive={isContactOverlayOpen}
@@ -398,6 +466,9 @@ const MobileNavLayout = ({
           springRotation={contactUnravel.curveOffset.x}
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
           className="-mb-14 md:-mb-[55px]"
+          buttonRef={(element) => {
+            contactButtonRefs.current[2] = element;
+          }}
           onNavigate={onNavigate}
           onClick={toggleContactOverlay}
           isActive={isContactOverlayOpen}
@@ -419,6 +490,9 @@ const MobileNavLayout = ({
           springRotation={contactUnravel.curveOffset.x}
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
           className="-mb-14 md:-mb-[55px]"
+          buttonRef={(element) => {
+            contactButtonRefs.current[3] = element;
+          }}
           onNavigate={onNavigate}
           onClick={toggleContactOverlay}
           isActive={isContactOverlayOpen}
@@ -500,7 +574,7 @@ const MobileNavLayout = ({
         springTransform={contactUnravel.hasCompletedInitialAnimation ? contactUnravel.transform : undefined}
         curveOffset={contactUnravel.hasCompletedInitialAnimation ? contactUnravel.curveOffset : undefined}
         controlsStore={arrowControlsStore}
-        buttonPosition={{ left: btnPositionsMid.contactLeft, bottom: btnPositionsMid.contactBottom, isCentered: true }}
+        buttonElement={contactButtonElement}
       />
 
       {/* ============================================
@@ -522,6 +596,9 @@ const MobileNavLayout = ({
           springRotation={galleryUnravel.curveOffset.x}
           hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
           className="-mr-14 md:-mr-[55px]"
+          buttonRef={(element) => {
+            galleryButtonRefs.current[0] = element;
+          }}
           onNavigate={onNavigate}
         />
       </div>
@@ -541,6 +618,9 @@ const MobileNavLayout = ({
           springRotation={galleryUnravel.curveOffset.x}
           hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
           className="-mr-14 md:-mr-[55px]"
+          buttonRef={(element) => {
+            galleryButtonRefs.current[1] = element;
+          }}
           onNavigate={onNavigate}
         />
       </div>
@@ -560,6 +640,9 @@ const MobileNavLayout = ({
           springRotation={galleryUnravel.curveOffset.x}
           hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
           className="-mr-14 md:-mr-[55px]"
+          buttonRef={(element) => {
+            galleryButtonRefs.current[2] = element;
+          }}
           onNavigate={onNavigate}
         />
       </div>
@@ -579,6 +662,9 @@ const MobileNavLayout = ({
           springRotation={galleryUnravel.curveOffset.x}
           hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
           className="-mr-14 md:-mr-[55px]"
+          buttonRef={(element) => {
+            galleryButtonRefs.current[3] = element;
+          }}
           onNavigate={onNavigate}
         />
       </div>
@@ -658,7 +744,7 @@ const MobileNavLayout = ({
         springTransform={galleryUnravel.hasCompletedInitialAnimation ? galleryUnravel.transform : undefined}
         curveOffset={galleryUnravel.hasCompletedInitialAnimation ? galleryUnravel.curveOffset : undefined}
         controlsStore={arrowControlsStore}
-        buttonPosition={{ right: btnPositionsMid.galleryRight, bottom: btnPositionsMid.galleryBottom }}
+        buttonElement={galleryButtonElement}
       />
     </div>
   );

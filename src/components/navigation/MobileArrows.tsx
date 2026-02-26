@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useControls, folder } from 'leva';
 import { AnimatedArrowhead, AnimatedDot } from './ArrowComponents';
 import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls } from '../../hooks/useMobileArrowControls';
@@ -6,9 +6,10 @@ import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
 // Detect Safari/iOS for browser-specific Y offset
-// Safari renders strokeLinecap="round" differently, requiring a different offset
+// WebKit renders strokeLinecap="round" differently, requiring a different offset
+const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/i.test(navigator.userAgent);
 const isSafari = typeof navigator !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-const defaultCenterYOffset = isSafari ? -3 : -5;
+const defaultCenterYOffset = isIOS || isSafari ? -3 : -5;
 
 // Shared Leva control for arrow targeting offset
 const useArrowTargetingControls = (controlsStore?: LevaStore) => {
@@ -19,35 +20,67 @@ const useArrowTargetingControls = (controlsStore?: LevaStore) => {
   }, { store: controlsStore });
 };
 
-// Button position in CSS units (passed from MobileNavLayout)
-interface ButtonPosition {
-  left?: number;  // percentage of viewport width
-  right?: number; // percentage of viewport width (for gallery)
-  bottom: number; // svh units
-  isCentered?: boolean; // true for contact (has translateX(-50%))
-}
-
 /**
- * Hook to calculate arrow endpoint from known CSS positions
- * No DOM queries needed - uses viewport dimensions + CSS values
- *
- * NOTE: Currently disabled because getBoundingClientRect() returns the TRANSFORMED
- * bounding box, which causes incorrect calculations when spring animations apply
- * rotation/skew transforms to the SVG. The arrows move to wrong positions after
- * the initial render. Using static Leva-tuned values instead.
+ * Hook to calculate arrow endpoint from the real button position.
+ * Uses the SVG screen CTM to convert screen-space coordinates into SVG user units,
+ * so it remains accurate even when the SVG has CSS transforms applied.
  */
 const useCalculatedEndpoint = (
-  _svgRef: React.RefObject<SVGSVGElement | null>,
-  _buttonPos: ButtonPosition,
-  _viewBox: { width: number; height: number },
-  _buttonSize: number, // pixels
-  _marginX: number, // horizontal margin offset in pixels
-  _marginY: number = 0, // vertical margin offset in pixels (for contact)
-  _centerYOffset: number = 0 // visual adjustment for crosshair targeting
+  svgRef: React.RefObject<SVGSVGElement | null>,
+  buttonElement: HTMLElement | null | undefined,
+  centerYOffset: number = 0 // visual adjustment for crosshair targeting
 ): { x: number; y: number } | null => {
-  // Disabled - return null to use static Leva values
-  // See comment above for explanation
-  return null;
+  const [endpoint, setEndpoint] = useState<{ x: number; y: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!svgRef.current || !buttonElement) {
+      return;
+    }
+
+    const svg = svgRef.current;
+
+    const update = () => {
+      if (!svgRef.current || !buttonElement) {
+        return;
+      }
+
+      const rect = buttonElement.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) {
+        return;
+      }
+
+      const ctm = svg.getScreenCTM();
+      if (!ctm) {
+        return;
+      }
+
+      const point = svg.createSVGPoint();
+      point.x = rect.left + rect.width / 2;
+      point.y = rect.top + rect.height / 2 + centerYOffset;
+
+      const svgPoint = point.matrixTransform(ctm.inverse());
+      setEndpoint({ x: svgPoint.x, y: svgPoint.y });
+    };
+
+    update();
+    const frame = requestAnimationFrame(update);
+    const handleViewportChange = () => update();
+
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('scroll', handleViewportChange, true);
+
+    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    resizeObserver?.observe(buttonElement);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+      resizeObserver?.disconnect();
+    };
+  }, [svgRef, buttonElement, centerYOffset]);
+
+  return endpoint;
 };
 
 interface SpringTransform {
@@ -71,8 +104,8 @@ interface ArrowProps {
   springTransform?: SpringTransform;
   curveOffset?: CurveOffset;
   controlsStore?: LevaStore;
-  // Button position for dynamic endpoint calculation
-  buttonPosition?: ButtonPosition;
+  // Real button element for dynamic endpoint calculation
+  buttonElement?: HTMLElement | null;
 }
 
 /**
@@ -89,26 +122,14 @@ const getArrowAngle = (lastControlX: number, lastControlY: number, endX: number,
 // ETHOS ARROW - Left side, loops up-left toward button
 // ViewBox: 120×160, starts near label (bottom-right), ends pointing at button (upper-left)
 // =============================================================================
-export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffset, controlsStore, buttonPosition }: ArrowProps) => {
+export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffset, controlsStore, buttonElement }: ArrowProps) => {
   // Leva controls for live editing
   const controls = useEthosArrowControls(controlsStore);
   const { centerYOffset } = useArrowTargetingControls(controlsStore);
 
   // Ref for dynamic endpoint calculation
   const svgRef = useRef<SVGSVGElement>(null);
-  const viewBox = { width: 120, height: 160 };
-
-  // Calculate endpoint from button position (no DOM queries)
-  // Ethos: left-positioned with margin-left: -56px
-  const dynamicEndpoint = useCalculatedEndpoint(
-    svgRef,
-    buttonPosition ?? { left: 14, bottom: 26 },
-    viewBox,
-    80,  // button size in pixels
-    -56, // marginX: -ml-14 shifts left
-    0,   // marginY: none
-    centerYOffset // visual adjustment for crosshair targeting
-  );
+  const dynamicEndpoint = useCalculatedEndpoint(svgRef, buttonElement, centerYOffset);
 
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
@@ -126,42 +147,37 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
     ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.05}px, ${(springTransform?.translateY ?? 0) + oy * 0.08}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.1}deg) skewY(${oy * 0.15}deg)`
     : undefined;
 
-  // For Mid breakpoint, use dynamic endpoint if available
-  const midEndX = dynamicEndpoint?.x ?? controls.mid.endX;
-  const midEndY = dynamicEndpoint?.y ?? controls.mid.endY;
-  // Calculate control point to make arrow point at button: ctrl = 2*end - button
-  // Since end IS the button, we use the original control point direction
-  const midCtrlX = controls.mid.ctrlX;
-  const midCtrlY = controls.mid.ctrlY;
+  const dynamicEndX = dynamicEndpoint?.x;
+  const dynamicEndY = dynamicEndpoint?.y;
 
   // Use Leva controls for path data (Mid uses dynamic endpoint)
   const pathData = {
     small: {
-      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${controls.small.endX} ${controls.small.endY}`,
+      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${dynamicEndX ?? controls.small.endX} ${dynamicEndY ?? controls.small.endY}`,
       startX: controls.small.startX, startY: controls.small.startY,
       lastCtrlX: controls.small.ctrlX, lastCtrlY: controls.small.ctrlY,
-      endX: controls.small.endX, endY: controls.small.endY,
+      endX: dynamicEndX ?? controls.small.endX, endY: dynamicEndY ?? controls.small.endY,
       angleOffset: controls.small.angleOffset,
     },
     mid: {
-      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${midCtrlX} ${midCtrlY}, ${midEndX} ${midEndY}`,
+      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${controls.mid.ctrlX} ${controls.mid.ctrlY}, ${dynamicEndX ?? controls.mid.endX} ${dynamicEndY ?? controls.mid.endY}`,
       startX: controls.mid.startX, startY: controls.mid.startY,
-      lastCtrlX: midCtrlX, lastCtrlY: midCtrlY,
-      endX: midEndX, endY: midEndY,
+      lastCtrlX: controls.mid.ctrlX, lastCtrlY: controls.mid.ctrlY,
+      endX: dynamicEndX ?? controls.mid.endX, endY: dynamicEndY ?? controls.mid.endY,
       angleOffset: controls.mid.angleOffset,
     },
     tablet: {
-      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${controls.tablet.endX} ${controls.tablet.endY}`,
+      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${dynamicEndX ?? controls.tablet.endX} ${dynamicEndY ?? controls.tablet.endY}`,
       startX: controls.tablet.startX, startY: controls.tablet.startY,
       lastCtrlX: controls.tablet.ctrlX, lastCtrlY: controls.tablet.ctrlY,
-      endX: controls.tablet.endX, endY: controls.tablet.endY,
+      endX: dynamicEndX ?? controls.tablet.endX, endY: dynamicEndY ?? controls.tablet.endY,
       angleOffset: controls.tablet.angleOffset,
     },
     ipadPro: {
-      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${controls.ipadPro.endX} ${controls.ipadPro.endY}`,
+      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${dynamicEndX ?? controls.ipadPro.endX} ${dynamicEndY ?? controls.ipadPro.endY}`,
       startX: controls.ipadPro.startX, startY: controls.ipadPro.startY,
       lastCtrlX: controls.ipadPro.ctrlX, lastCtrlY: controls.ipadPro.ctrlY,
-      endX: controls.ipadPro.endX, endY: controls.ipadPro.endY,
+      endX: dynamicEndX ?? controls.ipadPro.endX, endY: dynamicEndY ?? controls.ipadPro.endY,
       angleOffset: controls.ipadPro.angleOffset,
     },
   };
@@ -285,26 +301,14 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
 // CONTACT ARROW - Center, spirals down toward button below
 // ViewBox: 80×120, starts near top (label area), ends pointing down at button
 // =============================================================================
-export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOffset, controlsStore, buttonPosition }: ArrowProps) => {
+export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOffset, controlsStore, buttonElement }: ArrowProps) => {
   // Leva controls for live editing
   const controls = useContactArrowControls(controlsStore);
   const { centerYOffset } = useArrowTargetingControls(controlsStore);
 
   // Ref for dynamic endpoint calculation
   const svgRef = useRef<SVGSVGElement>(null);
-  const viewBox = { width: 80, height: 120 };
-
-  // Calculate endpoint from button position (no DOM queries)
-  // Contact: centered with translateX(-50%) and margin-bottom: -56px
-  const dynamicEndpoint = useCalculatedEndpoint(
-    svgRef,
-    buttonPosition ?? { left: 45, bottom: 7, isCentered: true },
-    viewBox,
-    80, // button size in pixels
-    0,  // marginX: none (centered)
-    -56, // marginY: -mb-14 shifts down
-    centerYOffset // visual adjustment for crosshair targeting
-  );
+  const dynamicEndpoint = useCalculatedEndpoint(svgRef, buttonElement, centerYOffset);
 
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
@@ -321,40 +325,37 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
     ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.06}px, ${(springTransform?.translateY ?? 0) + oy * 0.05}px) rotate(${(springTransform?.rotate ?? 0) - ox * 0.12}deg) skewX(${ox * 0.18}deg)`
     : undefined;
 
-  // For Mid breakpoint, use dynamic endpoint if available
-  const midEndX = dynamicEndpoint?.x ?? controls.mid.endX;
-  const midEndY = dynamicEndpoint?.y ?? controls.mid.endY;
-  const midCtrlX = controls.mid.ctrlX;
-  const midCtrlY = controls.mid.ctrlY;
+  const dynamicEndX = dynamicEndpoint?.x;
+  const dynamicEndY = dynamicEndpoint?.y;
 
   // Use Leva controls for path data (Mid uses dynamic endpoint)
   const pathData = {
     small: {
-      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${controls.small.endX} ${controls.small.endY}`,
+      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${dynamicEndX ?? controls.small.endX} ${dynamicEndY ?? controls.small.endY}`,
       startX: controls.small.startX, startY: controls.small.startY,
       lastCtrlX: controls.small.ctrlX, lastCtrlY: controls.small.ctrlY,
-      endX: controls.small.endX, endY: controls.small.endY,
+      endX: dynamicEndX ?? controls.small.endX, endY: dynamicEndY ?? controls.small.endY,
       angleOffset: controls.small.angleOffset,
     },
     mid: {
-      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${midCtrlX} ${midCtrlY}, ${midEndX} ${midEndY}`,
+      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${controls.mid.ctrlX} ${controls.mid.ctrlY}, ${dynamicEndX ?? controls.mid.endX} ${dynamicEndY ?? controls.mid.endY}`,
       startX: controls.mid.startX, startY: controls.mid.startY,
-      lastCtrlX: midCtrlX, lastCtrlY: midCtrlY,
-      endX: midEndX, endY: midEndY,
+      lastCtrlX: controls.mid.ctrlX, lastCtrlY: controls.mid.ctrlY,
+      endX: dynamicEndX ?? controls.mid.endX, endY: dynamicEndY ?? controls.mid.endY,
       angleOffset: controls.mid.angleOffset,
     },
     tablet: {
-      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${controls.tablet.endX} ${controls.tablet.endY}`,
+      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${dynamicEndX ?? controls.tablet.endX} ${dynamicEndY ?? controls.tablet.endY}`,
       startX: controls.tablet.startX, startY: controls.tablet.startY,
       lastCtrlX: controls.tablet.ctrlX, lastCtrlY: controls.tablet.ctrlY,
-      endX: controls.tablet.endX, endY: controls.tablet.endY,
+      endX: dynamicEndX ?? controls.tablet.endX, endY: dynamicEndY ?? controls.tablet.endY,
       angleOffset: controls.tablet.angleOffset,
     },
     ipadPro: {
-      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${controls.ipadPro.endX} ${controls.ipadPro.endY}`,
+      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${dynamicEndX ?? controls.ipadPro.endX} ${dynamicEndY ?? controls.ipadPro.endY}`,
       startX: controls.ipadPro.startX, startY: controls.ipadPro.startY,
       lastCtrlX: controls.ipadPro.ctrlX, lastCtrlY: controls.ipadPro.ctrlY,
-      endX: controls.ipadPro.endX, endY: controls.ipadPro.endY,
+      endX: dynamicEndX ?? controls.ipadPro.endX, endY: dynamicEndY ?? controls.ipadPro.endY,
       angleOffset: controls.ipadPro.angleOffset,
     },
   };
@@ -478,26 +479,14 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
 // GALLERY ARROW - Right side, waves right toward button
 // ViewBox: 180×110, starts left, loops/waves, ends pointing right at button
 // =============================================================================
-export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOffset, controlsStore, buttonPosition }: ArrowProps) => {
+export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOffset, controlsStore, buttonElement }: ArrowProps) => {
   // Leva controls for live editing
   const controls = useGalleryArrowControls(controlsStore);
   const { centerYOffset } = useArrowTargetingControls(controlsStore);
 
   // Ref for dynamic endpoint calculation
   const svgRef = useRef<SVGSVGElement>(null);
-  const viewBox = { width: 180, height: 110 };
-
-  // Calculate endpoint from button position (no DOM queries)
-  // Gallery: right-positioned with margin-right: -56px (shifts right)
-  const dynamicEndpoint = useCalculatedEndpoint(
-    svgRef,
-    buttonPosition ?? { right: 17, bottom: 8 },
-    viewBox,
-    80, // button size in pixels
-    -56, // marginX: -mr-14 shifts right (handled specially for right-positioned)
-    0,   // marginY: none
-    centerYOffset // visual adjustment for crosshair targeting
-  );
+  const dynamicEndpoint = useCalculatedEndpoint(svgRef, buttonElement, centerYOffset);
 
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
@@ -514,40 +503,37 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
     ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.04}px, ${(springTransform?.translateY ?? 0) + oy * 0.06}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.08}deg) skewY(${-oy * 0.2}deg) scaleX(${1 + Math.abs(ox) * 0.004})`
     : undefined;
 
-  // For Mid breakpoint, use dynamic endpoint if available
-  const midEndX = dynamicEndpoint?.x ?? controls.mid.endX;
-  const midEndY = dynamicEndpoint?.y ?? controls.mid.endY;
-  const midCtrlX = controls.mid.ctrlX;
-  const midCtrlY = controls.mid.ctrlY;
+  const dynamicEndX = dynamicEndpoint?.x;
+  const dynamicEndY = dynamicEndpoint?.y;
 
   // Use Leva controls for path data (Mid uses dynamic endpoint)
   const pathData = {
     small: {
-      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${controls.small.endX} ${controls.small.endY}`,
+      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${dynamicEndX ?? controls.small.endX} ${dynamicEndY ?? controls.small.endY}`,
       startX: controls.small.startX, startY: controls.small.startY,
       lastCtrlX: controls.small.ctrlX, lastCtrlY: controls.small.ctrlY,
-      endX: controls.small.endX, endY: controls.small.endY,
+      endX: dynamicEndX ?? controls.small.endX, endY: dynamicEndY ?? controls.small.endY,
       angleOffset: controls.small.angleOffset,
     },
     mid: {
-      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${midCtrlX} ${midCtrlY}, ${midEndX} ${midEndY}`,
+      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${controls.mid.ctrlX} ${controls.mid.ctrlY}, ${dynamicEndX ?? controls.mid.endX} ${dynamicEndY ?? controls.mid.endY}`,
       startX: controls.mid.startX, startY: controls.mid.startY,
-      lastCtrlX: midCtrlX, lastCtrlY: midCtrlY,
-      endX: midEndX, endY: midEndY,
+      lastCtrlX: controls.mid.ctrlX, lastCtrlY: controls.mid.ctrlY,
+      endX: dynamicEndX ?? controls.mid.endX, endY: dynamicEndY ?? controls.mid.endY,
       angleOffset: controls.mid.angleOffset,
     },
     tablet: {
-      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${controls.tablet.endX} ${controls.tablet.endY}`,
+      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${dynamicEndX ?? controls.tablet.endX} ${dynamicEndY ?? controls.tablet.endY}`,
       startX: controls.tablet.startX, startY: controls.tablet.startY,
       lastCtrlX: controls.tablet.ctrlX, lastCtrlY: controls.tablet.ctrlY,
-      endX: controls.tablet.endX, endY: controls.tablet.endY,
+      endX: dynamicEndX ?? controls.tablet.endX, endY: dynamicEndY ?? controls.tablet.endY,
       angleOffset: controls.tablet.angleOffset,
     },
     ipadPro: {
-      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${controls.ipadPro.endX} ${controls.ipadPro.endY}`,
+      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${dynamicEndX ?? controls.ipadPro.endX} ${dynamicEndY ?? controls.ipadPro.endY}`,
       startX: controls.ipadPro.startX, startY: controls.ipadPro.startY,
       lastCtrlX: controls.ipadPro.ctrlX, lastCtrlY: controls.ipadPro.ctrlY,
-      endX: controls.ipadPro.endX, endY: controls.ipadPro.endY,
+      endX: dynamicEndX ?? controls.ipadPro.endX, endY: dynamicEndY ?? controls.ipadPro.endY,
       angleOffset: controls.ipadPro.angleOffset,
     },
   };
