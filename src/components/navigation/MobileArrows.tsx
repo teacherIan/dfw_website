@@ -143,7 +143,7 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
   const ox = curveOffset?.x ?? 0;
   const oy = curveOffset?.y ?? 0;
 
-  const svgTransform = springTransform || curveOffset
+  const svgTransform = (springTransform || curveOffset) && !buttonElement
     ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.05}px, ${(springTransform?.translateY ?? 0) + oy * 0.08}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.1}deg) skewY(${oy * 0.15}deg)`
     : undefined;
 
@@ -321,7 +321,7 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
   const ox = curveOffset?.x ?? 0;
   const oy = curveOffset?.y ?? 0;
 
-  const svgTransform = springTransform || curveOffset
+  const svgTransform = (springTransform || curveOffset) && !buttonElement
     ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.06}px, ${(springTransform?.translateY ?? 0) + oy * 0.05}px) rotate(${(springTransform?.rotate ?? 0) - ox * 0.12}deg) skewX(${ox * 0.18}deg)`
     : undefined;
 
@@ -499,7 +499,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
   const ox = curveOffset?.x ?? 0;
   const oy = curveOffset?.y ?? 0;
 
-  const svgTransform = springTransform || curveOffset
+  const svgTransform = (springTransform || curveOffset) && !buttonElement
     ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.04}px, ${(springTransform?.translateY ?? 0) + oy * 0.06}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.08}deg) skewY(${-oy * 0.2}deg) scaleX(${1 + Math.abs(ox) * 0.004})`
     : undefined;
 

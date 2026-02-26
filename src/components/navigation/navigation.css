@@ -427,31 +427,28 @@
   position: absolute;
   pointer-events: none;
   left: 0%;
-  bottom: var(--arrow-ethos-bottom);
+  bottom: calc(var(--arrow-ethos-bottom) + (100svh - var(--arrow-ref-height, 932px)) * 0.26);
   overflow: visible;
   /* Compensate for height: button at 26svh, reference 932px for mid breakpoint
      When viewport is shorter, buttons move UP, so arrows shift UP (negative Y) */
-  transform: translateY(calc((100svh - var(--arrow-ref-height, 932px)) * 0.26));
 }
 
 .nav-mobile-contact-arrow {
   position: absolute;
   pointer-events: none;
   left: 43%;
-  bottom: var(--arrow-contact-bottom);
+  bottom: calc(var(--arrow-contact-bottom) + (100svh - var(--arrow-ref-height, 932px)) * 0.05);
   overflow: visible;
   /* Contact button near bottom (-0.8svh), minimal compensation needed */
-  transform: translateY(calc((100svh - var(--arrow-ref-height, 932px)) * 0.05));
 }
 
 .nav-mobile-gallery-arrow {
   position: absolute;
   pointer-events: none;
   right: 2%;
-  bottom: var(--arrow-gallery-bottom);
+  bottom: calc(var(--arrow-gallery-bottom) + (100svh - var(--arrow-ref-height, 932px)) * 0.09);
   overflow: visible;
   /* Gallery button at 9svh */
-  transform: translateY(calc((100svh - var(--arrow-ref-height, 932px)) * 0.09));
 }
 
 /* Small screen adjustments for Contact arrow */
