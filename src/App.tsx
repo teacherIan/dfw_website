@@ -221,7 +221,7 @@ function AppContent() {
         />
       )}
 
-      {/* Main 3D Canvas */}
+      {/* Main 3D Canvas - fills lvh, extends under mobile URL bar */}
       <div className="relative z-0 h-full w-full bg-transparent" style={{ touchAction: 'none' }}>
         <ErrorBoundary>
           <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
@@ -230,74 +230,77 @@ function AppContent() {
         </ErrorBoundary>
       </div>
 
-      {/* Overlays - only show on home scene after loading completes */}
-      {showOverlays && activeScene === 'home' && (animationPhase === 'idle' || animationPhase === 'exiting') && (loadingComplete || hasNavigated) && (
-        <MenuOverlay
-          onNavigate={navigateTo}
-          skipDelay={hasNavigated}
-          isExiting={animationPhase === 'exiting'}
-          controlsStore={controlsStore}
-          arrowControlsStore={arrowControlsStore}
-        />
-      )}
-      {showOverlays && activeScene === 'home' && !useHandDrawn && (
-        <TextOverlay key={animationKey} show={showText} />
-      )}
-      {showOverlays && activeScene === 'home' && (animationPhase === 'idle' || animationPhase === 'exiting') && useHandDrawn && (
-        <HandDrawnText
-          key={animationKey}
-          show={showText}
-          isExiting={animationPhase === 'exiting'}
-          controlsStore={controlsStore}
-        />
-      )}
-
-      {/* Contact overlay - toggle from nav button */}
-      <AnimatePresence>
-        {isContactOverlayOpen && (
-          <ContactOverlay />
+      {/* UI Overlay container - constrained to svh (visible viewport) for correct positioning */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-svh">
+        {/* Overlays - only show on home scene after loading completes */}
+        {showOverlays && activeScene === 'home' && (animationPhase === 'idle' || animationPhase === 'exiting') && (loadingComplete || hasNavigated) && (
+          <MenuOverlay
+            onNavigate={navigateTo}
+            skipDelay={hasNavigated}
+            isExiting={animationPhase === 'exiting'}
+            controlsStore={controlsStore}
+            arrowControlsStore={arrowControlsStore}
+          />
         )}
-      </AnimatePresence>
-
-      {/* Ethos overlay - mount during exit animation, keep during return animation */}
-      {(activeScene === 'ethos' ||
-        (targetScene === 'ethos' && animationPhase === 'exiting') ||
-        (activeScene === 'home' && animationPhase === 'entering' && entranceType > 0)) && (
-        <EthosOverlay
-          isEntering={targetScene === 'ethos' && animationPhase === 'exiting'}
-          isReturning={activeScene === 'home' && animationPhase === 'entering'}
-          exitDuration={exitAnimationDuration ?? 5.9}
-          returnDuration={returnAnimationDuration ?? 2.6}
-          onFadeInComplete={() => setEthosReady(true)}
-        />
-      )}
-
-      {/* Gallery picker - keep mounted while in gallery to prevent re-animation */}
-      {(activeScene === 'gallery' || targetScene === 'gallery') && (
-        <BlueprintPicker
-          onSelectCategory={goToCategory}
-          onBack={handleReturnHome}
-          wallReady={wallReady}
-          hideContent={galleryViewState === 'grid'}
-        />
-      )}
-
-      {/* Gallery grid - show when viewing a category (overlays picker) */}
-      {activeScene === 'gallery' && galleryViewState === 'grid' && (
-        <BlueprintGalleryGrid />
-      )}
-
-      {/* Photo viewer - show when viewing an image */}
-      {activeScene === 'gallery' && isViewerOpen && (
-        <BlueprintPhotoViewer />
-      )}
-
-      {/* Back button - show during exit/transition animations and when on other scenes */}
-      <AnimatePresence>
-        {shouldShowBackButton() && (
-          <BackButton onClick={handleReturnHome} />
+        {showOverlays && activeScene === 'home' && !useHandDrawn && (
+          <TextOverlay key={animationKey} show={showText} />
         )}
-      </AnimatePresence>
+        {showOverlays && activeScene === 'home' && (animationPhase === 'idle' || animationPhase === 'exiting') && useHandDrawn && (
+          <HandDrawnText
+            key={animationKey}
+            show={showText}
+            isExiting={animationPhase === 'exiting'}
+            controlsStore={controlsStore}
+          />
+        )}
+
+        {/* Contact overlay - toggle from nav button */}
+        <AnimatePresence>
+          {isContactOverlayOpen && (
+            <ContactOverlay />
+          )}
+        </AnimatePresence>
+
+        {/* Ethos overlay - mount during exit animation, keep during return animation */}
+        {(activeScene === 'ethos' ||
+          (targetScene === 'ethos' && animationPhase === 'exiting') ||
+          (activeScene === 'home' && animationPhase === 'entering' && entranceType > 0)) && (
+          <EthosOverlay
+            isEntering={targetScene === 'ethos' && animationPhase === 'exiting'}
+            isReturning={activeScene === 'home' && animationPhase === 'entering'}
+            exitDuration={exitAnimationDuration ?? 5.9}
+            returnDuration={returnAnimationDuration ?? 2.6}
+            onFadeInComplete={() => setEthosReady(true)}
+          />
+        )}
+
+        {/* Gallery picker - keep mounted while in gallery to prevent re-animation */}
+        {(activeScene === 'gallery' || targetScene === 'gallery') && (
+          <BlueprintPicker
+            onSelectCategory={goToCategory}
+            onBack={handleReturnHome}
+            wallReady={wallReady}
+            hideContent={galleryViewState === 'grid'}
+          />
+        )}
+
+        {/* Gallery grid - show when viewing a category (overlays picker) */}
+        {activeScene === 'gallery' && galleryViewState === 'grid' && (
+          <BlueprintGalleryGrid />
+        )}
+
+        {/* Photo viewer - show when viewing an image */}
+        {activeScene === 'gallery' && isViewerOpen && (
+          <BlueprintPhotoViewer />
+        )}
+
+        {/* Back button - show during exit/transition animations and when on other scenes */}
+        <AnimatePresence>
+          {shouldShowBackButton() && (
+            <BackButton onClick={handleReturnHome} />
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
