@@ -162,6 +162,8 @@ const findVisibleElement = <T extends HTMLElement>(elements: Array<T | null>) =>
 
 const useVisibleElement = <T extends HTMLElement>(elementsRef: MutableRefObject<Array<T | null>>) => {
   const [visibleElement, setVisibleElement] = useState<T | null>(null);
+  // Force update counter to trigger re-checks after mount
+  const [, forceUpdate] = useState(0);
 
   useLayoutEffect(() => {
     const update = () => {
@@ -172,11 +174,19 @@ const useVisibleElement = <T extends HTMLElement>(elementsRef: MutableRefObject<
     update();
     const frame = requestAnimationFrame(update);
 
+    // Production timing fix: force another update after layout settles
+    // This catches elements that aren't laid out during initial render
+    const timeout = setTimeout(() => {
+      update();
+      forceUpdate((n) => n + 1);
+    }, 100);
+
     window.addEventListener('resize', update);
     window.addEventListener('orientationchange', update);
 
     return () => {
       cancelAnimationFrame(frame);
+      clearTimeout(timeout);
       window.removeEventListener('resize', update);
       window.removeEventListener('orientationchange', update);
     };
