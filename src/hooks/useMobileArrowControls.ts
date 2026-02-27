@@ -17,7 +17,7 @@ interface ArrowPathData {
 const ARROW_DEFAULTS = {
   ethos: {
     small: { startX: 118, startY: 90, ctrlX: 60, ctrlY: 60, endX: 77, endY: 11, angleOffset: 0 },
-    mid: { startX: 84, startY: 133, ctrlX: -53, ctrlY: 39, endX: 42, endY: -53, angleOffset: -1 },
+    mid: { startX: -46, startY: 18, ctrlX: -66, ctrlY: -100, endX: 148, endY: -85, angleOffset: -4 },
     tablet: { startX: 110, startY: 135, ctrlX: 70, ctrlY: 55, endX: 102, endY: 2, angleOffset: 0 },
     ipadPro: { startX: 115, startY: 130, ctrlX: 65, ctrlY: 40, endX: 85, endY: -25, angleOffset: 0 },
   },

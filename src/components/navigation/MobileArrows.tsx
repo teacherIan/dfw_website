@@ -6,13 +6,55 @@ import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
-const defaultCenterYOffset = 0;
-
-// Shared Leva control for arrow targeting offset
-const useArrowTargetingControls = (controlsStore?: LevaStore) => {
+// Arrow targeting controls for end point (button center)
+const useArrowEndControls = (controlsStore?: LevaStore) => {
   return useControls({
     '🎯 Arrow Targeting': folder({
-      centerYOffset: { value: defaultCenterYOffset, min: -50, max: 50, step: 1, label: 'Y Offset (px)' },
+      'End Point': folder({
+        endYOffset: { value: 0, min: -50, max: 50, step: 1, label: 'Y Offset (px)' },
+      }, { collapsed: true }),
+    }, { collapsed: false }),
+  }, { store: controlsStore });
+};
+
+// Arrow start controls for Ethos (bottom-right of label)
+const useEthosStartControls = (controlsStore?: LevaStore) => {
+  return useControls({
+    '🎯 Arrow Targeting': folder({
+      'Ethos Start': folder({
+        ethosStartX: { value: 0.4, min: 0, max: 1, step: 0.1, label: 'Anchor X (0-1)' },
+        ethosStartY: { value: 1.0, min: 0, max: 1, step: 0.1, label: 'Anchor Y (0-1)' },
+        ethosOffsetX: { value: 16, min: -50, max: 50, step: 1, label: 'Offset X (px)' },
+        ethosOffsetY: { value: 11, min: -50, max: 50, step: 1, label: 'Offset Y (px)' },
+      }, { collapsed: true }),
+    }, { collapsed: false }),
+  }, { store: controlsStore });
+};
+
+// Arrow start controls for Contact (bottom of label)
+const useContactStartControls = (controlsStore?: LevaStore) => {
+  return useControls({
+    '🎯 Arrow Targeting': folder({
+      'Contact Start': folder({
+        contactStartX: { value: 0.5, min: 0, max: 1, step: 0.1, label: 'Anchor X (0-1)' },
+        contactStartY: { value: 1, min: 0, max: 1, step: 0.1, label: 'Anchor Y (0-1)' },
+        contactOffsetX: { value: 0, min: -50, max: 50, step: 1, label: 'Offset X (px)' },
+        contactOffsetY: { value: 6, min: -50, max: 50, step: 1, label: 'Offset Y (px)' },
+      }, { collapsed: true }),
+    }, { collapsed: false }),
+  }, { store: controlsStore });
+};
+
+// Arrow start controls for Gallery (left side of label)
+const useGalleryStartControls = (controlsStore?: LevaStore) => {
+  return useControls({
+    '🎯 Arrow Targeting': folder({
+      'Gallery Start': folder({
+        galleryStartX: { value: 0, min: 0, max: 1, step: 0.1, label: 'Anchor X (0-1)' },
+        galleryStartY: { value: 0.5, min: 0, max: 1, step: 0.1, label: 'Anchor Y (0-1)' },
+        galleryOffsetX: { value: -6, min: -50, max: 50, step: 1, label: 'Offset X (px)' },
+        galleryOffsetY: { value: 0, min: -50, max: 50, step: 1, label: 'Offset Y (px)' },
+      }, { collapsed: true }),
     }, { collapsed: false }),
   }, { store: controlsStore });
 };
@@ -71,64 +113,54 @@ const useElementPoint = (
   anchor: AnchorPoint,
   originElement?: HTMLElement | null
 ): { x: number; y: number } | null => {
-  const [point, setPoint] = useState<{ x: number; y: number } | null>(null);
+  // Force re-render on viewport changes
+  const [, setTick] = useState(0);
 
   useLayoutEffect(() => {
-    if (!element) {
-      return;
-    }
-
-    const update = () => {
-      if (!element) {
-        return;
-      }
-
-      const rect = element.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) {
-        return;
-      }
-
-      let x = rect.left + rect.width * anchor.x + (anchor.offsetX ?? 0);
-      let y = rect.top + rect.height * anchor.y + (anchor.offsetY ?? 0);
-
-      if (originElement) {
-        const originRect = originElement.getBoundingClientRect();
-        x -= originRect.left;
-        y -= originRect.top;
-      }
-      setPoint((prev) => (prev && prev.x === x && prev.y === y ? prev : { x, y }));
-    };
+    const update = () => setTick((t) => t + 1);
 
     update();
     const frame = requestAnimationFrame(update);
 
-    const handleViewportChange = () => update();
-    window.addEventListener('resize', handleViewportChange);
-    window.addEventListener('scroll', handleViewportChange, true);
-    window.addEventListener('orientationchange', handleViewportChange);
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('orientationchange', update);
 
     const viewport = window.visualViewport;
-    viewport?.addEventListener('resize', handleViewportChange);
-    viewport?.addEventListener('scroll', handleViewportChange);
+    viewport?.addEventListener('resize', update);
+    viewport?.addEventListener('scroll', update);
 
     const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
-    resizeObserver?.observe(element);
-    if (originElement) {
-      resizeObserver?.observe(originElement);
-    }
+    if (element) resizeObserver?.observe(element);
+    if (originElement) resizeObserver?.observe(originElement);
 
     return () => {
       cancelAnimationFrame(frame);
-      window.removeEventListener('resize', handleViewportChange);
-      window.removeEventListener('scroll', handleViewportChange, true);
-      window.removeEventListener('orientationchange', handleViewportChange);
-      viewport?.removeEventListener('resize', handleViewportChange);
-      viewport?.removeEventListener('scroll', handleViewportChange);
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('orientationchange', update);
+      viewport?.removeEventListener('resize', update);
+      viewport?.removeEventListener('scroll', update);
       resizeObserver?.disconnect();
     };
-  }, [element, anchor.x, anchor.y, anchor.offsetX, anchor.offsetY, originElement]);
+  }, [element, originElement]);
 
-  return point;
+  // Compute point directly during render - responds immediately to anchor changes
+  if (!element) return null;
+
+  const rect = element.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) return null;
+
+  let x = rect.left + rect.width * anchor.x + (anchor.offsetX ?? 0);
+  let y = rect.top + rect.height * anchor.y + (anchor.offsetY ?? 0);
+
+  if (originElement) {
+    const originRect = originElement.getBoundingClientRect();
+    x -= originRect.left;
+    y -= originRect.top;
+  }
+
+  return { x, y };
 };
 
 const useElementRect = (element: HTMLElement | null | undefined) => {
@@ -295,14 +327,15 @@ const buildMappedPath = (
 // =============================================================================
 export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore, labelElement, buttonElement, containerElement }: ArrowProps) => {
   const controls = useEthosArrowControls(controlsStore);
-  const { centerYOffset } = useArrowTargetingControls(controlsStore);
+  const { endYOffset } = useArrowEndControls(controlsStore);
+  const { ethosStartX, ethosStartY, ethosOffsetX, ethosOffsetY } = useEthosStartControls(controlsStore);
   const viewport = useViewportSize();
   const containerRect = useElementRect(containerElement);
   const breakpoint = getBreakpoint(viewport.width);
   const template = controls[breakpoint] as ArrowTemplate;
 
-  const startPoint = useElementPoint(labelElement, { x: 1, y: 0.5, offsetX: 6 }, containerElement);
-  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: centerYOffset }, containerElement);
+  const startPoint = useElementPoint(labelElement, { x: ethosStartX, y: ethosStartY, offsetX: ethosOffsetX, offsetY: ethosOffsetY }, containerElement);
+  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: endYOffset }, containerElement);
   // Use || to fall back on 0 values, not just null/undefined
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
@@ -355,14 +388,15 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
 // =============================================================================
 export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStore, labelElement, buttonElement, containerElement }: ArrowProps) => {
   const controls = useContactArrowControls(controlsStore);
-  const { centerYOffset } = useArrowTargetingControls(controlsStore);
+  const { endYOffset } = useArrowEndControls(controlsStore);
+  const { contactStartX, contactStartY, contactOffsetX, contactOffsetY } = useContactStartControls(controlsStore);
   const viewport = useViewportSize();
   const containerRect = useElementRect(containerElement);
   const breakpoint = getBreakpoint(viewport.width);
   const template = controls[breakpoint] as ArrowTemplate;
 
-  const startPoint = useElementPoint(labelElement, { x: 0.5, y: 1, offsetY: 6 }, containerElement);
-  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: centerYOffset }, containerElement);
+  const startPoint = useElementPoint(labelElement, { x: contactStartX, y: contactStartY, offsetX: contactOffsetX, offsetY: contactOffsetY }, containerElement);
+  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: endYOffset }, containerElement);
   // Use || to fall back on 0 values, not just null/undefined
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
@@ -415,14 +449,15 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
 // =============================================================================
 export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStore, labelElement, buttonElement, containerElement }: ArrowProps) => {
   const controls = useGalleryArrowControls(controlsStore);
-  const { centerYOffset } = useArrowTargetingControls(controlsStore);
+  const { endYOffset } = useArrowEndControls(controlsStore);
+  const { galleryStartX, galleryStartY, galleryOffsetX, galleryOffsetY } = useGalleryStartControls(controlsStore);
   const viewport = useViewportSize();
   const containerRect = useElementRect(containerElement);
   const breakpoint = getBreakpoint(viewport.width);
   const template = controls[breakpoint] as ArrowTemplate;
 
-  const startPoint = useElementPoint(labelElement, { x: 0, y: 0.5, offsetX: -6 }, containerElement);
-  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: centerYOffset }, containerElement);
+  const startPoint = useElementPoint(labelElement, { x: galleryStartX, y: galleryStartY, offsetX: galleryOffsetX, offsetY: galleryOffsetY }, containerElement);
+  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: endYOffset }, containerElement);
   // Use || to fall back on 0 values, not just null/undefined
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
