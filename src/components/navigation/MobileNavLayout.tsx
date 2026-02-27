@@ -210,7 +210,8 @@ const MobileNavLayout = ({
     delay: MOBILE_NAV_DELAYS.GALLERY_ARROW,
   });
 
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  // Use state for container to trigger re-render when mounted
+  const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null);
   const ethosButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const contactButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const galleryButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -238,7 +239,7 @@ const MobileNavLayout = ({
   const labelPositionsIpadPro = useBreakpointControls('ipadPro', 'labels', controlsStore);
 
   return (
-    <div className="mobile-nav-only" ref={containerRef}>
+    <div className="mobile-nav-only" ref={setContainerElement}>
       {/* ============================================
           ETHOS - Bottom Left Corner
           ============================================ */}
@@ -420,7 +421,7 @@ const MobileNavLayout = ({
         controlsStore={arrowControlsStore}
         labelElement={ethosLabelElement}
         buttonElement={ethosButtonElement}
-        containerElement={containerRef.current}
+        containerElement={containerElement}
       />
 
       {/* ============================================
@@ -612,7 +613,7 @@ const MobileNavLayout = ({
         controlsStore={arrowControlsStore}
         labelElement={contactLabelElement}
         buttonElement={contactButtonElement}
-        containerElement={containerRef.current}
+        containerElement={containerElement}
       />
 
       {/* ============================================
@@ -796,7 +797,7 @@ const MobileNavLayout = ({
         controlsStore={arrowControlsStore}
         labelElement={galleryLabelElement}
         buttonElement={galleryButtonElement}
-        containerElement={containerRef.current}
+        containerElement={containerElement}
       />
     </div>
   );
