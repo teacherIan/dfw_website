@@ -12,26 +12,28 @@ import { useAnimationStore, useIsContactOverlayOpen } from '../../stores/animati
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
 // Breakpoint configuration for button and label positions
+// Triangular layout: Ethos (bottom-left), Gallery (bottom-right), Contact (center-top apex)
+// Buttons must be BELOW the "Doug's Found Wood" title
 const BREAKPOINT_CONFIGS = {
   small: {
     name: 'Small (<400px)',
-    buttons: { ethosLeft: 14, ethosBottom: 26, contactLeft: 45, contactBottom: 7, galleryRight: 17, galleryBottom: 8 },
-    labels: { ethosLeft: 8, ethosBottom: 7, contactLeft: 40, contactBottom: 15, galleryRight: 10, galleryBottom: 2 },
+    buttons: { ethosLeft: 8, ethosBottom: 6, contactLeft: 50, contactBottom: 28, galleryRight: 8, galleryBottom: 6 },
+    labels: { ethosLeft: 3, ethosBottom: 14, contactLeft: 50, contactBottom: 36, galleryRight: 3, galleryBottom: 14 },
   },
   mid: {
     name: 'Mid (400-699px)',
-    buttons: { ethosLeft: 14, ethosBottom: 26, contactLeft: 45, contactBottom: 7.0, galleryRight: 17, galleryBottom: 8 },
-    labels: { ethosLeft: 8, ethosBottom: 7, contactLeft: 40, contactBottom: 15, galleryRight: 10, galleryBottom: 2 },
+    buttons: { ethosLeft: 10, ethosBottom: 6, contactLeft: 50, contactBottom: 28, galleryRight: 10, galleryBottom: 6 },
+    labels: { ethosLeft: 5, ethosBottom: 14, contactLeft: 50, contactBottom: 36, galleryRight: 5, galleryBottom: 14 },
   },
   tablet: {
     name: 'Tablet (700-999px)',
-    buttons: { ethosLeft: 11, ethosBottom: 29, contactLeft: 40, contactBottom: 5.0, galleryRight: 8, galleryBottom: 8 },
-    labels: { ethosLeft: 8, ethosBottom: 7, contactLeft: 51, contactBottom: 13, galleryRight: 21, galleryBottom: 2 },
+    buttons: { ethosLeft: 12, ethosBottom: 7, contactLeft: 50, contactBottom: 30, galleryRight: 12, galleryBottom: 7 },
+    labels: { ethosLeft: 6, ethosBottom: 16, contactLeft: 50, contactBottom: 38, galleryRight: 6, galleryBottom: 16 },
   },
   ipadPro: {
     name: 'iPad Pro (1000-1199px)',
-    buttons: { ethosLeft: 11, ethosBottom: 29, contactLeft: 40, contactBottom: 5.0, galleryRight: 8, galleryBottom: 8 },
-    labels: { ethosLeft: 8, ethosBottom: 7, contactLeft: 51, contactBottom: 13, galleryRight: 21, galleryBottom: 2 },
+    buttons: { ethosLeft: 14, ethosBottom: 7, contactLeft: 50, contactBottom: 30, galleryRight: 14, galleryBottom: 7 },
+    labels: { ethosLeft: 8, ethosBottom: 16, contactLeft: 50, contactBottom: 38, galleryRight: 8, galleryBottom: 16 },
   },
 } as const;
 

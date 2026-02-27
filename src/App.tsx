@@ -197,7 +197,7 @@ function AppContent() {
   }, [animationPhase, targetScene, activeScene, ethosReady]);
 
   return (
-    <div className="relative h-svh w-screen overflow-hidden bg-[#f8f5ef] text-white">
+    <div className="relative h-lvh w-screen overflow-hidden bg-[#f8f5ef] text-white">
       {/* Loading screen - signals when animation can start */}
       <LoadingScreen
         isReady={streamingStarted}
