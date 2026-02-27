@@ -10,6 +10,7 @@ import BlueprintGalleryGrid from './components/gallery/BlueprintGalleryGrid';
 import BlueprintPhotoViewer from './components/gallery/BlueprintPhotoViewer';
 import MenuOverlay from './components/navigation/MenuOverlay';
 import BackButton from './components/navigation/BackButton';
+import InstallBanner from './components/InstallBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingScreen from './components/LoadingScreen';
 import {
@@ -304,6 +305,11 @@ function AppContent() {
             <BackButton onClick={handleReturnHome} />
           )}
         </AnimatePresence>
+
+        {/* Install banner - prompts mobile users to add to home screen */}
+        {activeScene === 'home' && animationPhase === 'idle' && loadingComplete && (
+          <InstallBanner />
+        )}
       </div>
     </div>
   );
