@@ -152,7 +152,9 @@ const findVisibleElement = <T extends HTMLElement>(elements: Array<T | null>) =>
       continue;
     }
 
-    if (element.offsetParent !== null || element.getClientRects().length > 0) {
+    // Check if element has non-zero dimensions (most reliable for CSS-hidden elements)
+    const rect = element.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
       return element;
     }
   }
@@ -161,25 +163,16 @@ const findVisibleElement = <T extends HTMLElement>(elements: Array<T | null>) =>
 };
 
 const useVisibleElement = <T extends HTMLElement>(elementsRef: MutableRefObject<Array<T | null>>) => {
-  const [visibleElement, setVisibleElement] = useState<T | null>(null);
-  // Force update counter to trigger re-checks after mount
-  const [, forceUpdate] = useState(0);
+  // Counter to force re-renders on resize/orientation change
+  const [, setCounter] = useState(0);
 
   useLayoutEffect(() => {
-    const update = () => {
-      const next = findVisibleElement(elementsRef.current);
-      setVisibleElement((prev) => (prev === next ? prev : next));
-    };
+    const update = () => setCounter((c) => c + 1);
 
+    // Force initial updates to catch late-mounting elements
     update();
     const frame = requestAnimationFrame(update);
-
-    // Production timing fix: force another update after layout settles
-    // This catches elements that aren't laid out during initial render
-    const timeout = setTimeout(() => {
-      update();
-      forceUpdate((n) => n + 1);
-    }, 100);
+    const timeout = setTimeout(update, 100);
 
     window.addEventListener('resize', update);
     window.addEventListener('orientationchange', update);
@@ -192,7 +185,8 @@ const useVisibleElement = <T extends HTMLElement>(elementsRef: MutableRefObject<
     };
   }, [elementsRef]);
 
-  return visibleElement;
+  // Compute visible element on every render - more reliable than storing in state
+  return findVisibleElement(elementsRef.current);
 };
 
 const MobileNavLayout = ({

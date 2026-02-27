@@ -6,11 +6,7 @@ import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
-// Detect Safari/iOS for browser-specific Y offset
-// WebKit renders strokeLinecap="round" differently, requiring a different offset
-const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/i.test(navigator.userAgent);
-const isSafari = typeof navigator !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-const defaultCenterYOffset = isIOS || isSafari ? -3 : -5;
+const defaultCenterYOffset = 0;
 
 // Shared Leva control for arrow targeting offset
 const useArrowTargetingControls = (controlsStore?: LevaStore) => {
@@ -27,7 +23,11 @@ interface ViewportSize {
 }
 
 const useViewportSize = (): ViewportSize => {
-  const [size, setSize] = useState<ViewportSize>({ width: 0, height: 0 });
+  // Initialize with actual viewport size to avoid 0x0 on first render
+  const [size, setSize] = useState<ViewportSize>(() => ({
+    width: typeof window !== 'undefined' ? (window.visualViewport?.width ?? window.innerWidth) : 0,
+    height: typeof window !== 'undefined' ? (window.visualViewport?.height ?? window.innerHeight) : 0,
+  }));
 
   useLayoutEffect(() => {
     const update = () => {
@@ -303,8 +303,9 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
 
   const startPoint = useElementPoint(labelElement, { x: 1, y: 0.5, offsetX: 6 }, containerElement);
   const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: centerYOffset }, containerElement);
-  const width = containerRect?.width ?? viewport.width;
-  const height = containerRect?.height ?? viewport.height;
+  // Use || to fall back on 0 values, not just null/undefined
+  const width = containerRect?.width || viewport.width;
+  const height = containerRect?.height || viewport.height;
 
   if (!startPoint || !endPoint || width === 0 || height === 0) {
     return null;
@@ -362,8 +363,9 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
 
   const startPoint = useElementPoint(labelElement, { x: 0.5, y: 1, offsetY: 6 }, containerElement);
   const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: centerYOffset }, containerElement);
-  const width = containerRect?.width ?? viewport.width;
-  const height = containerRect?.height ?? viewport.height;
+  // Use || to fall back on 0 values, not just null/undefined
+  const width = containerRect?.width || viewport.width;
+  const height = containerRect?.height || viewport.height;
 
   if (!startPoint || !endPoint || width === 0 || height === 0) {
     return null;
@@ -421,8 +423,9 @@ export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStor
 
   const startPoint = useElementPoint(labelElement, { x: 0, y: 0.5, offsetX: -6 }, containerElement);
   const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: centerYOffset }, containerElement);
-  const width = containerRect?.width ?? viewport.width;
-  const height = containerRect?.height ?? viewport.height;
+  // Use || to fall back on 0 values, not just null/undefined
+  const width = containerRect?.width || viewport.width;
+  const height = containerRect?.height || viewport.height;
 
   if (!startPoint || !endPoint || width === 0 || height === 0) {
     return null;
