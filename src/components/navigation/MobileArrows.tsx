@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useControls, folder } from 'leva';
 import { AnimatedArrowhead, AnimatedDot } from './ArrowComponents';
 import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls } from '../../hooks/useMobileArrowControls';
@@ -110,11 +111,8 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
     centerYOffset // visual adjustment for crosshair targeting
   );
 
-  const pathStyle = {
-    strokeDashoffset: isVisible ? 0 : 1,
-    transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
-  };
-
+  // Animation delays for Framer Motion (in seconds)
+  const pathDelaySeconds = delay / 1000;
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
@@ -180,17 +178,17 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
     >
       {/* iPad Pro (1000-1199px) */}
       <g className="hidden min-[1000px]:max-[1199px]:block">
-        <path
+        <motion.path
           d={pathData.ipadPro.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.ipadPro.startX} y={pathData.ipadPro.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
@@ -205,17 +203,17 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
 
       {/* Tablet (700-999px) */}
       <g className="hidden min-[700px]:max-[999px]:block">
-        <path
+        <motion.path
           d={pathData.tablet.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.tablet.startX} y={pathData.tablet.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
@@ -230,17 +228,17 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
 
       {/* Mid (400-699px) */}
       <g className="hidden min-[400px]:max-[699px]:block">
-        <path
+        <motion.path
           d={pathData.mid.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.mid.startX} y={pathData.mid.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
@@ -255,17 +253,17 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
 
       {/* Small (<400px) */}
       <g className="hidden max-[399px]:block">
-        <path
+        <motion.path
           d={pathData.small.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.small.startX} y={pathData.small.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
@@ -306,11 +304,8 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
     centerYOffset // visual adjustment for crosshair targeting
   );
 
-  const pathStyle = {
-    strokeDashoffset: isVisible ? 0 : 1,
-    transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
-  };
-
+  // Animation delays for Framer Motion (in seconds)
+  const pathDelaySeconds = delay / 1000;
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
@@ -373,17 +368,17 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
     >
       {/* iPad Pro (1000-1199px) */}
       <g className="hidden min-[1000px]:max-[1199px]:block">
-        <path
+        <motion.path
           d={pathData.ipadPro.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.ipadPro.startX} y={pathData.ipadPro.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
@@ -398,17 +393,17 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
 
       {/* Tablet (700-999px) */}
       <g className="hidden min-[700px]:max-[999px]:block">
-        <path
+        <motion.path
           d={pathData.tablet.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.tablet.startX} y={pathData.tablet.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
@@ -423,17 +418,17 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
 
       {/* Mid (400-699px) */}
       <g className="hidden min-[400px]:max-[699px]:block">
-        <path
+        <motion.path
           d={pathData.mid.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.mid.startX} y={pathData.mid.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
@@ -448,17 +443,17 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
 
       {/* Small (<400px) */}
       <g className="hidden max-[399px]:block">
-        <path
+        <motion.path
           d={pathData.small.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.small.startX} y={pathData.small.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
@@ -499,11 +494,8 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
     centerYOffset // visual adjustment for crosshair targeting
   );
 
-  const pathStyle = {
-    strokeDashoffset: isVisible ? 0 : 1,
-    transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
-  };
-
+  // Animation delays for Framer Motion (in seconds)
+  const pathDelaySeconds = delay / 1000;
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
@@ -566,17 +558,17 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
     >
       {/* iPad Pro (1000-1199px) */}
       <g className="hidden min-[1000px]:max-[1199px]:block">
-        <path
+        <motion.path
           d={pathData.ipadPro.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.ipadPro.startX} y={pathData.ipadPro.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
@@ -591,17 +583,17 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
 
       {/* Tablet (700-999px) */}
       <g className="hidden min-[700px]:max-[999px]:block">
-        <path
+        <motion.path
           d={pathData.tablet.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.tablet.startX} y={pathData.tablet.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
@@ -616,17 +608,17 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
 
       {/* Mid (400-699px) */}
       <g className="hidden min-[400px]:max-[699px]:block">
-        <path
+        <motion.path
           d={pathData.mid.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.mid.startX} y={pathData.mid.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
@@ -641,17 +633,17 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
 
       {/* Small (<400px) */}
       <g className="hidden max-[399px]:block">
-        <path
+        <motion.path
           d={pathData.small.d}
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
           fill="none"
           filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
         />
         <AnimatedDot x={pathData.small.startX} y={pathData.small.startY} isVisible={isVisible} delay={dotDelay} />
         <AnimatedArrowhead
