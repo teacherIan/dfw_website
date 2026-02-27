@@ -122,6 +122,7 @@ interface MobileLabelProps {
   font: string;
   springOffset?: number;
   hasCompletedAnimation: boolean;
+  labelRef?: Ref<HTMLSpanElement>;
 }
 
 const MobileLabel = ({
@@ -129,8 +130,10 @@ const MobileLabel = ({
   font,
   springOffset = 0,
   hasCompletedAnimation,
+  labelRef,
 }: MobileLabelProps) => (
   <span
+    ref={labelRef}
     style={{
       display: 'inline-block',
       transform: hasCompletedAnimation
@@ -143,7 +146,7 @@ const MobileLabel = ({
   </span>
 );
 
-const findVisibleButton = (elements: Array<HTMLButtonElement | null>) => {
+const findVisibleElement = <T extends HTMLElement>(elements: Array<T | null>) => {
   for (const element of elements) {
     if (!element) {
       continue;
@@ -157,12 +160,12 @@ const findVisibleButton = (elements: Array<HTMLButtonElement | null>) => {
   return null;
 };
 
-const useVisibleButtonElement = (elementsRef: MutableRefObject<Array<HTMLButtonElement | null>>) => {
-  const [visibleElement, setVisibleElement] = useState<HTMLButtonElement | null>(null);
+const useVisibleElement = <T extends HTMLElement>(elementsRef: MutableRefObject<Array<T | null>>) => {
+  const [visibleElement, setVisibleElement] = useState<T | null>(null);
 
   useLayoutEffect(() => {
     const update = () => {
-      const next = findVisibleButton(elementsRef.current);
+      const next = findVisibleElement(elementsRef.current);
       setVisibleElement((prev) => (prev === next ? prev : next));
     };
 
@@ -207,13 +210,20 @@ const MobileNavLayout = ({
     delay: MOBILE_NAV_DELAYS.GALLERY_ARROW,
   });
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const ethosButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const contactButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const galleryButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const ethosLabelRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const contactLabelRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const galleryLabelRefs = useRef<Array<HTMLSpanElement | null>>([]);
 
-  const ethosButtonElement = useVisibleButtonElement(ethosButtonRefs);
-  const contactButtonElement = useVisibleButtonElement(contactButtonRefs);
-  const galleryButtonElement = useVisibleButtonElement(galleryButtonRefs);
+  const ethosButtonElement = useVisibleElement(ethosButtonRefs);
+  const contactButtonElement = useVisibleElement(contactButtonRefs);
+  const galleryButtonElement = useVisibleElement(galleryButtonRefs);
+  const ethosLabelElement = useVisibleElement(ethosLabelRefs);
+  const contactLabelElement = useVisibleElement(contactLabelRefs);
+  const galleryLabelElement = useVisibleElement(galleryLabelRefs);
 
   // Button positions for each breakpoint
   const btnPositionsSmall = useBreakpointControls('small', 'buttons', controlsStore);
@@ -228,7 +238,7 @@ const MobileNavLayout = ({
   const labelPositionsIpadPro = useBreakpointControls('ipadPro', 'labels', controlsStore);
 
   return (
-    <div className="mobile-nav-only">
+    <div className="mobile-nav-only" ref={containerRef}>
       {/* ============================================
           ETHOS - Bottom Left Corner
           ============================================ */}
@@ -335,6 +345,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={ethosUnravel.curveOffset.x}
           hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            ethosLabelRefs.current[0] = element;
+          }}
         />
       </div>
 
@@ -352,6 +365,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={ethosUnravel.curveOffset.x}
           hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            ethosLabelRefs.current[1] = element;
+          }}
         />
       </div>
 
@@ -369,6 +385,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={ethosUnravel.curveOffset.x}
           hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            ethosLabelRefs.current[2] = element;
+          }}
         />
       </div>
 
@@ -386,6 +405,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={ethosUnravel.curveOffset.x}
           hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            ethosLabelRefs.current[3] = element;
+          }}
         />
       </div>
 
@@ -396,7 +418,9 @@ const MobileNavLayout = ({
         springTransform={ethosUnravel.hasCompletedInitialAnimation ? ethosUnravel.transform : undefined}
         curveOffset={ethosUnravel.hasCompletedInitialAnimation ? ethosUnravel.curveOffset : undefined}
         controlsStore={arrowControlsStore}
+        labelElement={ethosLabelElement}
         buttonElement={ethosButtonElement}
+        containerElement={containerRef.current}
       />
 
       {/* ============================================
@@ -513,6 +537,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={contactUnravel.curveOffset.x}
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            contactLabelRefs.current[0] = element;
+          }}
         />
       </div>
 
@@ -530,6 +557,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={contactUnravel.curveOffset.x}
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            contactLabelRefs.current[1] = element;
+          }}
         />
       </div>
 
@@ -547,6 +577,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={contactUnravel.curveOffset.x}
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            contactLabelRefs.current[2] = element;
+          }}
         />
       </div>
 
@@ -564,6 +597,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={contactUnravel.curveOffset.x}
           hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            contactLabelRefs.current[3] = element;
+          }}
         />
       </div>
 
@@ -574,7 +610,9 @@ const MobileNavLayout = ({
         springTransform={contactUnravel.hasCompletedInitialAnimation ? contactUnravel.transform : undefined}
         curveOffset={contactUnravel.hasCompletedInitialAnimation ? contactUnravel.curveOffset : undefined}
         controlsStore={arrowControlsStore}
+        labelElement={contactLabelElement}
         buttonElement={contactButtonElement}
+        containerElement={containerRef.current}
       />
 
       {/* ============================================
@@ -683,6 +721,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={galleryUnravel.curveOffset.x}
           hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            galleryLabelRefs.current[0] = element;
+          }}
         />
       </div>
 
@@ -700,6 +741,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={galleryUnravel.curveOffset.x}
           hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            galleryLabelRefs.current[1] = element;
+          }}
         />
       </div>
 
@@ -717,6 +761,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={galleryUnravel.curveOffset.x}
           hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            galleryLabelRefs.current[2] = element;
+          }}
         />
       </div>
 
@@ -734,6 +781,9 @@ const MobileNavLayout = ({
           font={font}
           springOffset={galleryUnravel.curveOffset.x}
           hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
+          labelRef={(element) => {
+            galleryLabelRefs.current[3] = element;
+          }}
         />
       </div>
 
@@ -744,7 +794,9 @@ const MobileNavLayout = ({
         springTransform={galleryUnravel.hasCompletedInitialAnimation ? galleryUnravel.transform : undefined}
         curveOffset={galleryUnravel.hasCompletedInitialAnimation ? galleryUnravel.curveOffset : undefined}
         controlsStore={arrowControlsStore}
+        labelElement={galleryLabelElement}
         buttonElement={galleryButtonElement}
+        containerElement={containerRef.current}
       />
     </div>
   );

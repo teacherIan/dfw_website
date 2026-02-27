@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { useControls, folder } from 'leva';
 import { AnimatedArrowhead, AnimatedDot } from './ArrowComponents';
 import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls } from '../../hooks/useMobileArrowControls';
@@ -20,67 +20,160 @@ const useArrowTargetingControls = (controlsStore?: LevaStore) => {
   }, { store: controlsStore });
 };
 
-/**
- * Hook to calculate arrow endpoint from the real button position.
- * Uses the SVG screen CTM to convert screen-space coordinates into SVG user units,
- * so it remains accurate even when the SVG has CSS transforms applied.
- */
-const useCalculatedEndpoint = (
-  svgRef: React.RefObject<SVGSVGElement | null>,
-  buttonElement: HTMLElement | null | undefined,
-  centerYOffset: number = 0 // visual adjustment for crosshair targeting
-): { x: number; y: number } | null => {
-  const [endpoint, setEndpoint] = useState<{ x: number; y: number } | null>(null);
+interface ViewportSize {
+  width: number;
+  height: number;
+}
+
+const useViewportSize = (): ViewportSize => {
+  const [size, setSize] = useState<ViewportSize>({ width: 0, height: 0 });
 
   useLayoutEffect(() => {
-    if (!svgRef.current || !buttonElement) {
-      return;
-    }
-
-    const svg = svgRef.current;
-
     const update = () => {
-      if (!svgRef.current || !buttonElement) {
-        return;
-      }
-
-      const rect = buttonElement.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) {
-        return;
-      }
-
-      const ctm = svg.getScreenCTM();
-      if (!ctm) {
-        return;
-      }
-
-      const point = svg.createSVGPoint();
-      point.x = rect.left + rect.width / 2;
-      point.y = rect.top + rect.height / 2 + centerYOffset;
-
-      const svgPoint = point.matrixTransform(ctm.inverse());
-      setEndpoint({ x: svgPoint.x, y: svgPoint.y });
+      const viewport = window.visualViewport;
+      const width = viewport?.width ?? window.innerWidth;
+      const height = viewport?.height ?? window.innerHeight;
+      setSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
     };
 
     update();
     const frame = requestAnimationFrame(update);
-    const handleViewportChange = () => update();
 
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+
+    const viewport = window.visualViewport;
+    viewport?.addEventListener('resize', update);
+    viewport?.addEventListener('scroll', update);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+      viewport?.removeEventListener('resize', update);
+      viewport?.removeEventListener('scroll', update);
+    };
+  }, []);
+
+  return size;
+};
+
+interface AnchorPoint {
+  x: number;
+  y: number;
+  offsetX?: number;
+  offsetY?: number;
+}
+
+const useElementPoint = (
+  element: HTMLElement | null | undefined,
+  anchor: AnchorPoint,
+  originElement?: HTMLElement | null
+): { x: number; y: number } | null => {
+  const [point, setPoint] = useState<{ x: number; y: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!element) {
+      return;
+    }
+
+    const update = () => {
+      if (!element) {
+        return;
+      }
+
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) {
+        return;
+      }
+
+      let x = rect.left + rect.width * anchor.x + (anchor.offsetX ?? 0);
+      let y = rect.top + rect.height * anchor.y + (anchor.offsetY ?? 0);
+
+      if (originElement) {
+        const originRect = originElement.getBoundingClientRect();
+        x -= originRect.left;
+        y -= originRect.top;
+      }
+      setPoint((prev) => (prev && prev.x === x && prev.y === y ? prev : { x, y }));
+    };
+
+    update();
+    const frame = requestAnimationFrame(update);
+
+    const handleViewportChange = () => update();
     window.addEventListener('resize', handleViewportChange);
     window.addEventListener('scroll', handleViewportChange, true);
+    window.addEventListener('orientationchange', handleViewportChange);
+
+    const viewport = window.visualViewport;
+    viewport?.addEventListener('resize', handleViewportChange);
+    viewport?.addEventListener('scroll', handleViewportChange);
 
     const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
-    resizeObserver?.observe(buttonElement);
+    resizeObserver?.observe(element);
+    if (originElement) {
+      resizeObserver?.observe(originElement);
+    }
 
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener('resize', handleViewportChange);
       window.removeEventListener('scroll', handleViewportChange, true);
+      window.removeEventListener('orientationchange', handleViewportChange);
+      viewport?.removeEventListener('resize', handleViewportChange);
+      viewport?.removeEventListener('scroll', handleViewportChange);
       resizeObserver?.disconnect();
     };
-  }, [svgRef, buttonElement, centerYOffset]);
+  }, [element, anchor.x, anchor.y, anchor.offsetX, anchor.offsetY, originElement]);
 
-  return endpoint;
+  return point;
+};
+
+const useElementRect = (element: HTMLElement | null | undefined) => {
+  const [rect, setRect] = useState<{ width: number; height: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!element) {
+      return;
+    }
+
+    const update = () => {
+      if (!element) {
+        return;
+      }
+      const bounds = element.getBoundingClientRect();
+      setRect((prev) => {
+        if (prev && prev.width === bounds.width && prev.height === bounds.height) {
+          return prev;
+        }
+        return { width: bounds.width, height: bounds.height };
+      });
+    };
+
+    update();
+    const frame = requestAnimationFrame(update);
+
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    const viewport = window.visualViewport;
+    viewport?.addEventListener('resize', update);
+    viewport?.addEventListener('scroll', update);
+
+    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    resizeObserver?.observe(element);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+      viewport?.removeEventListener('resize', update);
+      viewport?.removeEventListener('scroll', update);
+      resizeObserver?.disconnect();
+    };
+  }, [element]);
+
+  return rect;
 };
 
 interface SpringTransform {
@@ -104,8 +197,10 @@ interface ArrowProps {
   springTransform?: SpringTransform;
   curveOffset?: CurveOffset;
   controlsStore?: LevaStore;
-  // Real button element for dynamic endpoint calculation
+  // Real elements for dynamic endpoint calculation
+  labelElement?: HTMLElement | null;
   buttonElement?: HTMLElement | null;
+  containerElement?: HTMLElement | null;
 }
 
 /**
@@ -118,19 +213,103 @@ const getArrowAngle = (lastControlX: number, lastControlY: number, endX: number,
   return Math.atan2(dy, dx) * (180 / Math.PI);
 };
 
+type BreakpointKey = 'small' | 'mid' | 'tablet' | 'ipadPro';
+
+const getBreakpoint = (width: number): BreakpointKey => {
+  if (width <= 0) return 'mid';
+  if (width < 400) return 'small';
+  if (width < 700) return 'mid';
+  if (width < 1000) return 'tablet';
+  return 'ipadPro';
+};
+
+interface ArrowTemplate {
+  startX: number;
+  startY: number;
+  ctrlX: number;
+  ctrlY: number;
+  endX: number;
+  endY: number;
+  angleOffset: number;
+}
+
+interface MappedPath {
+  d: string;
+  start: { x: number; y: number };
+  ctrl: { x: number; y: number };
+  end: { x: number; y: number };
+  angleOffset: number;
+}
+
+const buildMappedPath = (
+  template: ArrowTemplate,
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  curveOffset?: CurveOffset
+): MappedPath => {
+  const templateStart = { x: template.startX, y: template.startY };
+  const templateEnd = { x: template.endX, y: template.endY };
+  const templateCtrl = { x: template.ctrlX, y: template.ctrlY };
+
+  const v0x = templateEnd.x - templateStart.x;
+  const v0y = templateEnd.y - templateStart.y;
+  const v1x = end.x - start.x;
+  const v1y = end.y - start.y;
+  const len0 = Math.hypot(v0x, v0y) || 1;
+  const len1 = Math.hypot(v1x, v1y) || 1;
+  const scale = len1 / len0;
+  const angle0 = Math.atan2(v0y, v0x);
+  const angle1 = Math.atan2(v1y, v1x);
+  const rotation = angle1 - angle0;
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+
+  const applyTransform = (point: { x: number; y: number }) => {
+    const dx = (point.x - templateStart.x) * scale;
+    const dy = (point.y - templateStart.y) * scale;
+    return {
+      x: start.x + dx * cos - dy * sin,
+      y: start.y + dx * sin + dy * cos,
+    };
+  };
+
+  const ctrl = applyTransform(templateCtrl);
+  if (curveOffset) {
+    ctrl.x += curveOffset.x * scale;
+    ctrl.y += curveOffset.y * scale;
+  }
+
+  return {
+    d: `M ${start.x} ${start.y} Q ${ctrl.x} ${ctrl.y}, ${end.x} ${end.y}`,
+    start,
+    ctrl,
+    end,
+    angleOffset: template.angleOffset,
+  };
+};
+
 // =============================================================================
 // ETHOS ARROW - Left side, loops up-left toward button
 // ViewBox: 120×160, starts near label (bottom-right), ends pointing at button (upper-left)
 // =============================================================================
-export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffset, controlsStore, buttonElement }: ArrowProps) => {
-  // Leva controls for live editing
+export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore, labelElement, buttonElement, containerElement }: ArrowProps) => {
   const controls = useEthosArrowControls(controlsStore);
   const { centerYOffset } = useArrowTargetingControls(controlsStore);
+  const viewport = useViewportSize();
+  const containerRect = useElementRect(containerElement);
+  const breakpoint = getBreakpoint(viewport.width);
+  const template = controls[breakpoint] as ArrowTemplate;
 
-  // Ref for dynamic endpoint calculation
-  const svgRef = useRef<SVGSVGElement>(null);
-  const dynamicEndpoint = useCalculatedEndpoint(svgRef, buttonElement, centerYOffset);
+  const startPoint = useElementPoint(labelElement, { x: 1, y: 0.5, offsetX: 6 }, containerElement);
+  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: centerYOffset }, containerElement);
+  const width = containerRect?.width ?? viewport.width;
+  const height = containerRect?.height ?? viewport.height;
 
+  if (!startPoint || !endPoint || width === 0 || height === 0) {
+    return null;
+  }
+
+  const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
@@ -139,160 +318,35 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
-  // Curve offset for spring animation
-  const ox = curveOffset?.x ?? 0;
-  const oy = curveOffset?.y ?? 0;
-
-  const svgTransform = (springTransform || curveOffset) && !buttonElement
-    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.05}px, ${(springTransform?.translateY ?? 0) + oy * 0.08}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.1}deg) skewY(${oy * 0.15}deg)`
-    : undefined;
-
-  const dynamicEndX = dynamicEndpoint?.x;
-  const dynamicEndY = dynamicEndpoint?.y;
-
-  // Use Leva controls for path data (Mid uses dynamic endpoint)
-  const pathData = {
-    small: {
-      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${dynamicEndX ?? controls.small.endX} ${dynamicEndY ?? controls.small.endY}`,
-      startX: controls.small.startX, startY: controls.small.startY,
-      lastCtrlX: controls.small.ctrlX, lastCtrlY: controls.small.ctrlY,
-      endX: dynamicEndX ?? controls.small.endX, endY: dynamicEndY ?? controls.small.endY,
-      angleOffset: controls.small.angleOffset,
-    },
-    mid: {
-      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${controls.mid.ctrlX} ${controls.mid.ctrlY}, ${dynamicEndX ?? controls.mid.endX} ${dynamicEndY ?? controls.mid.endY}`,
-      startX: controls.mid.startX, startY: controls.mid.startY,
-      lastCtrlX: controls.mid.ctrlX, lastCtrlY: controls.mid.ctrlY,
-      endX: dynamicEndX ?? controls.mid.endX, endY: dynamicEndY ?? controls.mid.endY,
-      angleOffset: controls.mid.angleOffset,
-    },
-    tablet: {
-      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${dynamicEndX ?? controls.tablet.endX} ${dynamicEndY ?? controls.tablet.endY}`,
-      startX: controls.tablet.startX, startY: controls.tablet.startY,
-      lastCtrlX: controls.tablet.ctrlX, lastCtrlY: controls.tablet.ctrlY,
-      endX: dynamicEndX ?? controls.tablet.endX, endY: dynamicEndY ?? controls.tablet.endY,
-      angleOffset: controls.tablet.angleOffset,
-    },
-    ipadPro: {
-      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${dynamicEndX ?? controls.ipadPro.endX} ${dynamicEndY ?? controls.ipadPro.endY}`,
-      startX: controls.ipadPro.startX, startY: controls.ipadPro.startY,
-      lastCtrlX: controls.ipadPro.ctrlX, lastCtrlY: controls.ipadPro.ctrlY,
-      endX: dynamicEndX ?? controls.ipadPro.endX, endY: dynamicEndY ?? controls.ipadPro.endY,
-      angleOffset: controls.ipadPro.angleOffset,
-    },
-  };
-
   return (
     <svg
-      ref={svgRef}
-      className="nav-mobile-ethos-arrow h-[160px] w-[120px] md:h-[220px] md:w-[165px]"
-      style={{
-        transform: svgTransform,
-        transformOrigin: 'bottom left',
-        overflow: 'visible',
-      }}
-      viewBox="0 0 120 160"
+      className="nav-mobile-ethos-arrow"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
       fill="none"
     >
-      {/* iPad Pro (1000-1199px) */}
-      <g className="hidden min-[1000px]:max-[1199px]:block">
-        <path
-          d={pathData.ipadPro.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.ipadPro.startX} y={pathData.ipadPro.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.ipadPro.endX}
-          y={pathData.ipadPro.endY}
-          angle={getArrowAngle(pathData.ipadPro.lastCtrlX, pathData.ipadPro.lastCtrlY, pathData.ipadPro.endX, pathData.ipadPro.endY) + pathData.ipadPro.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
-
-      {/* Tablet (700-999px) */}
-      <g className="hidden min-[700px]:max-[999px]:block">
-        <path
-          d={pathData.tablet.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.tablet.startX} y={pathData.tablet.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.tablet.endX}
-          y={pathData.tablet.endY}
-          angle={getArrowAngle(pathData.tablet.lastCtrlX, pathData.tablet.lastCtrlY, pathData.tablet.endX, pathData.tablet.endY) + pathData.tablet.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
-
-      {/* Mid (400-699px) */}
-      <g className="hidden min-[400px]:max-[699px]:block">
-        <path
-          d={pathData.mid.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.mid.startX} y={pathData.mid.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.mid.endX}
-          y={pathData.mid.endY}
-          angle={getArrowAngle(pathData.mid.lastCtrlX, pathData.mid.lastCtrlY, pathData.mid.endX, pathData.mid.endY) + pathData.mid.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
-
-      {/* Small (<400px) */}
-      <g className="hidden max-[399px]:block">
-        <path
-          d={pathData.small.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.small.startX} y={pathData.small.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.small.endX}
-          y={pathData.small.endY}
-          angle={getArrowAngle(pathData.small.lastCtrlX, pathData.small.lastCtrlY, pathData.small.endX, pathData.small.endY) + pathData.small.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
+      <path
+        d={pathData.d}
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        pathLength={1}
+        strokeDasharray="1"
+        style={pathStyle}
+        fill="none"
+        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+      />
+      <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
+      <AnimatedArrowhead
+        size="mobile"
+        x={pathData.end.x}
+        y={pathData.end.y}
+        angle={getArrowAngle(pathData.ctrl.x, pathData.ctrl.y, pathData.end.x, pathData.end.y) + pathData.angleOffset}
+        isVisible={isVisible}
+        delay={arrowheadDelay}
+      />
     </svg>
   );
 };
@@ -301,15 +355,24 @@ export const EthosArrow = ({ isVisible, delay = 300, springTransform, curveOffse
 // CONTACT ARROW - Center, spirals down toward button below
 // ViewBox: 80×120, starts near top (label area), ends pointing down at button
 // =============================================================================
-export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOffset, controlsStore, buttonElement }: ArrowProps) => {
-  // Leva controls for live editing
+export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStore, labelElement, buttonElement, containerElement }: ArrowProps) => {
   const controls = useContactArrowControls(controlsStore);
   const { centerYOffset } = useArrowTargetingControls(controlsStore);
+  const viewport = useViewportSize();
+  const containerRect = useElementRect(containerElement);
+  const breakpoint = getBreakpoint(viewport.width);
+  const template = controls[breakpoint] as ArrowTemplate;
 
-  // Ref for dynamic endpoint calculation
-  const svgRef = useRef<SVGSVGElement>(null);
-  const dynamicEndpoint = useCalculatedEndpoint(svgRef, buttonElement, centerYOffset);
+  const startPoint = useElementPoint(labelElement, { x: 0.5, y: 1, offsetY: 6 }, containerElement);
+  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: centerYOffset }, containerElement);
+  const width = containerRect?.width ?? viewport.width;
+  const height = containerRect?.height ?? viewport.height;
 
+  if (!startPoint || !endPoint || width === 0 || height === 0) {
+    return null;
+  }
+
+  const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
@@ -318,159 +381,35 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
-  const ox = curveOffset?.x ?? 0;
-  const oy = curveOffset?.y ?? 0;
-
-  const svgTransform = (springTransform || curveOffset) && !buttonElement
-    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.06}px, ${(springTransform?.translateY ?? 0) + oy * 0.05}px) rotate(${(springTransform?.rotate ?? 0) - ox * 0.12}deg) skewX(${ox * 0.18}deg)`
-    : undefined;
-
-  const dynamicEndX = dynamicEndpoint?.x;
-  const dynamicEndY = dynamicEndpoint?.y;
-
-  // Use Leva controls for path data (Mid uses dynamic endpoint)
-  const pathData = {
-    small: {
-      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${dynamicEndX ?? controls.small.endX} ${dynamicEndY ?? controls.small.endY}`,
-      startX: controls.small.startX, startY: controls.small.startY,
-      lastCtrlX: controls.small.ctrlX, lastCtrlY: controls.small.ctrlY,
-      endX: dynamicEndX ?? controls.small.endX, endY: dynamicEndY ?? controls.small.endY,
-      angleOffset: controls.small.angleOffset,
-    },
-    mid: {
-      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${controls.mid.ctrlX} ${controls.mid.ctrlY}, ${dynamicEndX ?? controls.mid.endX} ${dynamicEndY ?? controls.mid.endY}`,
-      startX: controls.mid.startX, startY: controls.mid.startY,
-      lastCtrlX: controls.mid.ctrlX, lastCtrlY: controls.mid.ctrlY,
-      endX: dynamicEndX ?? controls.mid.endX, endY: dynamicEndY ?? controls.mid.endY,
-      angleOffset: controls.mid.angleOffset,
-    },
-    tablet: {
-      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${dynamicEndX ?? controls.tablet.endX} ${dynamicEndY ?? controls.tablet.endY}`,
-      startX: controls.tablet.startX, startY: controls.tablet.startY,
-      lastCtrlX: controls.tablet.ctrlX, lastCtrlY: controls.tablet.ctrlY,
-      endX: dynamicEndX ?? controls.tablet.endX, endY: dynamicEndY ?? controls.tablet.endY,
-      angleOffset: controls.tablet.angleOffset,
-    },
-    ipadPro: {
-      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${dynamicEndX ?? controls.ipadPro.endX} ${dynamicEndY ?? controls.ipadPro.endY}`,
-      startX: controls.ipadPro.startX, startY: controls.ipadPro.startY,
-      lastCtrlX: controls.ipadPro.ctrlX, lastCtrlY: controls.ipadPro.ctrlY,
-      endX: dynamicEndX ?? controls.ipadPro.endX, endY: dynamicEndY ?? controls.ipadPro.endY,
-      angleOffset: controls.ipadPro.angleOffset,
-    },
-  };
-
   return (
     <svg
-      ref={svgRef}
-      className="nav-mobile-contact-arrow h-[120px] w-[80px] md:h-[165px] md:w-[110px]"
-      viewBox="0 0 80 120"
+      className="nav-mobile-contact-arrow"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
       fill="none"
-      style={{
-        transform: svgTransform,
-        transformOrigin: 'top center',
-        overflow: 'visible',
-      }}
     >
-      {/* iPad Pro (1000-1199px) */}
-      <g className="hidden min-[1000px]:max-[1199px]:block">
-        <path
-          d={pathData.ipadPro.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.ipadPro.startX} y={pathData.ipadPro.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.ipadPro.endX}
-          y={pathData.ipadPro.endY}
-          angle={getArrowAngle(pathData.ipadPro.lastCtrlX, pathData.ipadPro.lastCtrlY, pathData.ipadPro.endX, pathData.ipadPro.endY) + pathData.ipadPro.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
-
-      {/* Tablet (700-999px) */}
-      <g className="hidden min-[700px]:max-[999px]:block">
-        <path
-          d={pathData.tablet.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.tablet.startX} y={pathData.tablet.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.tablet.endX}
-          y={pathData.tablet.endY}
-          angle={getArrowAngle(pathData.tablet.lastCtrlX, pathData.tablet.lastCtrlY, pathData.tablet.endX, pathData.tablet.endY) + pathData.tablet.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
-
-      {/* Mid (400-699px) */}
-      <g className="hidden min-[400px]:max-[699px]:block">
-        <path
-          d={pathData.mid.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.mid.startX} y={pathData.mid.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.mid.endX}
-          y={pathData.mid.endY}
-          angle={getArrowAngle(pathData.mid.lastCtrlX, pathData.mid.lastCtrlY, pathData.mid.endX, pathData.mid.endY) + pathData.mid.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
-
-      {/* Small (<400px) */}
-      <g className="hidden max-[399px]:block">
-        <path
-          d={pathData.small.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.small.startX} y={pathData.small.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.small.endX}
-          y={pathData.small.endY}
-          angle={getArrowAngle(pathData.small.lastCtrlX, pathData.small.lastCtrlY, pathData.small.endX, pathData.small.endY) + pathData.small.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
+      <path
+        d={pathData.d}
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        pathLength={1}
+        strokeDasharray="1"
+        style={pathStyle}
+        fill="none"
+        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+      />
+      <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
+      <AnimatedArrowhead
+        size="mobile"
+        x={pathData.end.x}
+        y={pathData.end.y}
+        angle={getArrowAngle(pathData.ctrl.x, pathData.ctrl.y, pathData.end.x, pathData.end.y) + pathData.angleOffset}
+        isVisible={isVisible}
+        delay={arrowheadDelay}
+      />
     </svg>
   );
 };
@@ -479,15 +418,24 @@ export const ContactArrow = ({ isVisible, delay = 400, springTransform, curveOff
 // GALLERY ARROW - Right side, waves right toward button
 // ViewBox: 180×110, starts left, loops/waves, ends pointing right at button
 // =============================================================================
-export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOffset, controlsStore, buttonElement }: ArrowProps) => {
-  // Leva controls for live editing
+export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStore, labelElement, buttonElement, containerElement }: ArrowProps) => {
   const controls = useGalleryArrowControls(controlsStore);
   const { centerYOffset } = useArrowTargetingControls(controlsStore);
+  const viewport = useViewportSize();
+  const containerRect = useElementRect(containerElement);
+  const breakpoint = getBreakpoint(viewport.width);
+  const template = controls[breakpoint] as ArrowTemplate;
 
-  // Ref for dynamic endpoint calculation
-  const svgRef = useRef<SVGSVGElement>(null);
-  const dynamicEndpoint = useCalculatedEndpoint(svgRef, buttonElement, centerYOffset);
+  const startPoint = useElementPoint(labelElement, { x: 0, y: 0.5, offsetX: -6 }, containerElement);
+  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: centerYOffset }, containerElement);
+  const width = containerRect?.width ?? viewport.width;
+  const height = containerRect?.height ?? viewport.height;
 
+  if (!startPoint || !endPoint || width === 0 || height === 0) {
+    return null;
+  }
+
+  const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
@@ -496,159 +444,35 @@ export const GalleryArrow = ({ isVisible, delay = 500, springTransform, curveOff
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
-  const ox = curveOffset?.x ?? 0;
-  const oy = curveOffset?.y ?? 0;
-
-  const svgTransform = (springTransform || curveOffset) && !buttonElement
-    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.04}px, ${(springTransform?.translateY ?? 0) + oy * 0.06}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.08}deg) skewY(${-oy * 0.2}deg) scaleX(${1 + Math.abs(ox) * 0.004})`
-    : undefined;
-
-  const dynamicEndX = dynamicEndpoint?.x;
-  const dynamicEndY = dynamicEndpoint?.y;
-
-  // Use Leva controls for path data (Mid uses dynamic endpoint)
-  const pathData = {
-    small: {
-      d: `M ${controls.small.startX} ${controls.small.startY} Q ${controls.small.ctrlX} ${controls.small.ctrlY}, ${dynamicEndX ?? controls.small.endX} ${dynamicEndY ?? controls.small.endY}`,
-      startX: controls.small.startX, startY: controls.small.startY,
-      lastCtrlX: controls.small.ctrlX, lastCtrlY: controls.small.ctrlY,
-      endX: dynamicEndX ?? controls.small.endX, endY: dynamicEndY ?? controls.small.endY,
-      angleOffset: controls.small.angleOffset,
-    },
-    mid: {
-      d: `M ${controls.mid.startX} ${controls.mid.startY} Q ${controls.mid.ctrlX} ${controls.mid.ctrlY}, ${dynamicEndX ?? controls.mid.endX} ${dynamicEndY ?? controls.mid.endY}`,
-      startX: controls.mid.startX, startY: controls.mid.startY,
-      lastCtrlX: controls.mid.ctrlX, lastCtrlY: controls.mid.ctrlY,
-      endX: dynamicEndX ?? controls.mid.endX, endY: dynamicEndY ?? controls.mid.endY,
-      angleOffset: controls.mid.angleOffset,
-    },
-    tablet: {
-      d: `M ${controls.tablet.startX} ${controls.tablet.startY} Q ${controls.tablet.ctrlX} ${controls.tablet.ctrlY}, ${dynamicEndX ?? controls.tablet.endX} ${dynamicEndY ?? controls.tablet.endY}`,
-      startX: controls.tablet.startX, startY: controls.tablet.startY,
-      lastCtrlX: controls.tablet.ctrlX, lastCtrlY: controls.tablet.ctrlY,
-      endX: dynamicEndX ?? controls.tablet.endX, endY: dynamicEndY ?? controls.tablet.endY,
-      angleOffset: controls.tablet.angleOffset,
-    },
-    ipadPro: {
-      d: `M ${controls.ipadPro.startX} ${controls.ipadPro.startY} Q ${controls.ipadPro.ctrlX} ${controls.ipadPro.ctrlY}, ${dynamicEndX ?? controls.ipadPro.endX} ${dynamicEndY ?? controls.ipadPro.endY}`,
-      startX: controls.ipadPro.startX, startY: controls.ipadPro.startY,
-      lastCtrlX: controls.ipadPro.ctrlX, lastCtrlY: controls.ipadPro.ctrlY,
-      endX: dynamicEndX ?? controls.ipadPro.endX, endY: dynamicEndY ?? controls.ipadPro.endY,
-      angleOffset: controls.ipadPro.angleOffset,
-    },
-  };
-
   return (
     <svg
-      ref={svgRef}
-      className="nav-mobile-gallery-arrow h-[110px] w-[180px] md:h-[151px] md:w-[247px]"
-      style={{
-        transform: svgTransform,
-        transformOrigin: 'left center',
-        overflow: 'visible',
-      }}
-      viewBox="0 0 180 110"
+      className="nav-mobile-gallery-arrow"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
       fill="none"
     >
-      {/* iPad Pro (1000-1199px) */}
-      <g className="hidden min-[1000px]:max-[1199px]:block">
-        <path
-          d={pathData.ipadPro.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.ipadPro.startX} y={pathData.ipadPro.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.ipadPro.endX}
-          y={pathData.ipadPro.endY}
-          angle={getArrowAngle(pathData.ipadPro.lastCtrlX, pathData.ipadPro.lastCtrlY, pathData.ipadPro.endX, pathData.ipadPro.endY) + pathData.ipadPro.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
-
-      {/* Tablet (700-999px) */}
-      <g className="hidden min-[700px]:max-[999px]:block">
-        <path
-          d={pathData.tablet.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.tablet.startX} y={pathData.tablet.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.tablet.endX}
-          y={pathData.tablet.endY}
-          angle={getArrowAngle(pathData.tablet.lastCtrlX, pathData.tablet.lastCtrlY, pathData.tablet.endX, pathData.tablet.endY) + pathData.tablet.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
-
-      {/* Mid (400-699px) */}
-      <g className="hidden min-[400px]:max-[699px]:block">
-        <path
-          d={pathData.mid.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.mid.startX} y={pathData.mid.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.mid.endX}
-          y={pathData.mid.endY}
-          angle={getArrowAngle(pathData.mid.lastCtrlX, pathData.mid.lastCtrlY, pathData.mid.endX, pathData.mid.endY) + pathData.mid.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
-
-      {/* Small (<400px) */}
-      <g className="hidden max-[399px]:block">
-        <path
-          d={pathData.small.d}
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray="1"
-          style={pathStyle}
-          fill="none"
-          filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-        />
-        <AnimatedDot x={pathData.small.startX} y={pathData.small.startY} isVisible={isVisible} delay={dotDelay} />
-        <AnimatedArrowhead
-          size="mobile"
-          x={pathData.small.endX}
-          y={pathData.small.endY}
-          angle={getArrowAngle(pathData.small.lastCtrlX, pathData.small.lastCtrlY, pathData.small.endX, pathData.small.endY) + pathData.small.angleOffset}
-          isVisible={isVisible}
-          delay={arrowheadDelay}
-        />
-      </g>
+      <path
+        d={pathData.d}
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        pathLength={1}
+        strokeDasharray="1"
+        style={pathStyle}
+        fill="none"
+        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+      />
+      <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
+      <AnimatedArrowhead
+        size="mobile"
+        x={pathData.end.x}
+        y={pathData.end.y}
+        angle={getArrowAngle(pathData.ctrl.x, pathData.ctrl.y, pathData.end.x, pathData.end.y) + pathData.angleOffset}
+        isVisible={isVisible}
+        delay={arrowheadDelay}
+      />
     </svg>
   );
 };

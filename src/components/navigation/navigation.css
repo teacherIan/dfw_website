@@ -407,56 +407,16 @@
   bottom: var(--nav-mobile-gallery-label-bottom);
 }
 
-/* Mobile Arrows - Responsive positioning
-   Bottom values controlled via CSS variables in variables.css
-   for height-based breakpoint adjustments.
-
-   Height compensation: Buttons use svh units, so they move proportionally
-   with viewport height. Arrows need to compensate for height differences
-   from reference heights (where coordinates were calibrated).
-
-   Reference heights by breakpoint:
-   - Small (<400px): 812px (iPhone SE/mini)
-   - Mid (400-699px): 932px (iPhone 14 Pro Max)
-   - Tablet (700-999px): 1024px
-   - iPad Pro (1000-1199px): 1366px
-
-   Factor = button's svh value (e.g., ethos uses 26svh → 0.26)
-*/
-.nav-mobile-ethos-arrow {
-  position: absolute;
-  pointer-events: none;
-  left: 0%;
-  bottom: calc(var(--arrow-ethos-bottom) + (100svh - var(--arrow-ref-height, 932px)) * 0.26);
-  overflow: visible;
-  /* Compensate for height: button at 26svh, reference 932px for mid breakpoint
-     When viewport is shorter, buttons move UP, so arrows shift UP (negative Y) */
-}
-
-.nav-mobile-contact-arrow {
-  position: absolute;
-  pointer-events: none;
-  left: 43%;
-  bottom: calc(var(--arrow-contact-bottom) + (100svh - var(--arrow-ref-height, 932px)) * 0.05);
-  overflow: visible;
-  /* Contact button near bottom (-0.8svh), minimal compensation needed */
-}
-
+/* Mobile Arrows - Fullscreen overlay (screen coordinates) */
+.nav-mobile-ethos-arrow,
+.nav-mobile-contact-arrow,
 .nav-mobile-gallery-arrow {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  right: 2%;
-  bottom: calc(var(--arrow-gallery-bottom) + (100svh - var(--arrow-ref-height, 932px)) * 0.09);
   overflow: visible;
-  /* Gallery button at 9svh */
-}
-
-/* Small screen adjustments for Contact arrow */
-@media (max-width: 375px) {
-  .nav-mobile-contact-arrow {
-    left: 46%;
-    bottom: 6svh;
-  }
 }
 
 /* ========================================
