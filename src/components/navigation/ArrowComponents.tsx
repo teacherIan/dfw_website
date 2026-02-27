@@ -3,6 +3,8 @@
  * Used by both DesktopArrows and MobileArrows
  */
 
+import { motion } from 'framer-motion';
+
 export interface AnimatedArrowheadProps {
   x: number;
   y: number;
@@ -33,15 +35,15 @@ export const AnimatedArrowhead = ({
   const pathD = isMobile ? 'M-8,-4 L0,0 L-8,4' : 'M-7,-3 L0,0 L-7,3';
   const strokeWidth = isMobile ? 2 : 1.5;
   const shadowOpacity = isMobile ? 0.7 : 0.6;
+  const delaySeconds = delay / 1000;
 
   return (
-    <g
+    <motion.g
       transform={`translate(${x}, ${y}) rotate(${angle})`}
-      style={{
-        opacity: isVisible ? 1 : 0,
-        transition: `opacity 0.3s ease-out ${delay}ms`,
-        willChange: 'transform', // Stabilize Safari's GPU layer compositing for sub-pixel precision
-      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: isVisible ? 1 : 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut', delay: delaySeconds }}
+      style={{ willChange: 'transform' }} // Stabilize Safari's GPU layer compositing for sub-pixel precision
       className={className}
     >
       <path
@@ -53,7 +55,7 @@ export const AnimatedArrowhead = ({
         strokeLinejoin="round"
         filter={`drop-shadow(0 2px 4px rgba(0, 0, 0, ${shadowOpacity}))`}
       />
-    </g>
+    </motion.g>
   );
 };
 
@@ -74,20 +76,23 @@ export const AnimatedDot = ({
   isVisible,
   delay,
   className,
-}: AnimatedDotProps) => (
-  <circle
-    cx={x}
-    cy={y}
-    r="3"
-    fill="white"
-    filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
-    style={{
-      opacity: isVisible ? 1 : 0,
-      transition: `opacity 0.3s ease-out ${delay}ms`,
-    }}
-    className={className}
-  />
-);
+}: AnimatedDotProps) => {
+  const delaySeconds = delay / 1000;
+
+  return (
+    <motion.circle
+      cx={x}
+      cy={y}
+      r="3"
+      fill="white"
+      filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: isVisible ? 1 : 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut', delay: delaySeconds }}
+      className={className}
+    />
+  );
+};
 
 /**
  * Calculate arrowhead rotation angle for quadratic bezier curves

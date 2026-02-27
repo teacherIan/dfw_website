@@ -1,4 +1,5 @@
 import { useLayoutEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useControls, folder } from 'leva';
 import { AnimatedArrowhead, AnimatedDot } from './ArrowComponents';
 import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls } from '../../hooks/useMobileArrowControls';
@@ -310,11 +311,7 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
   }
 
   const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
-  const pathStyle = {
-    strokeDashoffset: isVisible ? 0 : 1,
-    transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
-  };
-
+  const pathDelaySeconds = delay / 1000;
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
@@ -326,17 +323,17 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
       viewBox={`0 0 ${width} ${height}`}
       fill="none"
     >
-      <path
+      <motion.path
         d={pathData.d}
         stroke="white"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        pathLength={1}
-        strokeDasharray="1"
-        style={pathStyle}
         fill="none"
         filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: isVisible ? 1 : 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
       />
       <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
       <AnimatedArrowhead
@@ -373,11 +370,7 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
   }
 
   const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
-  const pathStyle = {
-    strokeDashoffset: isVisible ? 0 : 1,
-    transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
-  };
-
+  const pathDelaySeconds = delay / 1000;
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
@@ -389,17 +382,17 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
       viewBox={`0 0 ${width} ${height}`}
       fill="none"
     >
-      <path
+      <motion.path
         d={pathData.d}
         stroke="white"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        pathLength={1}
-        strokeDasharray="1"
-        style={pathStyle}
         fill="none"
         filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: isVisible ? 1 : 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
       />
       <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
       <AnimatedArrowhead
@@ -436,11 +429,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStor
   }
 
   const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
-  const pathStyle = {
-    strokeDashoffset: isVisible ? 0 : 1,
-    transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
-  };
-
+  const pathDelaySeconds = delay / 1000;
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
 
@@ -452,17 +441,17 @@ export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStor
       viewBox={`0 0 ${width} ${height}`}
       fill="none"
     >
-      <path
+      <motion.path
         d={pathData.d}
         stroke="white"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        pathLength={1}
-        strokeDasharray="1"
-        style={pathStyle}
         fill="none"
         filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: isVisible ? 1 : 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
       />
       <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
       <AnimatedArrowhead
