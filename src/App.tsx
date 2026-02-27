@@ -22,6 +22,7 @@ import EthosOverlay from './components/ethos/EthosOverlay';
 import { GalleryProvider, useGallery } from './contexts/GalleryContext';
 import { DragDisplacementProvider } from './contexts/DragDisplacementContext';
 import { useAnimationStore, useIsContactOverlayOpen } from './stores';
+import { useStandaloneMode } from './hooks';
 import './types/r3f.d';
 
 function AppContent() {
@@ -32,6 +33,9 @@ function AppContent() {
   const arrowControlsStore = useCreateStore();
   const showLeva = import.meta.env.DEV; // Hidden in production
   const showArrowControls = import.meta.env.DEV; // Arrow controls only in dev
+
+  // Detect if running as installed PWA for fullscreen layout
+  const isStandalone = useStandaloneMode();
 
   // Get state and actions from Zustand store
   const {
@@ -197,7 +201,7 @@ function AppContent() {
   }, [animationPhase, targetScene, activeScene, ethosReady]);
 
   return (
-    <div className="relative h-lvh w-screen overflow-hidden bg-[#f8f5ef] text-white">
+    <div className={`relative w-screen overflow-hidden bg-[#f8f5ef] text-white ${isStandalone ? 'h-dvh' : 'h-svh'}`}>
       {/* Loading screen - signals when animation can start */}
       <LoadingScreen
         isReady={streamingStarted}

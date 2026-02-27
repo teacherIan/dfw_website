@@ -1,0 +1,22 @@
+{
+  "name": "Doug's Found Wood",
+  "short_name": "DFW",
+  "description": "Handcrafted furniture by Doug's Found Wood",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f5ef",
+  "theme_color": "#f8f5ef",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/assets/dfw_logo_3d.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/dfw_logo_3d.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

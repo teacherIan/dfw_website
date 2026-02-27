@@ -3,3 +3,4 @@ export { useSceneControls } from './useSceneControls';
 export type { SceneControls } from './useSceneControls';
 export { useArrowUnravel } from './useArrowUnravel';
 export { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls } from './useMobileArrowControls';
+export { useStandaloneMode } from './useStandaloneMode';
