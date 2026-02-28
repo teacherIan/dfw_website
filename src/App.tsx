@@ -10,7 +10,6 @@ import BlueprintGalleryGrid from './components/gallery/BlueprintGalleryGrid';
 import BlueprintPhotoViewer from './components/gallery/BlueprintPhotoViewer';
 import MenuOverlay from './components/navigation/MenuOverlay';
 import BackButton from './components/navigation/BackButton';
-import InstallBanner from './components/InstallBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingScreen from './components/LoadingScreen';
 import {
@@ -23,7 +22,7 @@ import EthosOverlay from './components/ethos/EthosOverlay';
 import { GalleryProvider, useGallery } from './contexts/GalleryContext';
 import { DragDisplacementProvider } from './contexts/DragDisplacementContext';
 import { useAnimationStore, useIsContactOverlayOpen } from './stores';
-import { useStandaloneMode } from './hooks';
+import { useStandaloneMode, useWindowWidth, DESKTOP_BREAKPOINT } from './hooks';
 import './types/r3f.d';
 
 function AppContent() {
@@ -32,11 +31,23 @@ function AppContent() {
 
   const controlsStore = useCreateStore();
   const arrowControlsStore = useCreateStore();
+  const mobileNavStore = useCreateStore();
   const showLeva = import.meta.env.DEV; // Hidden in production
   const showArrowControls = import.meta.env.DEV; // Arrow controls only in dev
 
   // Detect if running as installed PWA for fullscreen layout
   const isStandalone = useStandaloneMode();
+
+  // Detect viewport width for conditional Leva panel visibility
+  const { windowWidth } = useWindowWidth();
+  const isMobileView = windowWidth < DESKTOP_BREAKPOINT;
+
+  // Mobile-specific FOV control (separate from desktop FOV in main controls)
+  const { mobileFov } = useControls({
+    '📷 Camera': folder({
+      mobileFov: { value: 50, min: 20, max: 120, step: 1, label: 'Mobile FOV' },
+    }),
+  }, { store: mobileNavStore });
 
   // Get state and actions from Zustand store
   const {
@@ -214,8 +225,8 @@ function AppContent() {
       <Leva hidden={!showLeva} />
       {showLeva && activeScene !== 'gallery' && <LevaPanel store={controlsStore} />}
 
-      {/* Mobile arrow controls - separate panel for arrow positioning */}
-      {showArrowControls && (
+      {/* Mobile arrow controls - separate panel for arrow positioning (mobile only) */}
+      {showArrowControls && isMobileView && (
         <LevaPanel
           store={arrowControlsStore}
           flat
@@ -226,11 +237,23 @@ function AppContent() {
         />
       )}
 
+      {/* Mobile navigation controls - button/label positions and sizes (mobile only) */}
+      {showLeva && isMobileView && (
+        <LevaPanel
+          store={mobileNavStore}
+          flat
+          titleBar={{ title: 'Mobile Navigation' }}
+          theme={{
+            sizes: { rootWidth: '320px' },
+          }}
+        />
+      )}
+
       {/* Main 3D Canvas - fills lvh, extends under mobile URL bar */}
       <div className="relative z-0 h-full w-full bg-transparent" style={{ touchAction: 'none' }}>
         <ErrorBoundary>
           <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
-            <Scene controlsStore={controlsStore} />
+            <Scene controlsStore={controlsStore} mobileFov={mobileFov} isMobileView={isMobileView} />
           </Canvas>
         </ErrorBoundary>
       </div>
@@ -245,6 +268,7 @@ function AppContent() {
             isExiting={animationPhase === 'exiting'}
             controlsStore={controlsStore}
             arrowControlsStore={arrowControlsStore}
+            mobileNavStore={mobileNavStore}
           />
         )}
         {showOverlays && activeScene === 'home' && !useHandDrawn && (
@@ -306,10 +330,6 @@ function AppContent() {
           )}
         </AnimatePresence>
 
-        {/* Install banner - prompts mobile users to add to home screen */}
-        {activeScene === 'home' && animationPhase === 'idle' && loadingComplete && (
-          <InstallBanner />
-        )}
       </div>
     </div>
   );

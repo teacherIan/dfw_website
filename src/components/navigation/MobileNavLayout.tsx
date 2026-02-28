@@ -11,41 +11,56 @@ import { useAnimationStore, useIsContactOverlayOpen } from '../../stores/animati
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
-// Breakpoint configuration for button and label positions
+// Breakpoint configuration for button positions, label positions, and button sizes
 // Triangular layout: Ethos (bottom-left), Gallery (bottom-right), Contact (center-top apex)
+// All positions use LEFT edge for consistency (galleryLeft: 92 = 8% from right edge)
 // Buttons must be BELOW the "Doug's Found Wood" title
 const BREAKPOINT_CONFIGS = {
   small: {
     name: 'Small (<400px)',
-    buttons: { ethosLeft: 8, ethosBottom: 6, contactLeft: 50, contactBottom: 28, galleryRight: 8, galleryBottom: 6 },
-    labels: { ethosLeft: 3, ethosBottom: 14, contactLeft: 50, contactBottom: 36, galleryRight: 3, galleryBottom: 14 },
+    buttons: { ethosLeft: 8, ethosBottom: 6, contactLeft: 50, contactBottom: 28, galleryLeft: 92, galleryBottom: 6 },
+    labels: { ethosLeft: 3, ethosBottom: 14, contactLeft: 50, contactBottom: 36, galleryLeft: 97, galleryBottom: 14 },
+    sizes: { buttonSize: 80 },
   },
   mid: {
     name: 'Mid (400-699px)',
-    buttons: { ethosLeft: 10, ethosBottom: 6, contactLeft: 50, contactBottom: 28, galleryRight: 10, galleryBottom: 6 },
-    labels: { ethosLeft: 5, ethosBottom: 14, contactLeft: 50, contactBottom: 36, galleryRight: 5, galleryBottom: 14 },
+    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 39, contactBottom: 5, galleryLeft: 83, galleryBottom: 6 },
+    labels: { ethosLeft: 5, ethosBottom: 12, contactLeft: 50, contactBottom: 15, galleryLeft: 67, galleryBottom: 2 },
+    sizes: { buttonSize: 70 },
   },
   tablet: {
     name: 'Tablet (700-999px)',
-    buttons: { ethosLeft: 12, ethosBottom: 7, contactLeft: 50, contactBottom: 30, galleryRight: 12, galleryBottom: 7 },
-    labels: { ethosLeft: 6, ethosBottom: 16, contactLeft: 50, contactBottom: 38, galleryRight: 6, galleryBottom: 16 },
+    buttons: { ethosLeft: 12, ethosBottom: 7, contactLeft: 50, contactBottom: 30, galleryLeft: 88, galleryBottom: 7 },
+    labels: { ethosLeft: 6, ethosBottom: 16, contactLeft: 50, contactBottom: 38, galleryLeft: 94, galleryBottom: 16 },
+    sizes: { buttonSize: 100 },
   },
   ipadPro: {
     name: 'iPad Pro (1000-1199px)',
-    buttons: { ethosLeft: 14, ethosBottom: 7, contactLeft: 50, contactBottom: 30, galleryRight: 14, galleryBottom: 7 },
-    labels: { ethosLeft: 8, ethosBottom: 16, contactLeft: 50, contactBottom: 38, galleryRight: 8, galleryBottom: 16 },
+    buttons: { ethosLeft: 14, ethosBottom: 7, contactLeft: 50, contactBottom: 30, galleryLeft: 86, galleryBottom: 7 },
+    labels: { ethosLeft: 8, ethosBottom: 16, contactLeft: 50, contactBottom: 38, galleryLeft: 92, galleryBottom: 16 },
+    sizes: { buttonSize: 110 },
   },
 } as const;
 
 type BreakpointKey = keyof typeof BREAKPOINT_CONFIGS;
 
+// Position defaults type (all breakpoints have the same shape)
+type PositionDefaults = {
+  ethosLeft: number;
+  ethosBottom: number;
+  contactLeft: number;
+  contactBottom: number;
+  galleryLeft: number;
+  galleryBottom: number;
+};
+
 // Generate Leva control schema for position controls
-const createPositionControls = (defaults: typeof BREAKPOINT_CONFIGS.small.buttons) => ({
+const createPositionControls = (defaults: PositionDefaults) => ({
   ethosLeft: { value: defaults.ethosLeft, min: -50, max: 100, step: 1, label: 'Ethos Left (%)' },
   ethosBottom: { value: defaults.ethosBottom, min: -20, max: 100, step: 1, label: 'Ethos Bottom (svh)' },
   contactLeft: { value: defaults.contactLeft, min: 0, max: 100, step: 1, label: 'Contact Left (%)' },
   contactBottom: { value: defaults.contactBottom, min: -20, max: 100, step: 0.1, label: 'Contact Bottom (svh)' },
-  galleryRight: { value: defaults.galleryRight, min: -50, max: 100, step: 1, label: 'Gallery Right (%)' },
+  galleryLeft: { value: defaults.galleryLeft, min: 0, max: 150, step: 1, label: 'Gallery Left (%)' },
   galleryBottom: { value: defaults.galleryBottom, min: -20, max: 100, step: 1, label: 'Gallery Bottom (svh)' },
 });
 
@@ -53,17 +68,31 @@ const createPositionControls = (defaults: typeof BREAKPOINT_CONFIGS.small.button
 const useBreakpointControls = (
   breakpoint: BreakpointKey,
   type: 'buttons' | 'labels',
-  controlsStore?: LevaStore
+  mobileNavStore?: LevaStore
 ) => {
   const config = BREAKPOINT_CONFIGS[breakpoint];
-  const prefix = type === 'buttons' ? 'Mobile Buttons' : 'Mobile Labels';
+  const prefix = type === 'buttons' ? '📍 Button Positions' : '🏷️ Label Positions';
 
   return useControls({
-    [`🏠 Base.📱 ${prefix}.${config.name}`]: folder(
+    [`${prefix}.${config.name}`]: folder(
       createPositionControls(config[type]),
       { collapsed: true }
     ),
-  }, { store: controlsStore });
+  }, { store: mobileNavStore });
+};
+
+// Hook to get button size controls for a breakpoint
+const useSizeControls = (
+  breakpoint: BreakpointKey,
+  mobileNavStore?: LevaStore
+) => {
+  const config = BREAKPOINT_CONFIGS[breakpoint];
+
+  return useControls({
+    [`📏 Button Sizes.${config.name}`]: folder({
+      buttonSize: { value: config.sizes.buttonSize, min: 40, max: 200, step: 5, label: 'Size (px)' },
+    }, { collapsed: true }),
+  }, { store: mobileNavStore });
 };
 
 interface MobileNavLayoutProps {
@@ -72,6 +101,7 @@ interface MobileNavLayoutProps {
   onNavigate: (scene: SceneId) => void;
   controlsStore?: LevaStore;
   arrowControlsStore?: LevaStore;
+  mobileNavStore?: LevaStore;
 }
 
 // Mobile button with spring rotation
@@ -85,6 +115,7 @@ interface MobileButtonProps {
   onNavigate: (scene: SceneId) => void;
   onClick?: () => void;
   isActive?: boolean;
+  size?: number;
 }
 
 const MobileButton = ({
@@ -97,6 +128,7 @@ const MobileButton = ({
   onNavigate,
   onClick,
   isActive = false,
+  size,
 }: MobileButtonProps) => (
   <span
     style={{
@@ -111,6 +143,7 @@ const MobileButton = ({
       aria-label={`Open ${label}`}
       onClick={onClick ?? (() => onNavigate(scene))}
       ref={buttonRef}
+      style={size ? { width: `${size}px`, height: `${size}px` } : undefined}
     >
       <BlueprintButtonSVG />
       <span className="sr-only">View {label}</span>
@@ -195,8 +228,8 @@ const MobileNavLayout = ({
   font,
   isVisible,
   onNavigate,
-  controlsStore,
   arrowControlsStore,
+  mobileNavStore,
 }: MobileNavLayoutProps) => {
   // Contact toggle state
   const toggleContactOverlay = useAnimationStore((state) => state.toggleContactOverlay);
@@ -233,16 +266,22 @@ const MobileNavLayout = ({
   const galleryLabelElement = useVisibleElement(galleryLabelRefs);
 
   // Button positions for each breakpoint
-  const btnPositionsSmall = useBreakpointControls('small', 'buttons', controlsStore);
-  const btnPositionsMid = useBreakpointControls('mid', 'buttons', controlsStore);
-  const btnPositionsTablet = useBreakpointControls('tablet', 'buttons', controlsStore);
-  const btnPositionsIpadPro = useBreakpointControls('ipadPro', 'buttons', controlsStore);
+  const btnPositionsSmall = useBreakpointControls('small', 'buttons', mobileNavStore);
+  const btnPositionsMid = useBreakpointControls('mid', 'buttons', mobileNavStore);
+  const btnPositionsTablet = useBreakpointControls('tablet', 'buttons', mobileNavStore);
+  const btnPositionsIpadPro = useBreakpointControls('ipadPro', 'buttons', mobileNavStore);
 
   // Label positions for each breakpoint
-  const labelPositionsSmall = useBreakpointControls('small', 'labels', controlsStore);
-  const labelPositionsMid = useBreakpointControls('mid', 'labels', controlsStore);
-  const labelPositionsTablet = useBreakpointControls('tablet', 'labels', controlsStore);
-  const labelPositionsIpadPro = useBreakpointControls('ipadPro', 'labels', controlsStore);
+  const labelPositionsSmall = useBreakpointControls('small', 'labels', mobileNavStore);
+  const labelPositionsMid = useBreakpointControls('mid', 'labels', mobileNavStore);
+  const labelPositionsTablet = useBreakpointControls('tablet', 'labels', mobileNavStore);
+  const labelPositionsIpadPro = useBreakpointControls('ipadPro', 'labels', mobileNavStore);
+
+  // Button sizes for each breakpoint
+  const sizeSmall = useSizeControls('small', mobileNavStore);
+  const sizeMid = useSizeControls('mid', mobileNavStore);
+  const sizeTablet = useSizeControls('tablet', mobileNavStore);
+  const sizeIpadPro = useSizeControls('ipadPro', mobileNavStore);
 
   return (
     <div className="mobile-nav-only" ref={setContainerElement}>
@@ -269,6 +308,7 @@ const MobileNavLayout = ({
             ethosButtonRefs.current[0] = element;
           }}
           onNavigate={onNavigate}
+          size={sizeSmall.buttonSize}
         />
       </div>
 
@@ -291,6 +331,7 @@ const MobileNavLayout = ({
             ethosButtonRefs.current[1] = element;
           }}
           onNavigate={onNavigate}
+          size={sizeMid.buttonSize}
         />
       </div>
 
@@ -313,6 +354,7 @@ const MobileNavLayout = ({
             ethosButtonRefs.current[2] = element;
           }}
           onNavigate={onNavigate}
+          size={sizeTablet.buttonSize}
         />
       </div>
 
@@ -335,6 +377,7 @@ const MobileNavLayout = ({
             ethosButtonRefs.current[3] = element;
           }}
           onNavigate={onNavigate}
+          size={sizeIpadPro.buttonSize}
         />
       </div>
 
@@ -455,6 +498,7 @@ const MobileNavLayout = ({
           onNavigate={onNavigate}
           onClick={toggleContactOverlay}
           isActive={isContactOverlayOpen}
+          size={sizeSmall.buttonSize}
         />
       </div>
 
@@ -479,6 +523,7 @@ const MobileNavLayout = ({
           onNavigate={onNavigate}
           onClick={toggleContactOverlay}
           isActive={isContactOverlayOpen}
+          size={sizeMid.buttonSize}
         />
       </div>
 
@@ -503,6 +548,7 @@ const MobileNavLayout = ({
           onNavigate={onNavigate}
           onClick={toggleContactOverlay}
           isActive={isContactOverlayOpen}
+          size={sizeTablet.buttonSize}
         />
       </div>
 
@@ -527,6 +573,7 @@ const MobileNavLayout = ({
           onNavigate={onNavigate}
           onClick={toggleContactOverlay}
           isActive={isContactOverlayOpen}
+          size={sizeIpadPro.buttonSize}
         />
       </div>
 
@@ -631,7 +678,7 @@ const MobileNavLayout = ({
         className="nav-mobile-gallery-btn hidden max-[399px]:block"
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
-          right: `${btnPositionsSmall.galleryRight}%`,
+          left: `${btnPositionsSmall.galleryLeft}%`,
           bottom: `${btnPositionsSmall.galleryBottom}svh`,
         }}
       >
@@ -645,6 +692,7 @@ const MobileNavLayout = ({
             galleryButtonRefs.current[0] = element;
           }}
           onNavigate={onNavigate}
+          size={sizeSmall.buttonSize}
         />
       </div>
 
@@ -653,7 +701,7 @@ const MobileNavLayout = ({
         className="nav-mobile-gallery-btn hidden min-[400px]:max-[699px]:block"
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
-          right: `${btnPositionsMid.galleryRight}%`,
+          left: `${btnPositionsMid.galleryLeft}%`,
           bottom: `${btnPositionsMid.galleryBottom}svh`,
         }}
       >
@@ -667,6 +715,7 @@ const MobileNavLayout = ({
             galleryButtonRefs.current[1] = element;
           }}
           onNavigate={onNavigate}
+          size={sizeMid.buttonSize}
         />
       </div>
 
@@ -675,7 +724,7 @@ const MobileNavLayout = ({
         className="nav-mobile-gallery-btn hidden min-[700px]:max-[999px]:block"
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
-          right: `${btnPositionsTablet.galleryRight}%`,
+          left: `${btnPositionsTablet.galleryLeft}%`,
           bottom: `${btnPositionsTablet.galleryBottom}svh`,
         }}
       >
@@ -689,6 +738,7 @@ const MobileNavLayout = ({
             galleryButtonRefs.current[2] = element;
           }}
           onNavigate={onNavigate}
+          size={sizeTablet.buttonSize}
         />
       </div>
 
@@ -697,7 +747,7 @@ const MobileNavLayout = ({
         className="nav-mobile-gallery-btn hidden min-[1000px]:max-[1199px]:block"
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
-          right: `${btnPositionsIpadPro.galleryRight}%`,
+          left: `${btnPositionsIpadPro.galleryLeft}%`,
           bottom: `${btnPositionsIpadPro.galleryBottom}svh`,
         }}
       >
@@ -711,6 +761,7 @@ const MobileNavLayout = ({
             galleryButtonRefs.current[3] = element;
           }}
           onNavigate={onNavigate}
+          size={sizeIpadPro.buttonSize}
         />
       </div>
 
@@ -719,7 +770,7 @@ const MobileNavLayout = ({
         className="nav-mobile-gallery-label hidden max-[399px]:block"
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
-          right: `${labelPositionsSmall.galleryRight}%`,
+          left: `${labelPositionsSmall.galleryLeft}%`,
           bottom: `${labelPositionsSmall.galleryBottom}svh`,
         }}
       >
@@ -739,7 +790,7 @@ const MobileNavLayout = ({
         className="nav-mobile-gallery-label hidden min-[400px]:max-[699px]:block"
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
-          right: `${labelPositionsMid.galleryRight}%`,
+          left: `${labelPositionsMid.galleryLeft}%`,
           bottom: `${labelPositionsMid.galleryBottom}svh`,
         }}
       >
@@ -759,7 +810,7 @@ const MobileNavLayout = ({
         className="nav-mobile-gallery-label hidden min-[700px]:max-[999px]:block"
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
-          right: `${labelPositionsTablet.galleryRight}%`,
+          left: `${labelPositionsTablet.galleryLeft}%`,
           bottom: `${labelPositionsTablet.galleryBottom}svh`,
         }}
       >
@@ -779,7 +830,7 @@ const MobileNavLayout = ({
         className="nav-mobile-gallery-label hidden min-[1000px]:max-[1199px]:block"
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
-          right: `${labelPositionsIpadPro.galleryRight}%`,
+          left: `${labelPositionsIpadPro.galleryLeft}%`,
           bottom: `${labelPositionsIpadPro.galleryBottom}svh`,
         }}
       >

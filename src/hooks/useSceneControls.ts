@@ -9,6 +9,7 @@ export interface SceneControls {
   cameraX: number;
   cameraY: number;
   cameraZ: number;
+  fov: number;
   animateCamera: boolean;
   animationDuration: number;
   startX: number;
@@ -171,6 +172,7 @@ export const useSceneControls = ({
     cameraX,
     cameraY,
     cameraZ,
+    fov,
     animateCamera,
     animationDuration,
     startX,
@@ -180,6 +182,7 @@ export const useSceneControls = ({
     swayIntensity,
   } = useControls({
     '🏠 Base.🎥 Camera': folder({
+      fov: { value: 50, min: 20, max: 120, step: 1, label: 'FOV' },
       position: folder({
         cameraX: { value: cameraDefaults.x, min: -10, max: 10, step: 0.1, label: 'X' },
         cameraY: { value: cameraDefaults.y, min: -5, max: 10, step: 0.1, label: 'Y' },
@@ -711,6 +714,7 @@ export const useSceneControls = ({
     cameraX,
     cameraY,
     cameraZ,
+    fov,
     animateCamera,
     animationDuration,
     startX,

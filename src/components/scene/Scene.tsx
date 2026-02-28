@@ -1,7 +1,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo, useRef, useEffect, useLayoutEffect, useCallback, useState } from 'react';
 import { InteractivePresentationControls } from './InteractivePresentationControls';
-import { Euler, Quaternion, Vector3 } from 'three';
+import { Euler, PerspectiveCamera, Quaternion, Vector3 } from 'three';
 import type { SplatMesh as SparkSplatMesh } from '@sparkjsdev/spark';
 import { dyno } from '@sparkjsdev/spark';
 import { easeOutCubic, easeInOutCubic, lerp } from '../../utils';
@@ -15,13 +15,15 @@ type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
 interface SceneProps {
   controlsStore?: LevaStore;
+  mobileFov?: number;
+  isMobileView?: boolean;
 }
 
 /**
  * Scene component for the 3D splat visualization
  * Handles camera controls, splat mesh rendering, entrance and exit animations
  */
-const Scene = ({ controlsStore }: SceneProps) => {
+const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false }: SceneProps) => {
   // Get animation state from Zustand store
   const {
     activeScene,
@@ -230,6 +232,7 @@ const Scene = ({ controlsStore }: SceneProps) => {
     cameraX,
     cameraY,
     cameraZ,
+    fov,
     animateCamera,
     animationDuration,
     startX,
@@ -366,6 +369,14 @@ const Scene = ({ controlsStore }: SceneProps) => {
       camera.position.set(cameraX, cameraY, cameraZ);
     }
   }, [camera, cameraX, cameraY, cameraZ, animateCamera]);
+
+  // Update camera FOV from Leva controls (use mobile or desktop FOV based on viewport)
+  useEffect(() => {
+    if (camera instanceof PerspectiveCamera) {
+      camera.fov = isMobileView ? mobileFov : fov;
+      camera.updateProjectionMatrix();
+    }
+  }, [camera, fov, mobileFov, isMobileView]);
 
   // Memoize SparkRenderer args
   const sparkRendererArgs = useMemo(() => {
