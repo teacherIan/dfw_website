@@ -283,7 +283,6 @@ export const BlueprintGalleryGrid = () => {
           >
             <motion.div
               className={styles.mainFrame}
-              layoutId={`gallery-image-${activeIndex}`}
               onClick={handleImageClick}
               initial={{ opacity: 0.8, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -341,10 +340,19 @@ export const BlueprintGalleryGrid = () => {
             />
 
             {/* Expanded image wrapper - handles centering */}
-            <div className={styles.expandedWrapper} onClick={handleCloseExpanded}>
+            <motion.div
+              className={styles.expandedWrapper}
+              onClick={handleCloseExpanded}
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
               <motion.div
                 className={styles.expandedFrame}
-                layoutId={`gallery-image-${activeIndex}`}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               >
                 <img
@@ -357,7 +365,7 @@ export const BlueprintGalleryGrid = () => {
                 <div className={`${styles.corner} ${styles.cornerBl}`} />
                 <div className={`${styles.corner} ${styles.cornerBr}`} />
               </motion.div>
-            </div>
+            </motion.div>
           </>
         )}
       </AnimatePresence>
