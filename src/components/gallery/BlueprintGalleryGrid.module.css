@@ -155,6 +155,8 @@
   scrollbar-width: none;
   -ms-overflow-style: none;
   max-width: calc(100vw - 48px);
+  touch-action: pan-x; /* Only allow horizontal touch scrolling */
+  overscroll-behavior: contain; /* Prevent scroll chaining */
 }
 
 .thumbnailRow::-webkit-scrollbar {
@@ -413,9 +415,11 @@
     gap: 0;
     justify-content: flex-start;
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    touch-action: pan-x; /* Only allow horizontal touch scrolling */
+    overscroll-behavior: contain; /* Prevent scroll chaining */
   }
 
   .thumbnailContainer::-webkit-scrollbar {
