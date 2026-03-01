@@ -9,6 +9,7 @@
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   overscroll-behavior: contain; /* Prevent scroll chaining to body */
   touch-action: pan-y; /* Allow vertical touch scrolling */
+  pointer-events: auto; /* Re-enable clicks (parent container has pointer-events: none) */
   background: #f8f5ef; /* Newsprint cream */
 }
 

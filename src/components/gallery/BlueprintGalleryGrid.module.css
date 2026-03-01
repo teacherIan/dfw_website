@@ -6,6 +6,7 @@
   z-index: 26;
   background-color: transparent;
   overflow: hidden;
+  pointer-events: auto; /* Re-enable clicks (parent container has pointer-events: none) */
 }
 
 .paper {
@@ -347,14 +348,21 @@
   z-index: 50;
 }
 
-.expandedFrame {
+/* Wrapper handles centering - prevents Framer Motion layout from breaking positioning */
+.expandedWrapper {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  z-index: 51;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  cursor: zoom-out;
+}
+
+.expandedFrame {
   max-width: 90vw;
   max-height: 85vh;
-  z-index: 51;
   border: 1px solid rgba(255, 255, 255, 0.4);
   padding: 16px;
   background: rgba(0, 20, 40, 0.5);
@@ -455,6 +463,21 @@
     padding: 16px;
     max-width: 100%;
   }
+
+  /* Expanded image takes full width on mobile */
+  .expandedWrapper {
+    padding: 8px;
+  }
+
+  .expandedFrame {
+    max-width: calc(100vw - 16px);
+    max-height: calc(100vh - 48px);
+    padding: 8px;
+  }
+
+  .expandedFrame img {
+    max-height: calc(100vh - 64px);
+  }
 }
 
 /* Responsive - 480px (small mobile) */
@@ -480,5 +503,19 @@
 
   .thumbnailContainer {
     padding: 0;
+  }
+
+  /* Expanded image with minimal padding on small screens */
+  .expandedWrapper {
+    padding: 4px;
+  }
+
+  .expandedFrame {
+    max-width: calc(100vw - 8px);
+    padding: 4px;
+  }
+
+  .expandedFrame img {
+    max-height: calc(100vh - 56px);
   }
 }

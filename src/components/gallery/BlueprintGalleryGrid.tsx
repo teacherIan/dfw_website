@@ -340,23 +340,24 @@ export const BlueprintGalleryGrid = () => {
               onClick={handleCloseExpanded}
             />
 
-            {/* Expanded image */}
-            <motion.div
-              className={styles.expandedFrame}
-              layoutId={`gallery-image-${activeIndex}`}
-              onClick={handleCloseExpanded}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            >
-              <img
-                src={activeImage.img}
-                alt={activeImage.name}
-              />
-              {/* Corner marks */}
-              <div className={`${styles.corner} ${styles.cornerTl}`} />
-              <div className={`${styles.corner} ${styles.cornerTr}`} />
-              <div className={`${styles.corner} ${styles.cornerBl}`} />
-              <div className={`${styles.corner} ${styles.cornerBr}`} />
-            </motion.div>
+            {/* Expanded image wrapper - handles centering */}
+            <div className={styles.expandedWrapper} onClick={handleCloseExpanded}>
+              <motion.div
+                className={styles.expandedFrame}
+                layoutId={`gallery-image-${activeIndex}`}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              >
+                <img
+                  src={activeImage.img}
+                  alt={activeImage.name}
+                />
+                {/* Corner marks */}
+                <div className={`${styles.corner} ${styles.cornerTl}`} />
+                <div className={`${styles.corner} ${styles.cornerTr}`} />
+                <div className={`${styles.corner} ${styles.cornerBl}`} />
+                <div className={`${styles.corner} ${styles.cornerBr}`} />
+              </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
