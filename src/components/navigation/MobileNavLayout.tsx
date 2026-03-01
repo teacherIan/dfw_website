@@ -298,7 +298,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsSmall.ethosLeft}%`,
-          bottom: `${btnPositionsSmall.ethosBottom}svh`,
+          bottom: `calc(${btnPositionsSmall.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -321,7 +321,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsMid.ethosLeft}%`,
-          bottom: `${btnPositionsMid.ethosBottom}svh`,
+          bottom: `calc(${btnPositionsMid.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -344,7 +344,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsTablet.ethosLeft}%`,
-          bottom: `${btnPositionsTablet.ethosBottom}svh`,
+          bottom: `calc(${btnPositionsTablet.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -367,7 +367,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
           left: `${btnPositionsIpadPro.ethosLeft}%`,
-          bottom: `${btnPositionsIpadPro.ethosBottom}svh`,
+          bottom: `calc(${btnPositionsIpadPro.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -390,7 +390,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.ETHOS_LABEL),
           left: `${labelPositionsSmall.ethosLeft}%`,
-          bottom: `${labelPositionsSmall.ethosBottom}svh`,
+          bottom: `calc(${labelPositionsSmall.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
@@ -410,7 +410,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.ETHOS_LABEL),
           left: `${labelPositionsMid.ethosLeft}%`,
-          bottom: `${labelPositionsMid.ethosBottom}svh`,
+          bottom: `calc(${labelPositionsMid.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
@@ -430,7 +430,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.ETHOS_LABEL),
           left: `${labelPositionsTablet.ethosLeft}%`,
-          bottom: `${labelPositionsTablet.ethosBottom}svh`,
+          bottom: `calc(${labelPositionsTablet.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
@@ -450,7 +450,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.ETHOS_LABEL),
           left: `${labelPositionsIpadPro.ethosLeft}%`,
-          bottom: `${labelPositionsIpadPro.ethosBottom}svh`,
+          bottom: `calc(${labelPositionsIpadPro.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
@@ -487,7 +487,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsSmall.contactLeft}%`,
-          bottom: `${btnPositionsSmall.contactBottom}svh`,
+          bottom: `calc(${btnPositionsSmall.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -512,7 +512,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsMid.contactLeft}%`,
-          bottom: `${btnPositionsMid.contactBottom}svh`,
+          bottom: `calc(${btnPositionsMid.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -537,7 +537,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsTablet.contactLeft}%`,
-          bottom: `${btnPositionsTablet.contactBottom}svh`,
+          bottom: `calc(${btnPositionsTablet.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -562,7 +562,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
           left: `${btnPositionsIpadPro.contactLeft}%`,
-          bottom: `${btnPositionsIpadPro.contactBottom}svh`,
+          bottom: `calc(${btnPositionsIpadPro.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -587,7 +587,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.CONTACT_LABEL),
           left: `${labelPositionsSmall.contactLeft}%`,
-          bottom: `${labelPositionsSmall.contactBottom}svh`,
+          bottom: `calc(${labelPositionsSmall.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
@@ -607,7 +607,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.CONTACT_LABEL),
           left: `${labelPositionsMid.contactLeft}%`,
-          bottom: `${labelPositionsMid.contactBottom}svh`,
+          bottom: `calc(${labelPositionsMid.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
@@ -627,7 +627,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.CONTACT_LABEL),
           left: `${labelPositionsTablet.contactLeft}%`,
-          bottom: `${labelPositionsTablet.contactBottom}svh`,
+          bottom: `calc(${labelPositionsTablet.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
@@ -647,7 +647,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.CONTACT_LABEL),
           left: `${labelPositionsIpadPro.contactLeft}%`,
-          bottom: `${labelPositionsIpadPro.contactBottom}svh`,
+          bottom: `calc(${labelPositionsIpadPro.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
@@ -684,7 +684,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           left: `${btnPositionsSmall.galleryLeft}%`,
-          bottom: `${btnPositionsSmall.galleryBottom}svh`,
+          bottom: `calc(${btnPositionsSmall.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -707,7 +707,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           left: `${btnPositionsMid.galleryLeft}%`,
-          bottom: `${btnPositionsMid.galleryBottom}svh`,
+          bottom: `calc(${btnPositionsMid.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -730,7 +730,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           left: `${btnPositionsTablet.galleryLeft}%`,
-          bottom: `${btnPositionsTablet.galleryBottom}svh`,
+          bottom: `calc(${btnPositionsTablet.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -753,7 +753,7 @@ const MobileNavLayout = ({
         style={{
           ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
           left: `${btnPositionsIpadPro.galleryLeft}%`,
-          bottom: `${btnPositionsIpadPro.galleryBottom}svh`,
+          bottom: `calc(${btnPositionsIpadPro.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileButton
@@ -776,7 +776,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
           left: `${labelPositionsSmall.galleryLeft}%`,
-          bottom: `${labelPositionsSmall.galleryBottom}svh`,
+          bottom: `calc(${labelPositionsSmall.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
@@ -796,7 +796,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
           left: `${labelPositionsMid.galleryLeft}%`,
-          bottom: `${labelPositionsMid.galleryBottom}svh`,
+          bottom: `calc(${labelPositionsMid.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
@@ -816,7 +816,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
           left: `${labelPositionsTablet.galleryLeft}%`,
-          bottom: `${labelPositionsTablet.galleryBottom}svh`,
+          bottom: `calc(${labelPositionsTablet.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
@@ -836,7 +836,7 @@ const MobileNavLayout = ({
         style={{
           ...createFadeSlideStyle(isVisible, 'y', '20px', MOBILE_NAV_DELAYS.GALLERY_LABEL),
           left: `${labelPositionsIpadPro.galleryLeft}%`,
-          bottom: `${labelPositionsIpadPro.galleryBottom}svh`,
+          bottom: `calc(${labelPositionsIpadPro.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         <MobileLabel
