@@ -22,7 +22,8 @@ import EthosOverlay from './components/ethos/EthosOverlay';
 import { GalleryProvider, useGallery } from './contexts/GalleryContext';
 import { DragDisplacementProvider } from './contexts/DragDisplacementContext';
 import { useAnimationStore, useIsContactOverlayOpen } from './stores';
-import { useStandaloneMode, useWindowWidth, DESKTOP_BREAKPOINT } from './hooks';
+import { useStandaloneMode, useWindowWidth, DESKTOP_BREAKPOINT, useArrowEffectsControls } from './hooks';
+import { ArrowFilterDefs } from './components/navigation/ArrowFilters';
 import './types/r3f.d';
 
 function AppContent() {
@@ -48,6 +49,9 @@ function AppContent() {
       mobileFov: { value: 50, min: 20, max: 120, step: 1, label: 'Mobile FOV' },
     }),
   }, { store: mobileNavStore });
+
+  // Arrow woodworker-style effects controls
+  const arrowEffectsConfig = useArrowEffectsControls(controlsStore);
 
   // Get state and actions from Zustand store
   const {
@@ -214,6 +218,9 @@ function AppContent() {
 
   return (
     <div className={`relative w-screen overflow-hidden bg-[#f8f5ef] text-white ${isStandalone ? 'h-dvh' : 'h-svh'}`}>
+      {/* SVG filter definitions for arrow woodworker effects */}
+      <ArrowFilterDefs config={arrowEffectsConfig} />
+
       {/* Loading screen - signals when animation can start */}
       <LoadingScreen
         isReady={streamingStarted}
@@ -269,6 +276,7 @@ function AppContent() {
             controlsStore={controlsStore}
             arrowControlsStore={arrowControlsStore}
             mobileNavStore={mobileNavStore}
+            arrowEffectsConfig={arrowEffectsConfig}
           />
         )}
         {showOverlays && activeScene === 'home' && !useHandDrawn && (

@@ -5,6 +5,31 @@
 
 import { motion } from 'framer-motion';
 
+export type ArrowheadStyle = 'standard' | 'layout' | 'simple';
+
+/**
+ * Arrowhead path definitions for different styles
+ * - standard: Classic angled arrowhead (current design)
+ * - layout: Simpler, more utilitarian carpenter-style
+ * - simple: Minimal, just a short perpendicular line
+ */
+const ARROWHEAD_PATHS: Record<ArrowheadStyle, { mobile: string; desktop: string }> = {
+  standard: {
+    mobile: 'M-8,-4 L0,0 L-8,4',
+    desktop: 'M-7,-3 L0,0 L-7,3',
+  },
+  layout: {
+    // Shallower angle, more utilitarian
+    mobile: 'M-6,-3 L0,0 L-6,3',
+    desktop: 'M-5,-2.5 L0,0 L-5,2.5',
+  },
+  simple: {
+    // Just a short perpendicular tick mark
+    mobile: 'M0,-4 L0,4',
+    desktop: 'M0,-3 L0,3',
+  },
+};
+
 export interface AnimatedArrowheadProps {
   x: number;
   y: number;
@@ -13,6 +38,8 @@ export interface AnimatedArrowheadProps {
   delay: number;
   className?: string;
   size?: 'desktop' | 'mobile';
+  /** Arrowhead style variant */
+  style?: ArrowheadStyle;
 }
 
 /**
@@ -27,12 +54,12 @@ export const AnimatedArrowhead = ({
   delay,
   className,
   size = 'desktop',
+  style = 'standard',
 }: AnimatedArrowheadProps) => {
   const isMobile = size === 'mobile';
-  // Path endpoints pulled back by strokeWidth/2 to compensate for round linecap extension
-  // This ensures the visual tip lands at the transform origin (0,0) rather than extending past it
-  // Mobile: strokeWidth=2 → pull back 1px; Desktop: strokeWidth=1.5 → pull back 0.75px
-  const pathD = isMobile ? 'M-8,-4 L0,0 L-8,4' : 'M-7,-3 L0,0 L-7,3';
+  // Get path for the selected style and size
+  const paths = ARROWHEAD_PATHS[style];
+  const pathD = isMobile ? paths.mobile : paths.desktop;
   const strokeWidth = isMobile ? 2 : 1.5;
   const shadowOpacity = isMobile ? 0.7 : 0.6;
   const delaySeconds = delay / 1000;

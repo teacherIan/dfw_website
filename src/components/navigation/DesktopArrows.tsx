@@ -1,4 +1,6 @@
 import { AnimatedArrowhead } from './ArrowComponents';
+import { getArrowFilterUrl, defaultArrowEffectsConfig } from './ArrowFilters';
+import type { ArrowEffectsConfig } from './ArrowFilters';
 
 interface SpringTransform {
   rotate: number;
@@ -20,6 +22,7 @@ interface ArrowProps {
   delay?: number;
   springTransform?: SpringTransform;
   curveOffset?: CurveOffset;
+  effectsConfig?: ArrowEffectsConfig;
 }
 
 // 1. LOOP ARROW (Top)
@@ -29,7 +32,11 @@ export const LoopArrow = ({
   delay = 0,
   springTransform,
   curveOffset,
+  effectsConfig,
 }: ArrowProps) => {
+  const config = effectsConfig ?? defaultArrowEffectsConfig;
+  const filterUrl = getArrowFilterUrl(config);
+
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
@@ -80,7 +87,7 @@ export const LoopArrow = ({
         style={pathStyle}
         fill="none"
         opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
+        filter={filterUrl}
       />
       <AnimatedArrowhead
         x={endX}
@@ -88,6 +95,7 @@ export const LoopArrow = ({
         angle={arrowAngle}
         isVisible={isVisible}
         delay={arrowheadDelay}
+        style={config.arrowheadStyle}
       />
     </svg>
   );
@@ -100,7 +108,11 @@ export const SpiralArrow = ({
   delay = 0,
   springTransform,
   curveOffset,
+  effectsConfig,
 }: ArrowProps) => {
+  const config = effectsConfig ?? defaultArrowEffectsConfig;
+  const filterUrl = getArrowFilterUrl(config);
+
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
@@ -148,7 +160,7 @@ export const SpiralArrow = ({
         style={pathStyle}
         fill="none"
         opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
+        filter={filterUrl}
       />
       <AnimatedArrowhead
         x={endX}
@@ -156,6 +168,7 @@ export const SpiralArrow = ({
         angle={arrowAngle}
         isVisible={isVisible}
         delay={arrowheadDelay}
+        style={config.arrowheadStyle}
       />
     </svg>
   );
@@ -168,7 +181,11 @@ export const WaveArrow = ({
   delay = 0,
   springTransform,
   curveOffset,
+  effectsConfig,
 }: ArrowProps) => {
+  const config = effectsConfig ?? defaultArrowEffectsConfig;
+  const filterUrl = getArrowFilterUrl(config);
+
   const pathStyle = {
     strokeDashoffset: isVisible ? 0 : 1,
     transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
@@ -213,7 +230,7 @@ export const WaveArrow = ({
         style={pathStyle}
         fill="none"
         opacity="0.95"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6))"
+        filter={filterUrl}
       />
       <AnimatedArrowhead
         x={endX}
@@ -221,6 +238,7 @@ export const WaveArrow = ({
         angle={arrowAngle}
         isVisible={isVisible}
         delay={arrowheadDelay}
+        style={config.arrowheadStyle}
       />
     </svg>
   );

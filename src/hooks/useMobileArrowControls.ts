@@ -13,25 +13,25 @@ interface ArrowPathData {
 }
 
 
-// Default values from the current MobileArrows.tsx
+// Default values - all breakpoints start with mid values, adjust tablet/ipadPro as needed
 const ARROW_DEFAULTS = {
   ethos: {
-    small: { startX: 118, startY: 90, ctrlX: 60, ctrlY: 60, endX: 77, endY: 11, angleOffset: 0 },
+    small: { startX: -46, startY: 18, ctrlX: -66, ctrlY: -100, endX: 148, endY: -85, angleOffset: -4 },
     mid: { startX: -46, startY: 18, ctrlX: -66, ctrlY: -100, endX: 148, endY: -85, angleOffset: -4 },
-    tablet: { startX: 110, startY: 135, ctrlX: 70, ctrlY: 55, endX: 102, endY: 2, angleOffset: 0 },
-    ipadPro: { startX: 115, startY: 130, ctrlX: 65, ctrlY: 40, endX: 85, endY: -25, angleOffset: 0 },
+    tablet: { startX: -46, startY: 18, ctrlX: -66, ctrlY: -100, endX: 148, endY: -85, angleOffset: -4 },
+    ipadPro: { startX: -46, startY: 18, ctrlX: -66, ctrlY: -100, endX: 148, endY: -85, angleOffset: -4 },
   },
   contact: {
-    small: { startX: 65, startY: 10, ctrlX: 55, ctrlY: 85, endX: 36, endY: 165, angleOffset: 0 },
+    small: { startX: -13, startY: -11, ctrlX: -100, ctrlY: 70, endX: 6, endY: 103, angleOffset: 0 },
     mid: { startX: -13, startY: -11, ctrlX: -100, ctrlY: 70, endX: 6, endY: 103, angleOffset: 0 },
-    tablet: { startX: 70, startY: 0, ctrlX: 50, ctrlY: 70, endX: 23, endY: 150, angleOffset: 0 },
-    ipadPro: { startX: 75, startY: 0, ctrlX: 55, ctrlY: 70, endX: 32, endY: 150, angleOffset: 0 },
+    tablet: { startX: -13, startY: -11, ctrlX: -100, ctrlY: 70, endX: 6, endY: 103, angleOffset: 0 },
+    ipadPro: { startX: -13, startY: -11, ctrlX: -100, ctrlY: 70, endX: 6, endY: 103, angleOffset: 0 },
   },
   gallery: {
-    small: { startX: 20, startY: 95, ctrlX: 90, ctrlY: 75, endX: 180, endY: 42, angleOffset: 0 },
+    small: { startX: 63, startY: 100, ctrlX: -10, ctrlY: 79, endX: 131, endY: -10, angleOffset: 0 },
     mid: { startX: 63, startY: 100, ctrlX: -10, ctrlY: 79, endX: 131, endY: -10, angleOffset: 0 },
-    tablet: { startX: 5, startY: 95, ctrlX: 90, ctrlY: 65, endX: 187, endY: 48, angleOffset: 0 },
-    ipadPro: { startX: 0, startY: 90, ctrlX: 85, ctrlY: 55, endX: 178, endY: 30, angleOffset: 0 },
+    tablet: { startX: 63, startY: 100, ctrlX: -10, ctrlY: 79, endX: 131, endY: -10, angleOffset: 0 },
+    ipadPro: { startX: 63, startY: 100, ctrlX: -10, ctrlY: 79, endX: 131, endY: -10, angleOffset: 0 },
   },
 };
 

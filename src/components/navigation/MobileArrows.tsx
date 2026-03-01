@@ -2,6 +2,10 @@ import { useLayoutEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useControls, folder } from 'leva';
 import { AnimatedArrowhead, AnimatedDot } from './ArrowComponents';
+import HashMarks from './HashMarks';
+import ScribeMarks from './ScribeMarks';
+import { getArrowFilterUrl, defaultArrowEffectsConfig } from './ArrowFilters';
+import type { ArrowEffectsConfig } from './ArrowFilters';
 import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls } from '../../hooks/useMobileArrowControls';
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
@@ -143,7 +147,7 @@ const useElementPoint = (
       viewport?.removeEventListener('scroll', update);
       resizeObserver?.disconnect();
     };
-  }, [element, originElement]);
+  }, [element, originElement, anchor.x, anchor.y, anchor.offsetX, anchor.offsetY]);
 
   // Compute point directly during render - responds immediately to anchor changes
   if (!element) return null;
@@ -234,6 +238,8 @@ interface ArrowProps {
   labelElement?: HTMLElement | null;
   buttonElement?: HTMLElement | null;
   containerElement?: HTMLElement | null;
+  // Woodworker-style effects configuration
+  effectsConfig?: ArrowEffectsConfig;
 }
 
 /**
@@ -325,7 +331,7 @@ const buildMappedPath = (
 // ETHOS ARROW - Left side, loops up-left toward button
 // ViewBox: 120×160, starts near label (bottom-right), ends pointing at button (upper-left)
 // =============================================================================
-export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore, labelElement, buttonElement, containerElement }: ArrowProps) => {
+export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore, labelElement, buttonElement, containerElement, effectsConfig }: ArrowProps) => {
   const controls = useEthosArrowControls(controlsStore);
   const { endYOffset } = useArrowEndControls(controlsStore);
   const { ethosStartX, ethosStartY, ethosOffsetX, ethosOffsetY } = useEthosStartControls(controlsStore);
@@ -336,7 +342,8 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
 
   const startPoint = useElementPoint(labelElement, { x: ethosStartX, y: ethosStartY, offsetX: ethosOffsetX, offsetY: ethosOffsetY }, containerElement);
   const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: endYOffset }, containerElement);
-  // Use || to fall back on 0 values, not just null/undefined
+  // IMPORTANT: Use || not ?? here. Container may have height=0 before layout completes.
+  // ?? only falls back on null/undefined, but || also falls back on 0.
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
 
@@ -348,6 +355,8 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
   const pathDelaySeconds = delay / 1000;
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
+  const config = effectsConfig ?? defaultArrowEffectsConfig;
+  const filterUrl = getArrowFilterUrl(config);
 
   return (
     <svg
@@ -364,11 +373,36 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+        filter={filterUrl}
         initial={{ pathLength: 0 }}
         animate={{ pathLength: isVisible ? 1 : 0 }}
         transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
       />
+      {/* Hash marks - small perpendicular lines */}
+      {config.enabled && config.hashEnabled && (
+        <HashMarks
+          pathData={pathData.d}
+          density={config.hashDensity}
+          length={config.hashLength}
+          spacing={config.hashSpacing}
+          opacity={config.hashOpacity}
+          isVisible={isVisible}
+          delay={delay + 200}
+          seed={42}
+        />
+      )}
+      {/* Scribe marks - thin parallel lines */}
+      {config.enabled && config.scribeEnabled && (
+        <ScribeMarks
+          pathData={pathData.d}
+          offset={config.scribeOffset}
+          strokeWidth={config.scribeWidth}
+          dashPattern={config.scribeDash}
+          opacity={config.scribeOpacity}
+          isVisible={isVisible}
+          delay={delay + 100}
+        />
+      )}
       <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
       <AnimatedArrowhead
         size="mobile"
@@ -377,6 +411,7 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
         angle={getArrowAngle(pathData.ctrl.x, pathData.ctrl.y, pathData.end.x, pathData.end.y) + pathData.angleOffset}
         isVisible={isVisible}
         delay={arrowheadDelay}
+        style={config.arrowheadStyle}
       />
     </svg>
   );
@@ -386,7 +421,7 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
 // CONTACT ARROW - Center, spirals down toward button below
 // ViewBox: 80×120, starts near top (label area), ends pointing down at button
 // =============================================================================
-export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStore, labelElement, buttonElement, containerElement }: ArrowProps) => {
+export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStore, labelElement, buttonElement, containerElement, effectsConfig }: ArrowProps) => {
   const controls = useContactArrowControls(controlsStore);
   const { endYOffset } = useArrowEndControls(controlsStore);
   const { contactStartX, contactStartY, contactOffsetX, contactOffsetY } = useContactStartControls(controlsStore);
@@ -397,7 +432,8 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
 
   const startPoint = useElementPoint(labelElement, { x: contactStartX, y: contactStartY, offsetX: contactOffsetX, offsetY: contactOffsetY }, containerElement);
   const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: endYOffset }, containerElement);
-  // Use || to fall back on 0 values, not just null/undefined
+  // IMPORTANT: Use || not ?? here. Container may have height=0 before layout completes.
+  // ?? only falls back on null/undefined, but || also falls back on 0.
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
 
@@ -409,6 +445,8 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
   const pathDelaySeconds = delay / 1000;
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
+  const config = effectsConfig ?? defaultArrowEffectsConfig;
+  const filterUrl = getArrowFilterUrl(config);
 
   return (
     <svg
@@ -425,11 +463,36 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+        filter={filterUrl}
         initial={{ pathLength: 0 }}
         animate={{ pathLength: isVisible ? 1 : 0 }}
         transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
       />
+      {/* Hash marks - small perpendicular lines */}
+      {config.enabled && config.hashEnabled && (
+        <HashMarks
+          pathData={pathData.d}
+          density={config.hashDensity}
+          length={config.hashLength}
+          spacing={config.hashSpacing}
+          opacity={config.hashOpacity}
+          isVisible={isVisible}
+          delay={delay + 200}
+          seed={84}
+        />
+      )}
+      {/* Scribe marks - thin parallel lines */}
+      {config.enabled && config.scribeEnabled && (
+        <ScribeMarks
+          pathData={pathData.d}
+          offset={config.scribeOffset}
+          strokeWidth={config.scribeWidth}
+          dashPattern={config.scribeDash}
+          opacity={config.scribeOpacity}
+          isVisible={isVisible}
+          delay={delay + 100}
+        />
+      )}
       <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
       <AnimatedArrowhead
         size="mobile"
@@ -438,6 +501,7 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
         angle={getArrowAngle(pathData.ctrl.x, pathData.ctrl.y, pathData.end.x, pathData.end.y) + pathData.angleOffset}
         isVisible={isVisible}
         delay={arrowheadDelay}
+        style={config.arrowheadStyle}
       />
     </svg>
   );
@@ -447,7 +511,7 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
 // GALLERY ARROW - Right side, waves right toward button
 // ViewBox: 180×110, starts left, loops/waves, ends pointing right at button
 // =============================================================================
-export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStore, labelElement, buttonElement, containerElement }: ArrowProps) => {
+export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStore, labelElement, buttonElement, containerElement, effectsConfig }: ArrowProps) => {
   const controls = useGalleryArrowControls(controlsStore);
   const { endYOffset } = useArrowEndControls(controlsStore);
   const { galleryStartX, galleryStartY, galleryOffsetX, galleryOffsetY } = useGalleryStartControls(controlsStore);
@@ -458,7 +522,8 @@ export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStor
 
   const startPoint = useElementPoint(labelElement, { x: galleryStartX, y: galleryStartY, offsetX: galleryOffsetX, offsetY: galleryOffsetY }, containerElement);
   const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: endYOffset }, containerElement);
-  // Use || to fall back on 0 values, not just null/undefined
+  // IMPORTANT: Use || not ?? here. Container may have height=0 before layout completes.
+  // ?? only falls back on null/undefined, but || also falls back on 0.
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
 
@@ -470,6 +535,8 @@ export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStor
   const pathDelaySeconds = delay / 1000;
   const dotDelay = delay;
   const arrowheadDelay = delay + 500;
+  const config = effectsConfig ?? defaultArrowEffectsConfig;
+  const filterUrl = getArrowFilterUrl(config);
 
   return (
     <svg
@@ -486,11 +553,36 @@ export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStor
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
-        filter="drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))"
+        filter={filterUrl}
         initial={{ pathLength: 0 }}
         animate={{ pathLength: isVisible ? 1 : 0 }}
         transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
       />
+      {/* Hash marks - small perpendicular lines */}
+      {config.enabled && config.hashEnabled && (
+        <HashMarks
+          pathData={pathData.d}
+          density={config.hashDensity}
+          length={config.hashLength}
+          spacing={config.hashSpacing}
+          opacity={config.hashOpacity}
+          isVisible={isVisible}
+          delay={delay + 200}
+          seed={126}
+        />
+      )}
+      {/* Scribe marks - thin parallel lines */}
+      {config.enabled && config.scribeEnabled && (
+        <ScribeMarks
+          pathData={pathData.d}
+          offset={config.scribeOffset}
+          strokeWidth={config.scribeWidth}
+          dashPattern={config.scribeDash}
+          opacity={config.scribeOpacity}
+          isVisible={isVisible}
+          delay={delay + 100}
+        />
+      )}
       <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
       <AnimatedArrowhead
         size="mobile"
@@ -499,6 +591,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStor
         angle={getArrowAngle(pathData.ctrl.x, pathData.ctrl.y, pathData.end.x, pathData.end.y) + pathData.angleOffset}
         isVisible={isVisible}
         delay={arrowheadDelay}
+        style={config.arrowheadStyle}
       />
     </svg>
   );

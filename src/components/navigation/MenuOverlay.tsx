@@ -6,6 +6,7 @@ import { LoopArrow, SpiralArrow, WaveArrow } from './DesktopArrows';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
 import { ANIMATION_TIMING, navItems, fontOptions, fontFamilyMap } from '../../constants';
 import type { ArrowType, SceneId } from '../../constants';
+import type { ArrowEffectsConfig } from './ArrowFilters';
 import { useWindowWidth, useArrowUnravel } from '../../hooks';
 import { useAnimationStore, useIsContactOverlayOpen } from '../../stores/animationStore';
 
@@ -18,6 +19,7 @@ interface MenuOverlayProps {
   controlsStore?: LevaStore;
   arrowControlsStore?: LevaStore;
   mobileNavStore?: LevaStore;
+  arrowEffectsConfig?: ArrowEffectsConfig;
 }
 
 // Arrow component mapping for desktop navigation
@@ -41,6 +43,7 @@ const BlueprintButton = ({
   onNavigate,
   onClick,
   isActive = false,
+  effectsConfig,
 }: {
   label: string;
   sceneId: SceneId;
@@ -52,6 +55,7 @@ const BlueprintButton = ({
   onNavigate: (scene: SceneId) => void;
   onClick?: () => void;
   isActive?: boolean;
+  effectsConfig?: ArrowEffectsConfig;
 }) => {
   const ArrowComponent = ArrowComponents[arrowType];
 
@@ -103,6 +107,7 @@ const BlueprintButton = ({
           delay={arrowDelay}
           springTransform={hasCompletedInitialAnimation ? transform : undefined}
           curveOffset={hasCompletedInitialAnimation ? curveOffset : undefined}
+          effectsConfig={effectsConfig}
         />
       </span>
 
@@ -143,6 +148,7 @@ const MenuOverlay = ({
   controlsStore,
   arrowControlsStore,
   mobileNavStore,
+  arrowEffectsConfig,
 }: MenuOverlayProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
@@ -229,6 +235,7 @@ const MenuOverlay = ({
           controlsStore={controlsStore}
           arrowControlsStore={arrowControlsStore}
           mobileNavStore={mobileNavStore}
+          arrowEffectsConfig={arrowEffectsConfig}
         />
       </div>
 
@@ -259,6 +266,7 @@ const MenuOverlay = ({
               onNavigate={onNavigate}
               onClick={item.id === 'contact' ? toggleContactOverlay : undefined}
               isActive={item.id === 'contact' && isContactOverlayOpen}
+              effectsConfig={arrowEffectsConfig}
             />
           ))}
         </div>

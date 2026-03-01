@@ -3,6 +3,7 @@ import { useControls, folder } from 'leva';
 import { EthosArrow, ContactArrow, GalleryArrow } from './MobileArrows';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
 import NavLabel from './NavLabel';
+import type { ArrowEffectsConfig } from './ArrowFilters';
 import { createFadeSlideStyle, createPopInStyle, createPopInCenteredStyle } from '../../utils/styles';
 import { MOBILE_NAV_DELAYS } from '../../constants/animation';
 import type { SceneId } from '../../constants';
@@ -18,14 +19,14 @@ type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 const BREAKPOINT_CONFIGS = {
   small: {
     name: 'Small (<400px)',
-    buttons: { ethosLeft: 8, ethosBottom: 6, contactLeft: 50, contactBottom: 28, galleryLeft: 92, galleryBottom: 6 },
-    labels: { ethosLeft: 3, ethosBottom: 14, contactLeft: 50, contactBottom: 36, galleryLeft: 97, galleryBottom: 14 },
-    sizes: { buttonSize: 80 },
+    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 6.5, galleryLeft: 82, galleryBottom: 10 },
+    labels: { ethosLeft: 20, ethosBottom: 14, contactLeft: 44, contactBottom: 15, galleryLeft: 67, galleryBottom: 1 },
+    sizes: { buttonSize: 70 },
   },
   mid: {
     name: 'Mid (400-699px)',
-    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 39, contactBottom: 5, galleryLeft: 83, galleryBottom: 6 },
-    labels: { ethosLeft: 5, ethosBottom: 12, contactLeft: 50, contactBottom: 15, galleryLeft: 67, galleryBottom: 2 },
+    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 6.5, galleryLeft: 82, galleryBottom: 10 },
+    labels: { ethosLeft: 20, ethosBottom: 14, contactLeft: 44, contactBottom: 15, galleryLeft: 67, galleryBottom: 1 },
     sizes: { buttonSize: 70 },
   },
   tablet: {
@@ -102,6 +103,7 @@ interface MobileNavLayoutProps {
   controlsStore?: LevaStore;
   arrowControlsStore?: LevaStore;
   mobileNavStore?: LevaStore;
+  arrowEffectsConfig?: ArrowEffectsConfig;
 }
 
 // Mobile button with spring rotation
@@ -218,7 +220,7 @@ const useVisibleElement = <T extends HTMLElement>(elementsRef: MutableRefObject<
       window.removeEventListener('resize', update);
       window.removeEventListener('orientationchange', update);
     };
-  }, [elementsRef]);
+  }, []); // Empty deps - only need to set up listeners once
 
   // Compute visible element on every render - more reliable than storing in state
   return findVisibleElement(elementsRef.current);
@@ -230,6 +232,7 @@ const MobileNavLayout = ({
   onNavigate,
   arrowControlsStore,
   mobileNavStore,
+  arrowEffectsConfig,
 }: MobileNavLayoutProps) => {
   // Contact toggle state
   const toggleContactOverlay = useAnimationStore((state) => state.toggleContactOverlay);
@@ -471,6 +474,7 @@ const MobileNavLayout = ({
         labelElement={ethosLabelElement}
         buttonElement={ethosButtonElement}
         containerElement={containerElement}
+        effectsConfig={arrowEffectsConfig}
       />
 
       {/* ============================================
@@ -667,6 +671,7 @@ const MobileNavLayout = ({
         labelElement={contactLabelElement}
         buttonElement={contactButtonElement}
         containerElement={containerElement}
+        effectsConfig={arrowEffectsConfig}
       />
 
       {/* ============================================
@@ -855,6 +860,7 @@ const MobileNavLayout = ({
         labelElement={galleryLabelElement}
         buttonElement={galleryButtonElement}
         containerElement={containerElement}
+        effectsConfig={arrowEffectsConfig}
       />
     </div>
   );
