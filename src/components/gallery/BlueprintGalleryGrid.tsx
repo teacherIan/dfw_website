@@ -350,6 +350,7 @@ export const BlueprintGalleryGrid = () => {
             >
               <motion.div
                 className={styles.expandedFrame}
+                onClick={(e) => e.stopPropagation()}
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}

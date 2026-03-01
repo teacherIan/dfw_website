@@ -242,8 +242,8 @@
 
 .mainFrame {
   position: relative;
-  max-width: 75%;
-  max-height: 60%;
+  max-width: 85%;
+  max-height: 70%;
   border: 1px solid rgba(255, 255, 255, 0.3);
   padding: 12px;
   background: rgba(0, 20, 40, 0.4);
@@ -383,8 +383,8 @@
 /* Responsive - 1024px */
 @media (max-width: 1024px) {
   .mainFrame {
-    max-width: 85%;
-    max-height: 50%;
+    max-width: 90%;
+    max-height: 60%;
   }
 
   .info {
@@ -459,7 +459,7 @@
 
   .mainFrame {
     max-width: 95%;
-    max-height: 55%;
+    max-height: 65%;
     padding: 8px;
   }
 
