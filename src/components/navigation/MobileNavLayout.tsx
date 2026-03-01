@@ -19,26 +19,26 @@ type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 const BREAKPOINT_CONFIGS = {
   small: {
     name: 'Small (<400px)',
-    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 6.5, galleryLeft: 82, galleryBottom: 10 },
+    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 8, galleryLeft: 82, galleryBottom: 10 },
     labels: { ethosLeft: 20, ethosBottom: 14, contactLeft: 44, contactBottom: 15, galleryLeft: 67, galleryBottom: 1 },
     sizes: { buttonSize: 70 },
   },
   mid: {
     name: 'Mid (400-699px)',
-    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 6.5, galleryLeft: 82, galleryBottom: 10 },
+    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 8, galleryLeft: 82, galleryBottom: 10 },
     labels: { ethosLeft: 20, ethosBottom: 14, contactLeft: 44, contactBottom: 15, galleryLeft: 67, galleryBottom: 1 },
     sizes: { buttonSize: 70 },
   },
   tablet: {
     name: 'Tablet (700-999px)',
-    buttons: { ethosLeft: 12, ethosBottom: 7, contactLeft: 50, contactBottom: 30, galleryLeft: 88, galleryBottom: 7 },
-    labels: { ethosLeft: 6, ethosBottom: 16, contactLeft: 50, contactBottom: 38, galleryLeft: 94, galleryBottom: 16 },
+    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 8, galleryLeft: 82, galleryBottom: 10 },
+    labels: { ethosLeft: 20, ethosBottom: 14, contactLeft: 44, contactBottom: 15, galleryLeft: 67, galleryBottom: 1 },
     sizes: { buttonSize: 100 },
   },
   ipadPro: {
     name: 'iPad Pro (1000-1199px)',
-    buttons: { ethosLeft: 14, ethosBottom: 7, contactLeft: 50, contactBottom: 30, galleryLeft: 86, galleryBottom: 7 },
-    labels: { ethosLeft: 8, ethosBottom: 16, contactLeft: 50, contactBottom: 38, galleryLeft: 92, galleryBottom: 16 },
+    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 8, galleryLeft: 82, galleryBottom: 10 },
+    labels: { ethosLeft: 20, ethosBottom: 14, contactLeft: 44, contactBottom: 15, galleryLeft: 67, galleryBottom: 1 },
     sizes: { buttonSize: 110 },
   },
 } as const;
