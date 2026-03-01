@@ -31,7 +31,7 @@ const BREAKPOINT_CONFIGS = {
   },
   tablet: {
     name: 'Tablet (700-999px)',
-    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 8, galleryLeft: 82, galleryBottom: 10 },
+    buttons: { ethosLeft: 7, ethosBottom: 3, contactLeft: 44, contactBottom: 5, galleryLeft: 87, galleryBottom: 9 },
     labels: { ethosLeft: 20, ethosBottom: 14, contactLeft: 44, contactBottom: 15, galleryLeft: 67, galleryBottom: 1 },
     sizes: { buttonSize: 100 },
   },
