@@ -14,7 +14,7 @@ export interface ProductImage {
   type: ProductType;
   name: string;
   description: string;
-  price: string;
+  price?: string;
 }
 
 export type CategoryKey = 'chairs' | 'large_tables' | 'small_tables' | 'structures';

@@ -6,6 +6,9 @@ import new_hob from '../../../gallery/structures/new_hob_highRise.jpg';
 import fort_w_child from '../../../gallery/structures/fort_w_child.png';
 import outsideStorage from '../../../gallery/structures/outside_storage.jpeg';
 import tree_house_steps from '../../../gallery/structures/tree_house_steps.jpg';
+import hobbit_A from '../../../gallery/structures/hobbit_A.JPG';
+import hobbit_B from '../../../gallery/structures/hobbit_B.JPG';
+import hobbit_C from '../../../gallery/structures/hobbit_C.JPG';
 
 import types from './types';
 export default [
@@ -75,6 +78,33 @@ export default [
   {
     orderNumber: '026',
     img: tree_house_steps,
+    type: types.structure,
+    name: 'Hobbit House',
+    description:
+      'The Hobbit House playhouse was designed with input from the teachers at the Tufts University Eliot Pearson Children\'s School. The house is designed so that children can use it in a variety of ways: to play store, as a jungle gym with passageways, and as a kid-sized place to sit with their friends.',
+    price: '$15,000 ~ $20,000',
+  },
+  {
+    orderNumber: '031',
+    img: hobbit_A,
+    type: types.structure,
+    name: 'Hobbit House',
+    description:
+      'The Hobbit House playhouse was designed with input from the teachers at the Tufts University Eliot Pearson Children\'s School. The house is designed so that children can use it in a variety of ways: to play store, as a jungle gym with passageways, and as a kid-sized place to sit with their friends.',
+    price: '$15,000 ~ $20,000',
+  },
+  {
+    orderNumber: '032',
+    img: hobbit_B,
+    type: types.structure,
+    name: 'Hobbit House',
+    description:
+      'The Hobbit House playhouse was designed with input from the teachers at the Tufts University Eliot Pearson Children\'s School. The house is designed so that children can use it in a variety of ways: to play store, as a jungle gym with passageways, and as a kid-sized place to sit with their friends.',
+    price: '$15,000 ~ $20,000',
+  },
+  {
+    orderNumber: '033',
+    img: hobbit_C,
     type: types.structure,
     name: 'Hobbit House',
     description:

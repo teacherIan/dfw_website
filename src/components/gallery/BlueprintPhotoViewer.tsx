@@ -30,9 +30,6 @@ const ImageInfoPanel = ({ image, isVisible }: ImageInfoPanelProps) => {
       <p className={styles.infoDescription}>
         {image.description}
       </p>
-      <div className={styles.infoPrice}>
-        {image.price}
-      </div>
     </motion.div>
   );
 };

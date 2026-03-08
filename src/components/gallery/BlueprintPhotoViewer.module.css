@@ -75,13 +75,6 @@
   margin-bottom: 12px;
 }
 
-.infoPrice {
-  font-family: 'Courier New', monospace;
-  font-size: clamp(1rem, 2vw, 1.25rem);
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: 0.05em;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .info {

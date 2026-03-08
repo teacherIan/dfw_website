@@ -317,9 +317,6 @@ export const BlueprintGalleryGrid = () => {
               <p className={styles.infoDescription}>
                 {activeImage.description}
               </p>
-              <div className={styles.infoPrice}>
-                {activeImage.price}
-              </div>
             </motion.div>
           </motion.div>
         )}
