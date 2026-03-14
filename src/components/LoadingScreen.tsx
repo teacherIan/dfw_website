@@ -42,7 +42,7 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      <div className="text-center flex flex-col items-center">
+      <div className="text-center flex flex-col items-center px-6">
         {/* Brand name */}
         <h1
           className="text-4xl md:text-5xl text-[#6b5e4f]"
