@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { motion, type Variants } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { LOGO_PATH } from '../../constants/logoPath';
 
 interface TextOverlayProps {
@@ -12,8 +12,6 @@ interface TextOverlayProps {
  * Responsive design for mobile devices
  */
 const TextOverlay = ({ show }: TextOverlayProps) => {
-  if (!show) return null;
-
   const pathVariants: Variants = {
     hidden: { pathLength: 0, opacity: 0, fillOpacity: 0 },
     visible: {
@@ -28,40 +26,57 @@ const TextOverlay = ({ show }: TextOverlayProps) => {
     }
   };
 
+  const containerVariants: Variants = {
+    visible: { opacity: 1, scale: 1 },
+    exit: {
+      opacity: 0,
+      scale: 0.97,
+      transition: { duration: 0.4, ease: "easeOut" }
+    }
+  };
+
   return (
-    <div
-      className={clsx(
-        'title-overlay',
-        'absolute right-0 left-0 w-full',
-        'flex justify-center',
-        'pointer-events-none select-none',
-        'z-40'
-      )}
-    >
-      <div className="px-4 pb-4 lg:pb-8 pt-2">
-        <svg
-          viewBox="0 0 646.076 89.889"
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          key="text-overlay"
+          variants={containerVariants}
+          initial={{ opacity: 1, scale: 1 }}
+          exit="exit"
           className={clsx(
-            'w-[85vw] sm:w-[500px] md:w-[600px] lg:w-[650px] xl:w-[700px]',
-            'h-auto',
-            'drop-shadow-lg'
+            'title-overlay',
+            'absolute right-0 left-0 w-full',
+            'flex justify-center',
+            'pointer-events-none select-none',
+            'z-40'
           )}
-          style={{
-            filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5))'
-          }}
         >
-          <motion.path
-            d={LOGO_PATH}
-            fill="white"
-            stroke="white"
-            strokeWidth="2"
-            variants={pathVariants}
-            initial="hidden"
-            animate="visible"
-          />
-        </svg>
-      </div>
-    </div>
+          <div className="px-4 pb-4 lg:pb-8 pt-2">
+            <svg
+              viewBox="0 0 646.076 89.889"
+              className={clsx(
+                'w-[85vw] sm:w-[500px] md:w-[600px] lg:w-[650px] xl:w-[700px]',
+                'h-auto',
+                'drop-shadow-lg'
+              )}
+              style={{
+                filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5))'
+              }}
+            >
+              <motion.path
+                d={LOGO_PATH}
+                fill="white"
+                stroke="white"
+                strokeWidth="2"
+                variants={pathVariants}
+                initial="hidden"
+                animate="visible"
+              />
+            </svg>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

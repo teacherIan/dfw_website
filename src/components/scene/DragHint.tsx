@@ -78,6 +78,18 @@ export default function DragHint() {
           0%, 100% { transform: translateX(-12px); }
           50% { transform: translateX(12px); }
         }
+        @media (prefers-reduced-motion: reduce) {
+          @keyframes dragHintFade {
+            0% { opacity: 0; }
+            10% { opacity: 0.8; }
+            80% { opacity: 0.8; }
+            100% { opacity: 0; }
+          }
+          @keyframes dragHintSlide {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(0); }
+          }
+        }
       `}</style>
     </div>
   );

@@ -44,6 +44,11 @@ body {
   overflow: hidden;
 }
 
+::selection {
+  background-color: rgba(168, 146, 121, 0.3);
+  color: inherit;
+}
+
 /* ========================================
    GALLERY TRANSITION OVERLAY
    Fades from transparent to blue during exit animation

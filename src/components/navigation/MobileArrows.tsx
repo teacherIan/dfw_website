@@ -347,8 +347,10 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
 
-  if (!startPoint || !endPoint || width === 0 || height === 0) {
-    return null;
+  const ready = !!(startPoint && endPoint && width > 0 && height > 0);
+
+  if (!ready) {
+    return <svg className="nav-mobile-ethos-arrow" style={{ opacity: 0, transition: 'opacity 0.15s ease' }} width={width || 1} height={height || 1} />;
   }
 
   const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
@@ -361,6 +363,7 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
   return (
     <svg
       className="nav-mobile-ethos-arrow"
+      style={{ opacity: 1, transition: 'opacity 0.15s ease' }}
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}
@@ -437,8 +440,10 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
 
-  if (!startPoint || !endPoint || width === 0 || height === 0) {
-    return null;
+  const ready = !!(startPoint && endPoint && width > 0 && height > 0);
+
+  if (!ready) {
+    return <svg className="nav-mobile-contact-arrow" style={{ opacity: 0, transition: 'opacity 0.15s ease' }} width={width || 1} height={height || 1} />;
   }
 
   const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
@@ -451,6 +456,7 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
   return (
     <svg
       className="nav-mobile-contact-arrow"
+      style={{ opacity: 1, transition: 'opacity 0.15s ease' }}
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}
@@ -527,8 +533,10 @@ export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStor
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
 
-  if (!startPoint || !endPoint || width === 0 || height === 0) {
-    return null;
+  const ready = !!(startPoint && endPoint && width > 0 && height > 0);
+
+  if (!ready) {
+    return <svg className="nav-mobile-gallery-arrow" style={{ opacity: 0, transition: 'opacity 0.15s ease' }} width={width || 1} height={height || 1} />;
   }
 
   const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
@@ -541,6 +549,7 @@ export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStor
   return (
     <svg
       className="nav-mobile-gallery-arrow"
+      style={{ opacity: 1, transition: 'opacity 0.15s ease' }}
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}

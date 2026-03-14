@@ -205,6 +205,8 @@
   font-size: 0.85rem;
   line-height: 1.55;
   text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 
 .articleBody p {

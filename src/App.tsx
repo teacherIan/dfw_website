@@ -286,7 +286,7 @@ function AppContent() {
       )}
 
       {/* Main 3D Canvas - fills lvh, extends under mobile URL bar */}
-      <div className="relative z-0 h-full w-full bg-transparent" style={{ touchAction: 'none' }}>
+      <div className="relative z-0 h-full w-full bg-transparent" style={{ touchAction: 'none', pointerEvents: animationPhase !== 'idle' ? 'none' : 'auto' }}>
         <ErrorBoundary>
           <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
             <Scene controlsStore={controlsStore} mobileFov={mobileFov} isMobileView={isMobileView} cameraSpeedMultiplier={isReturningVisitor ? 2 : 1} />

@@ -102,6 +102,16 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
           from { transform: scaleX(0); }
           to { transform: scaleX(1); }
         }
+        @media (prefers-reduced-motion: reduce) {
+          @keyframes loadingFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes loadingLineDrawIn {
+            from { transform: scaleX(1); }
+            to { transform: scaleX(1); }
+          }
+        }
       `}</style>
     </div>
   );

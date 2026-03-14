@@ -116,7 +116,7 @@ const EthosOverlay = ({ isEntering = false, isReturning = false, exitDuration = 
           </aside>
 
           {/* Article text with inline images */}
-          <div className={styles.articleBody}>
+          <div className={styles.articleBody} lang="en">
             <p>
               <span className={styles.dropCap}>I</span>
               turned where the driveway sign said "No Way" and began winding past little vignettes of Maine — an overgrown field, a stone wall, a gnarled tree in a clearing, a large stand of pines. The drive curled in an "s," and waiting at the end of the road was Doug Malloy with a cup of coffee in his hand.
