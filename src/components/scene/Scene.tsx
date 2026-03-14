@@ -4,7 +4,7 @@ import { InteractivePresentationControls } from './InteractivePresentationContro
 import { Euler, PerspectiveCamera, Quaternion, Vector3 } from 'three';
 import type { SplatMesh as SparkSplatMesh } from '@sparkjsdev/spark';
 import { dyno } from '@sparkjsdev/spark';
-import { easeOutCubic, easeInOutCubic, lerp } from '../../utils';
+import { easeOutCubic, easeOutBack, easeInOutCubic, lerp } from '../../utils';
 import { useSceneControls, DESKTOP_BREAKPOINT } from '../../hooks';
 import { EXIT_ANIMATION_TYPE, GALLERY_WALL_DURATION } from '../../constants';
 import { useAnimationStore } from '../../stores';
@@ -17,13 +17,14 @@ interface SceneProps {
   controlsStore?: LevaStore;
   mobileFov?: number;
   isMobileView?: boolean;
+  cameraSpeedMultiplier?: number;
 }
 
 /**
  * Scene component for the 3D splat visualization
  * Handles camera controls, splat mesh rendering, entrance and exit animations
  */
-const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false }: SceneProps) => {
+const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpeedMultiplier = 1 }: SceneProps) => {
   // Get animation state from Zustand store
   const {
     activeScene,
@@ -1186,7 +1187,7 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false }: ScenePro
 
     // Animate camera position during startup
     if (animateCamera && !cameraAnimationComplete.current) {
-      const progress = Math.min(baseTimeRef.current / animationDuration, 1);
+      const progress = Math.min((baseTimeRef.current * cameraSpeedMultiplier) / animationDuration, 1);
       const easedProgress = easeOutCubic(progress);
 
       // Interpolate camera position from start to target, plus sway
@@ -1218,9 +1219,10 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false }: ScenePro
       const isGalleryTransition = targetScene === 'gallery' || activeScene === 'gallery';
 
       if (animationPhase === 'idle' && !isGalleryTransition) {
-        // Returning to idle - lerp camera back to natural position (slower for smooth transition)
-        cameraReturnProgressRef.current = Math.min(cameraReturnProgressRef.current + delta * 1.0, 1);
-        const progress = easeOutCubic(cameraReturnProgressRef.current);
+        // Returning to idle - sync camera return with animation duration, gentle overshoot settle
+        const returnSpeed = 1.0 / Math.max(returnAnimationDuration, 0.5);
+        cameraReturnProgressRef.current = Math.min(cameraReturnProgressRef.current + delta * returnSpeed, 1);
+        const progress = easeOutBack(cameraReturnProgressRef.current);
 
         // Get current natural position (with sway if enabled)
         const naturalX = ambientSway ? cameraX + swayX * effectiveSway : cameraX;
@@ -1244,7 +1246,13 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false }: ScenePro
       }
     }
 
-    // Camera movement for gallery transition - pull back and lower for wall view
+    // Camera movement for gallery - subtle zoom in (moving closer to the work)
+    if ((targetScene === 'gallery' || activeScene === 'gallery') && animationPhase !== 'entering') {
+      const galleryTargetZ = cameraZ - 0.3;
+      camera.position.z = lerp(camera.position.z, galleryTargetZ, 0.03);
+    }
+
+    // Camera movement for gallery wall transition (type 16) - pull back and lower for wall view
     if (animationPhase === 'exiting' && exitTypeRef.current.value > 15.5 && exitTypeRef.current.value < 16.5) {
       const progress = exitProgressRef.current.value;
       const targetZ = lerp(cameraZ, 4.0, easeInOutCubic(progress));

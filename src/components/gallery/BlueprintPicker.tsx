@@ -91,9 +91,9 @@ const CategoryImage = ({
         whileTap={{ scale: 0.98, transition: { type: 'spring', stiffness: 400, damping: 20 } }}
         transition={{
           type: 'spring',
-          stiffness: 200,
-          damping: 15,
-          delay: isVisible ? index * 0.1 : 0,
+          stiffness: 180,
+          damping: 14,
+          delay: isVisible ? index * 0.15 : 0,
         }}
       >
       {/* Image frame with blueprint styling */}

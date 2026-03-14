@@ -116,6 +116,9 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
       isContactOverlayOpen: false, // Close contact overlay when navigating
     });
 
+    // Push browser history so the back button returns to home
+    window.history.pushState({ scene: newTarget }, '', `#${newTarget}`);
+
     if (newTarget === 'contact') {
       // Contact: splat-to-splat transition
       set({ animationPhase: 'transitioning' });

@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGallery } from '../../contexts/GalleryContext';
 import { getImagesForCategory, type ProductImage } from './image_info';
@@ -34,6 +34,8 @@ const ImageInfoPanel = ({ image, isVisible }: ImageInfoPanelProps) => {
   );
 };
 
+const SWIPE_THRESHOLD = 50;
+
 export const BlueprintPhotoViewer = () => {
   const {
     selectedCategory,
@@ -44,6 +46,7 @@ export const BlueprintPhotoViewer = () => {
   } = useGallery();
 
   const [isZoomed, setIsZoomed] = useState(false);
+  const touchStartX = useRef<number | null>(null);
 
   const images = selectedCategory ? getImagesForCategory(selectedCategory) : [];
   const currentImage = selectedImageIndex !== null ? images[selectedImageIndex] : null;
@@ -104,9 +107,47 @@ export const BlueprintPhotoViewer = () => {
     }
   }, [closeViewer]);
 
+  // Touch swipe handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+
+    if (Math.abs(deltaX) >= SWIPE_THRESHOLD) {
+      if (deltaX < 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
+    }
+  }, [handleNext, handlePrev]);
+
   if (!isViewerOpen || selectedImageIndex === null || images.length === 0) {
     return null;
   }
+
+  const navButtonStyle = {
+    position: 'absolute' as const,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'rgba(13, 40, 71, 0.8)',
+    border: '1px solid rgba(255, 255, 255, 0.3)',
+    borderRadius: '50%',
+    width: 'clamp(40px, 10vw, 56px)',
+    height: 'clamp(40px, 10vw, 56px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 'clamp(20px, 5vw, 28px)',
+    zIndex: 5,
+    transition: 'background 0.2s, transform 0.2s',
+  };
 
   return (
     <AnimatePresence>
@@ -136,7 +177,7 @@ export const BlueprintPhotoViewer = () => {
           </span>
         </div>
 
-        {/* Main image */}
+        {/* Main image with swipe support */}
         <motion.div
           style={{
             position: 'absolute',
@@ -150,6 +191,8 @@ export const BlueprintPhotoViewer = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           <img
             src={currentImage?.img}
@@ -173,25 +216,7 @@ export const BlueprintPhotoViewer = () => {
               type="button"
               onClick={handlePrev}
               aria-label="Previous image"
-              style={{
-                position: 'absolute',
-                left: '20px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'rgba(13, 40, 71, 0.8)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                borderRadius: '50%',
-                width: '48px',
-                height: '48px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontSize: '24px',
-                zIndex: 5,
-                transition: 'background 0.2s, transform 0.2s',
-              }}
+              style={{ ...navButtonStyle, left: '20px' }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(26, 58, 92, 0.9)';
               }}
@@ -205,25 +230,7 @@ export const BlueprintPhotoViewer = () => {
               type="button"
               onClick={handleNext}
               aria-label="Next image"
-              style={{
-                position: 'absolute',
-                right: '20px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'rgba(13, 40, 71, 0.8)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                borderRadius: '50%',
-                width: '48px',
-                height: '48px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontSize: '24px',
-                zIndex: 5,
-                transition: 'background 0.2s, transform 0.2s',
-              }}
+              style={{ ...navButtonStyle, right: '20px' }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(26, 58, 92, 0.9)';
               }}

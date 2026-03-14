@@ -20,6 +20,7 @@ interface MenuOverlayProps {
   arrowControlsStore?: LevaStore;
   mobileNavStore?: LevaStore;
   arrowEffectsConfig?: ArrowEffectsConfig;
+  menuAppearDelay?: number;
 }
 
 // Arrow component mapping for desktop navigation
@@ -149,6 +150,7 @@ const MenuOverlay = ({
   arrowControlsStore,
   mobileNavStore,
   arrowEffectsConfig,
+  menuAppearDelay,
 }: MenuOverlayProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
@@ -209,9 +211,9 @@ const MenuOverlay = ({
     setIsVisible(false);
     const timer = setTimeout(() => {
       setIsVisible(true);
-    }, ANIMATION_TIMING.MENU_APPEAR);
+    }, menuAppearDelay ?? ANIMATION_TIMING.MENU_APPEAR);
     return () => clearTimeout(timer);
-  }, [animationKey, skipDelay, isExiting]);
+  }, [animationKey, skipDelay, isExiting, menuAppearDelay]);
 
   useEffect(() => {
     const handleReset = () => {

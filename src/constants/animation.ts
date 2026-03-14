@@ -3,6 +3,14 @@ export const ANIMATION_TIMING = {
   MENU_APPEAR: 16500, // TEXT_APPEAR + TITLE_DURATION + 300ms buffer
 } as const;
 
+/** Faster timings for returning visitors (2x camera speed means ~10s entrance instead of ~20s) */
+export const FAST_ANIMATION_TIMING = {
+  TEXT_APPEAR: 10500,
+  MENU_APPEAR: 13000,
+} as const;
+
+export const FAST_MIN_DISPLAY_TIME = 2000;
+
 /**
  * Mobile navigation animation delays (in milliseconds)
  * Order: Center-outward (Contact first → Ethos & Gallery together)

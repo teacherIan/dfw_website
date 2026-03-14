@@ -12,8 +12,11 @@ import MenuOverlay from './components/navigation/MenuOverlay';
 import BackButton from './components/navigation/BackButton';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingScreen from './components/LoadingScreen';
+import DragHint from './components/scene/DragHint';
 import {
   ANIMATION_TIMING,
+  FAST_ANIMATION_TIMING,
+  FAST_MIN_DISPLAY_TIME,
   EXIT_ANIMATION_DURATION,
   ENTRANCE_ANIMATION_DURATION,
 } from './constants';
@@ -35,6 +38,16 @@ function AppContent() {
   const mobileNavStore = useCreateStore();
   const showLeva = import.meta.env.DEV; // Hidden in production
   const showArrowControls = import.meta.env.DEV; // Arrow controls only in dev
+
+  // Detect returning visitor for faster entrance animation
+  const [isReturningVisitor] = useState(() => {
+    try {
+      return sessionStorage.getItem('dfw_visited') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const timing = isReturningVisitor ? FAST_ANIMATION_TIMING : ANIMATION_TIMING;
 
   // Detect if running as installed PWA for fullscreen layout
   const isStandalone = useStandaloneMode();
@@ -145,6 +158,18 @@ function AppContent() {
     returnHome();
   }, [returnHome]);
 
+  // Browser back button support — return to home on popstate
+  useEffect(() => {
+    const handlePopState = () => {
+      const state = useAnimationStore.getState();
+      if (state.activeScene !== 'home' && state.animationPhase === 'idle') {
+        returnHome();
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [returnHome]);
+
   // Leva control to hide overlays for screenshots
   const { showOverlays, useHandDrawn } = useControls({
     'UI Controls': folder({
@@ -179,9 +204,9 @@ function AppContent() {
 
     const timer = setTimeout(() => {
       setShowText(true);
-    }, ANIMATION_TIMING.TEXT_APPEAR);
+    }, timing.TEXT_APPEAR);
     return () => clearTimeout(timer);
-  }, [animationKey, loadingComplete, setShowText]);
+  }, [animationKey, loadingComplete, setShowText, timing.TEXT_APPEAR]);
 
   useEffect(() => {
     const handleReset = () => {
@@ -224,7 +249,11 @@ function AppContent() {
       {/* Loading screen - signals when animation can start */}
       <LoadingScreen
         isReady={streamingStarted}
-        onComplete={setLoadingComplete}
+        onComplete={() => {
+          setLoadingComplete();
+          try { sessionStorage.setItem('dfw_visited', 'true'); } catch { /* noop */ }
+        }}
+        minDisplayTime={isReturningVisitor ? FAST_MIN_DISPLAY_TIME : undefined}
       />
 
       {/* Hide default Leva panel in production, show custom panel in dev */}
@@ -260,7 +289,7 @@ function AppContent() {
       <div className="relative z-0 h-full w-full bg-transparent" style={{ touchAction: 'none' }}>
         <ErrorBoundary>
           <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
-            <Scene controlsStore={controlsStore} mobileFov={mobileFov} isMobileView={isMobileView} />
+            <Scene controlsStore={controlsStore} mobileFov={mobileFov} isMobileView={isMobileView} cameraSpeedMultiplier={isReturningVisitor ? 2 : 1} />
           </Canvas>
         </ErrorBoundary>
       </div>
@@ -277,6 +306,7 @@ function AppContent() {
             arrowControlsStore={arrowControlsStore}
             mobileNavStore={mobileNavStore}
             arrowEffectsConfig={arrowEffectsConfig}
+            menuAppearDelay={timing.MENU_APPEAR}
           />
         )}
         {showOverlays && activeScene === 'home' && !useHandDrawn && (
@@ -289,6 +319,11 @@ function AppContent() {
             isExiting={animationPhase === 'exiting'}
             controlsStore={controlsStore}
           />
+        )}
+
+        {/* Mobile drag hint - show once after entrance animation */}
+        {isMobileView && loadingComplete && activeScene === 'home' && animationPhase === 'idle' && !hasNavigated && (
+          <DragHint />
         )}
 
         {/* Contact overlay - toggle from nav button */}
