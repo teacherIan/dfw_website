@@ -321,8 +321,8 @@ function AppContent() {
           />
         )}
 
-        {/* Mobile drag hint - show once after entrance animation */}
-        {isMobileView && loadingComplete && activeScene === 'home' && animationPhase === 'idle' && !hasNavigated && (
+        {/* Drag hint - show once after entrance animation */}
+        {loadingComplete && activeScene === 'home' && animationPhase === 'idle' && !hasNavigated && (
           <DragHint />
         )}
 

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 
 /**
- * DragHint - Shows a brief hand-drag gesture hint on mobile
- * to indicate the 3D model can be rotated by touch.
- * Auto-dismisses after 3 seconds or on first touch.
+ * DragHint - Shows a brief hand-drag gesture hint
+ * to indicate the 3D scene can be rotated by dragging.
+ * Auto-dismisses after 3 seconds or on first interaction.
  * Only shown once per session.
  */
 export default function DragHint() {
@@ -20,13 +20,15 @@ export default function DragHint() {
     // Auto-dismiss after 3 seconds
     const timer = setTimeout(() => setVisible(false), 3000);
 
-    // Dismiss on first touch
+    // Dismiss on first interaction (touch or mouse)
     const dismiss = () => setVisible(false);
     window.addEventListener('touchstart', dismiss, { once: true });
+    window.addEventListener('mousedown', dismiss, { once: true });
 
     return () => {
       clearTimeout(timer);
       window.removeEventListener('touchstart', dismiss);
+      window.removeEventListener('mousedown', dismiss);
     };
   }, []);
 
