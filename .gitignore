@@ -24,5 +24,14 @@ dist-ssr
 *.sln
 *.sw?
 
+# AI tool configs
+.agent/
+.agents/
+.claude/
+.junie/
+.windsurf/
+.zencoder/
+skills-lock.json
+
 # Large 3D source files (use .spz for web)
 *.ply
