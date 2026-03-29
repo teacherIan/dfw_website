@@ -38,18 +38,20 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#f8f5ef] transition-opacity duration-700 ${
+      className={`fixed left-0 right-0 bottom-0 z-50 flex items-center justify-center bg-[#f8f5ef] transition-opacity duration-700 ${
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
+      style={{ top: 'calc(-1 * env(safe-area-inset-top, 0px))' }}
     >
       <div className="text-center flex flex-col items-center px-6">
         {/* Brand name */}
         <h1
-          className="text-4xl md:text-5xl text-[#6b5e4f]"
+          className="text-4xl md:text-5xl text-[#6b5e4f] overflow-visible"
           style={{
             fontFamily: fontFamilyMap['Caveat'],
             animation: `loadingFadeIn ${isFast ? '0.6s' : '1.5s'} ease-out forwards`,
             opacity: 0,
+            padding: '0 0.15em',
           }}
         >
           Doug's Found Wood
