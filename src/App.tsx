@@ -285,8 +285,8 @@ function AppContent() {
         />
       )}
 
-      {/* Main 3D Canvas - extends behind iPhone Dynamic Island/notch via negative safe-area offset */}
-      <div className="fixed left-0 right-0 bottom-0 z-0 bg-transparent" style={{ top: 'calc(-1 * env(safe-area-inset-top, 0px))', touchAction: 'none', pointerEvents: animationPhase === 'entering' ? 'none' : 'auto' }}>
+      {/* Main 3D Canvas - fixed fullscreen, status bar area controlled by OS theme-color */}
+      <div className="fixed inset-0 z-0 bg-transparent" style={{ touchAction: 'none', pointerEvents: animationPhase === 'entering' ? 'none' : 'auto' }}>
         <ErrorBoundary>
           <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
             <Scene controlsStore={controlsStore} mobileFov={mobileFov} isMobileView={isMobileView} cameraSpeedMultiplier={isReturningVisitor ? 2 : 1} />
