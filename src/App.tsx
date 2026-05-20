@@ -175,22 +175,30 @@ function AppContent() {
     }, { collapsed: true }),
   }, { store: controlsStore });
 
-  // Get streamingStarted and loadingComplete from store
-  const streamingStarted = useAnimationStore((state) => state.streamingStarted);
   const loadingComplete = useAnimationStore((state) => state.loadingComplete);
   const isContactOverlayOpen = useIsContactOverlayOpen();
 
-  // Track when splat is fully loaded (for debugging)
+  // Keep the loading screen up until the splat has actually finished loading.
+  // `splatLoaded` is driven by the SplatMesh onLoad callback (via the
+  // `splatLoaded` window event). Gating on this — rather than on
+  // streamingStarted, which fired the moment the mesh element mounted —
+  // prevents the loading screen from fading out over a blank canvas while
+  // the multi-MB .spz is still downloading on a real network.
+  const [splatLoaded, setSplatLoaded] = useState(false);
   useEffect(() => {
     const handleSplatLoaded = () => {
       if (import.meta.env.DEV) {
         console.log('Splat fully loaded');
       }
+      setSplatLoaded(true);
     };
-
     window.addEventListener('splatLoaded', handleSplatLoaded);
+    // Safety net: never trap the user on the loading screen if the splat
+    // fails to load or onLoad never fires.
+    const fallback = window.setTimeout(() => setSplatLoaded(true), 45000);
     return () => {
       window.removeEventListener('splatLoaded', handleSplatLoaded);
+      window.clearTimeout(fallback);
     };
   }, []);
 
@@ -249,7 +257,7 @@ function AppContent() {
       {/* Loading screen - signals when animation can start */}
       {!isPrerender() && (
         <LoadingScreen
-          isReady={streamingStarted}
+          isReady={splatLoaded}
           onComplete={() => {
             setLoadingComplete();
             try { sessionStorage.setItem('dfw_visited', 'true'); } catch { /* noop */ }
