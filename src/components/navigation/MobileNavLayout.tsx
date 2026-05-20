@@ -200,6 +200,8 @@ const findVisibleElement = <T extends HTMLElement>(elements: Array<T | null>) =>
 };
 
 const useVisibleElement = <T extends HTMLElement>(elementsRef: MutableRefObject<Array<T | null>>) => {
+  const [visible, setVisible] = useState<T | null>(null);
+
   // Counter to force re-renders on resize/orientation change
   const [, setCounter] = useState(0);
 
@@ -207,7 +209,6 @@ const useVisibleElement = <T extends HTMLElement>(elementsRef: MutableRefObject<
     const update = () => setCounter((c) => c + 1);
 
     // Force initial updates to catch late-mounting elements
-    update();
     const frame = requestAnimationFrame(update);
     const timeout = setTimeout(update, 100);
 
@@ -222,8 +223,16 @@ const useVisibleElement = <T extends HTMLElement>(elementsRef: MutableRefObject<
     };
   }, []); // Empty deps - only need to set up listeners once
 
-  // Compute visible element on every render - more reliable than storing in state
-  return findVisibleElement(elementsRef.current);
+  // Recompute after every render — refs are populated post-render, and reading
+  // layout (getBoundingClientRect) is only safe outside of render. Intentionally
+  // dep-less so element mount/unmount is picked up; setState bails out when the
+  // result is unchanged, so this cannot loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    setVisible(findVisibleElement(elementsRef.current));
+  });
+
+  return visible;
 };
 
 const MobileNavLayout = ({

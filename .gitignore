@@ -23,6 +23,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.code-workspace
 
 # AI tool configs
 .agent/
@@ -35,3 +36,5 @@ skills-lock.json
 
 # Large 3D source files (use .spz for web)
 *.ply
+
+.playwright-mcp/

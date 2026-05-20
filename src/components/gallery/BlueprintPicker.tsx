@@ -28,8 +28,15 @@ const CATEGORY_DEFAULTS_MOBILE = {
 // Use mobile defaults on narrow screens
 const MOBILE_BREAKPOINT = 768;
 
+interface CategoryDefault {
+  x: number;
+  y: number;
+  size: number;
+  rotation: number;
+}
+
 // Generate Leva control schema for category position
-const createCategoryControlSchema = (defaults: typeof CATEGORY_DEFAULTS_DESKTOP.chairs) => ({
+const createCategoryControlSchema = (defaults: CategoryDefault) => ({
   x: { value: defaults.x, min: 5, max: 95, step: 1, label: 'X Position' },
   y: { value: defaults.y, min: 5, max: 95, step: 1, label: 'Y Position' },
   size: { value: defaults.size, min: 10, max: 40, step: 1, label: 'Size' },
@@ -192,16 +199,17 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
     }, 800);
   };
 
-  // Leva controls for gallery settings (hidden in production)
+  // Leva controls for gallery settings. The whole panel is hidden in
+  // production via <Leva hidden> in App.tsx, so no per-folder gating here.
   const { hideImages, paperOpacity, gridDarkness } = useControls('Gallery Settings', {
     hideImages: { value: false, label: 'Hide Images (for screenshot)' },
     paperOpacity: { value: 0.45, min: 0, max: 1, step: 0.05, label: 'Paper Opacity' },
     gridDarkness: { value: 0.08, min: 0, max: 0.3, step: 0.01, label: 'Grid Line Darkness' },
-  }, { hidden: !import.meta.env.DEV });
-  const chairsControls = useControls('Chairs', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.chairs), { hidden: !import.meta.env.DEV });
-  const largeTablesControls = useControls('Large Tables', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.large_tables), { hidden: !import.meta.env.DEV });
-  const smallTablesControls = useControls('Small Tables', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.small_tables), { hidden: !import.meta.env.DEV });
-  const structuresControls = useControls('Structures', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.structures), { hidden: !import.meta.env.DEV });
+  });
+  const chairsControls = useControls('Chairs', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.chairs));
+  const largeTablesControls = useControls('Large Tables', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.large_tables));
+  const smallTablesControls = useControls('Small Tables', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.small_tables));
+  const structuresControls = useControls('Structures', createCategoryControlSchema(CATEGORY_DEFAULTS_DESKTOP.structures));
 
   // Select defaults based on screen size
   const defaults = isMobile ? CATEGORY_DEFAULTS_MOBILE : CATEGORY_DEFAULTS_DESKTOP;
