@@ -388,8 +388,9 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
   const splatMeshArgs = useMemo(
     () =>
       ({
+        // spark v2 streams the URL natively via fetch; the `stream` option is
+        // now a bring-your-own ReadableStream and must not be a boolean.
         url: '/assets/v_one_final.spz',
-        stream: true,
         onLoad: () => {
           // Dispatch event when splat finishes loading (streaming complete)
           window.dispatchEvent(new Event('splatLoaded'));
