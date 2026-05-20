@@ -2,6 +2,8 @@ import { Canvas } from '@react-three/fiber';
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { BrowserRouter } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useControls, useCreateStore, LevaPanel, Leva, folder } from 'leva';
 import Scene from './components/scene/Scene';
 import TextOverlay from './components/scene/TextOverlay';
@@ -388,6 +390,14 @@ function App() {
           <AppContent />
         </GalleryProvider>
       </DragDisplacementProvider>
+      {/* Vercel observability — Web Analytics + real-user Core Web Vitals.
+          Skipped under the prerender UA so crawler snapshots stay clean. */}
+      {!isPrerender() && (
+        <>
+          <Analytics />
+          <SpeedInsights />
+        </>
+      )}
     </BrowserRouter>
   );
 }
