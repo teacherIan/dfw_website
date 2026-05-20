@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { BrowserRouter } from 'react-router-dom';
 import { useControls, useCreateStore, LevaPanel, Leva, folder } from 'leva';
 import Scene from './components/scene/Scene';
 import TextOverlay from './components/scene/TextOverlay';
@@ -25,11 +26,17 @@ import EthosOverlay from './components/ethos/EthosOverlay';
 import { GalleryProvider, useGallery } from './contexts/GalleryContext';
 import { DragDisplacementProvider } from './contexts/DragDisplacementContext';
 import { useAnimationStore, useIsContactOverlayOpen } from './stores';
-import { useStandaloneMode, useWindowWidth, DESKTOP_BREAKPOINT, useArrowEffectsControls } from './hooks';
+import { useStandaloneMode, useWindowWidth, DESKTOP_BREAKPOINT, useArrowEffectsControls, useRouteSceneSync } from './hooks';
+import { useSceneSeo } from './seo/useSceneSeo';
+import { isPrerender } from './seo/prerender';
+import SeoContent from './components/seo/SeoContent';
 import { ArrowFilterDefs } from './components/navigation/ArrowFilters';
 import './types/r3f.d';
 
 function AppContent() {
+  useRouteSceneSync();
+  useSceneSeo();
+
   // Gallery state from context
   const { viewState: galleryViewState, goToCategory, resetGallery, isViewerOpen } = useGallery();
 
@@ -158,18 +165,6 @@ function AppContent() {
     returnHome();
   }, [returnHome]);
 
-  // Browser back button support — return to home on popstate
-  useEffect(() => {
-    const handlePopState = () => {
-      const state = useAnimationStore.getState();
-      if (state.activeScene !== 'home' && state.animationPhase === 'idle') {
-        returnHome();
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [returnHome]);
-
   // Leva control to hide overlays for screenshots
   const { showOverlays, useHandDrawn } = useControls({
     'UI Controls': folder({
@@ -243,18 +238,23 @@ function AppContent() {
 
   return (
     <div className={`relative w-screen overflow-hidden bg-[#f8f5ef] text-white ${isStandalone ? 'h-dvh' : 'h-svh'}`}>
+      {/* Visually hidden semantic HTML for crawlers/prerender */}
+      <SeoContent />
+
       {/* SVG filter definitions for arrow woodworker effects */}
       <ArrowFilterDefs config={arrowEffectsConfig} />
 
       {/* Loading screen - signals when animation can start */}
-      <LoadingScreen
-        isReady={streamingStarted}
-        onComplete={() => {
-          setLoadingComplete();
-          try { sessionStorage.setItem('dfw_visited', 'true'); } catch { /* noop */ }
-        }}
-        minDisplayTime={isReturningVisitor ? FAST_MIN_DISPLAY_TIME : undefined}
-      />
+      {!isPrerender() && (
+        <LoadingScreen
+          isReady={streamingStarted}
+          onComplete={() => {
+            setLoadingComplete();
+            try { sessionStorage.setItem('dfw_visited', 'true'); } catch { /* noop */ }
+          }}
+          minDisplayTime={isReturningVisitor ? FAST_MIN_DISPLAY_TIME : undefined}
+        />
+      )}
 
       {/* Hide default Leva panel in production, show custom panel in dev */}
       {/* Home controls use custom store, gallery controls use default panel */}
@@ -286,13 +286,15 @@ function AppContent() {
       )}
 
       {/* Main 3D Canvas - fixed fullscreen, status bar area controlled by OS theme-color */}
-      <div className="fixed inset-0 z-0 bg-transparent" style={{ touchAction: 'none', pointerEvents: animationPhase === 'entering' ? 'none' : 'auto' }}>
-        <ErrorBoundary>
-          <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
-            <Scene controlsStore={controlsStore} mobileFov={mobileFov} isMobileView={isMobileView} cameraSpeedMultiplier={isReturningVisitor ? 2 : 1} />
-          </Canvas>
-        </ErrorBoundary>
-      </div>
+      {!isPrerender() && (
+        <div className="fixed inset-0 z-0 bg-transparent" style={{ touchAction: 'none', pointerEvents: animationPhase === 'entering' ? 'none' : 'auto' }}>
+          <ErrorBoundary>
+            <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
+              <Scene controlsStore={controlsStore} mobileFov={mobileFov} isMobileView={isMobileView} cameraSpeedMultiplier={isReturningVisitor ? 2 : 1} />
+            </Canvas>
+          </ErrorBoundary>
+        </div>
+      )}
 
       {/* UI Overlay container - constrained to svh (visible viewport) for correct positioning */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-svh">
@@ -380,11 +382,13 @@ function AppContent() {
 
 function App() {
   return (
-    <DragDisplacementProvider>
-      <GalleryProvider>
-        <AppContent />
-      </GalleryProvider>
-    </DragDisplacementProvider>
+    <BrowserRouter>
+      <DragDisplacementProvider>
+        <GalleryProvider>
+          <AppContent />
+        </GalleryProvider>
+      </DragDisplacementProvider>
+    </BrowserRouter>
   );
 }
 

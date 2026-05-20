@@ -6,6 +6,7 @@ import {
   ENTRANCE_ANIMATION_DURATION,
   TRANSITION_DURATION,
 } from '../constants';
+import { isPrerender } from '../seo/prerender';
 
 // DEV-only logging helper
 const log = import.meta.env.DEV
@@ -78,6 +79,8 @@ const clearNavigationTimeouts = () => {
   navigationTimeouts = [];
 };
 
+const prerenderMode = isPrerender();
+
 export const useAnimationStore = create<AnimationStore>((set, get) => ({
   // Initial state
   activeScene: 'home',
@@ -86,12 +89,12 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
   exitStartTime: null,
   exitType: 0,
   entranceType: 0,
-  showText: false,
-  hasNavigated: false,
+  showText: prerenderMode,
+  hasNavigated: prerenderMode,
   wallReady: false,
-  streamingStarted: false,
-  cameraAnimationComplete: false,
-  loadingComplete: false,
+  streamingStarted: prerenderMode,
+  cameraAnimationComplete: prerenderMode,
+  loadingComplete: prerenderMode,
   isContactOverlayOpen: false,
   animationKey: 0,
   exitAnimationDuration: EXIT_ANIMATION_DURATION,
@@ -115,9 +118,6 @@ export const useAnimationStore = create<AnimationStore>((set, get) => ({
       exitStartTime: performance.now(),
       isContactOverlayOpen: false, // Close contact overlay when navigating
     });
-
-    // Push browser history so the back button returns to home
-    window.history.pushState({ scene: newTarget }, '', `#${newTarget}`);
 
     if (newTarget === 'contact') {
       // Contact: splat-to-splat transition

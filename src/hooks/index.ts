@@ -5,3 +5,4 @@ export { useArrowUnravel } from './useArrowUnravel';
 export { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls } from './useMobileArrowControls';
 export { useStandaloneMode } from './useStandaloneMode';
 export { useArrowEffectsControls } from './useArrowEffectsControls';
+export { useRouteSceneSync } from './useRouteSceneSync';

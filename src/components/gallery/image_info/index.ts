@@ -36,3 +36,23 @@ export const getCategoryFromType = (type: string): CategoryKey | null => {
       return null;
   }
 };
+
+const slugifyName = (name: string): string =>
+  name
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/['']/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+export const productSlug = (item: ProductImage): string =>
+  `${slugifyName(item.name)}-${item.orderNumber}`;
+
+export const getImageBySlug = (slug: string): ProductImage | null => {
+  const match = getAllImages().find((item) => productSlug(item) === slug);
+  return match ?? null;
+};
+
+export const getCategoryForItem = (item: ProductImage): CategoryKey | null =>
+  getCategoryFromType(item.type);

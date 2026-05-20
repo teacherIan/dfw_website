@@ -78,3 +78,28 @@ export const INITIAL_SCENE_STATE: SceneState = {
   animationPhase: 'idle',
   exitStartTime: null,
 };
+
+/**
+ * Canonical URL path for each scene. URLs are a projection of scene state,
+ * not the source of truth — the animation store owns state. The router
+ * mirrors scene transitions so each view gets a crawlable URL.
+ */
+export const SCENE_PATH: Record<SceneId, string> = {
+  home: '/',
+  ethos: '/ethos',
+  contact: '/contact',
+  gallery: '/gallery',
+} as const;
+
+/**
+ * Inverse lookup: resolve a pathname to its corresponding scene.
+ * /gallery and /gallery/<anything> both map to the gallery scene;
+ * deeper routing (category, product slug) is handled inside the gallery UI.
+ */
+export const pathToScene = (pathname: string): SceneId => {
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+  if (normalized.startsWith('/gallery')) return 'gallery';
+  if (normalized === '/ethos') return 'ethos';
+  if (normalized === '/contact') return 'contact';
+  return 'home';
+};
