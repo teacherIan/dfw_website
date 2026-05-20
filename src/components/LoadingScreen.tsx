@@ -7,9 +7,11 @@ interface LoadingScreenProps {
   isReady: boolean;
   onComplete?: () => void;
   minDisplayTime?: number;
+  /** Splat download progress, 0–1. Drives the progress line. */
+  progress?: number;
 }
 
-export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DEFAULT_MIN_DISPLAY_TIME }: LoadingScreenProps) {
+export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DEFAULT_MIN_DISPLAY_TIME, progress = 0 }: LoadingScreenProps) {
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
@@ -35,6 +37,8 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
   if (isHidden) return null;
 
   const isFast = minDisplayTime < DEFAULT_MIN_DISPLAY_TIME;
+  // Keep a small floor so the line reads as "starting" rather than empty.
+  const displayProgress = Math.min(1, Math.max(0.03, progress));
 
   return (
     <div
@@ -56,7 +60,7 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
           Doug's Found Wood
         </h1>
 
-        {/* Hand-drawn progress line */}
+        {/* Splat download progress line */}
         <div
           className="mt-6 overflow-hidden"
           style={{
@@ -71,9 +75,9 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
               width: '100%',
               height: '100%',
               background: 'linear-gradient(90deg, transparent, #a89279 10%, #8b7355 50%, #a89279 90%, transparent)',
-              animation: `loadingLineDrawIn ${isFast ? '1.5s' : '4s'} ease-in-out ${isFast ? '0.5s' : '1.2s'} forwards`,
               transformOrigin: 'left center',
-              transform: 'scaleX(0)',
+              transform: `scaleX(${displayProgress})`,
+              transition: 'transform 0.4s ease-out',
             }}
           />
         </div>
@@ -99,18 +103,10 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes loadingLineDrawIn {
-          from { transform: scaleX(0); }
-          to { transform: scaleX(1); }
-        }
         @media (prefers-reduced-motion: reduce) {
           @keyframes loadingFadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
-          }
-          @keyframes loadingLineDrawIn {
-            from { transform: scaleX(1); }
-            to { transform: scaleX(1); }
           }
         }
       `}</style>

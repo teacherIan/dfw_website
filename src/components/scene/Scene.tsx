@@ -388,11 +388,22 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
   const splatMeshArgs = useMemo(
     () =>
       ({
-        // spark v2 streams the URL natively via fetch; the `stream` option is
-        // now a bring-your-own ReadableStream and must not be a boolean.
+        // spark v2: load via `url`. The `stream` option is a bring-your-own
+        // ReadableStream in v2 (not a boolean flag), so it is omitted.
         url: '/assets/v_one_final.spz',
+        onProgress: (event: ProgressEvent) => {
+          // Feed the loading-screen progress bar. total is the .spz
+          // Content-Length; lengthComputable is false until headers arrive.
+          if (event.lengthComputable && event.total > 0) {
+            window.dispatchEvent(
+              new CustomEvent('splatProgress', {
+                detail: { loaded: event.loaded, total: event.total },
+              })
+            );
+          }
+        },
         onLoad: () => {
-          // Dispatch event when splat finishes loading (streaming complete)
+          // Dispatch event when the splat has finished loading.
           window.dispatchEvent(new Event('splatLoaded'));
         },
       }) as const,

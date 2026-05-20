@@ -185,19 +185,31 @@ function AppContent() {
   // prevents the loading screen from fading out over a blank canvas while
   // the multi-MB .spz is still downloading on a real network.
   const [splatLoaded, setSplatLoaded] = useState(false);
+  const [splatProgress, setSplatProgress] = useState(0);
   useEffect(() => {
     const handleSplatLoaded = () => {
       if (import.meta.env.DEV) {
         console.log('Splat fully loaded');
       }
+      setSplatProgress(1);
       setSplatLoaded(true);
     };
+    const handleSplatProgress = (event: Event) => {
+      const detail = (event as CustomEvent<{ loaded: number; total: number }>).detail;
+      if (detail && detail.total > 0) {
+        const ratio = Math.min(1, detail.loaded / detail.total);
+        // Monotonic — never let the bar jump backwards.
+        setSplatProgress((prev) => (ratio > prev ? ratio : prev));
+      }
+    };
     window.addEventListener('splatLoaded', handleSplatLoaded);
+    window.addEventListener('splatProgress', handleSplatProgress);
     // Safety net: never trap the user on the loading screen if the splat
     // fails to load or onLoad never fires.
     const fallback = window.setTimeout(() => setSplatLoaded(true), 45000);
     return () => {
       window.removeEventListener('splatLoaded', handleSplatLoaded);
+      window.removeEventListener('splatProgress', handleSplatProgress);
       window.clearTimeout(fallback);
     };
   }, []);
@@ -258,6 +270,7 @@ function AppContent() {
       {!isPrerender() && (
         <LoadingScreen
           isReady={splatLoaded}
+          progress={splatProgress}
           onComplete={() => {
             setLoadingComplete();
             try { sessionStorage.setItem('dfw_visited', 'true'); } catch { /* noop */ }
