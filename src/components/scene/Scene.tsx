@@ -392,8 +392,8 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
         // ReadableStream in v2 (not a boolean flag), so it is omitted.
         url: '/assets/v_one_final.spz',
         onProgress: (event: ProgressEvent) => {
-          // Feed the loading-screen progress bar. total is the .spz
-          // Content-Length; lengthComputable is false until headers arrive.
+          // Feed real download progress to the loading-screen bar when the
+          // network reports it (the bar also advances on its own time curve).
           if (event.lengthComputable && event.total > 0) {
             window.dispatchEvent(
               new CustomEvent('splatProgress', {

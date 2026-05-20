@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fontFamilyMap } from '../constants';
 
 const DEFAULT_MIN_DISPLAY_TIME = 6000;
@@ -7,7 +7,7 @@ interface LoadingScreenProps {
   isReady: boolean;
   onComplete?: () => void;
   minDisplayTime?: number;
-  /** Splat download progress, 0–1. Drives the progress line. */
+  /** Real splat download progress, 0–1, when the network reports it. */
   progress?: number;
 }
 
@@ -16,11 +16,45 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
+  // The progress line is animated directly via a ref (no per-frame React
+  // re-render). Latest props are mirrored into refs so the animation loop
+  // can read them without being torn down on every change.
+  const lineRef = useRef<HTMLDivElement>(null);
+  const isReadyRef = useRef(isReady);
+  const progressRef = useRef(progress);
+  useEffect(() => { isReadyRef.current = isReady; }, [isReady]);
+  useEffect(() => { progressRef.current = progress; }, [progress]);
+
   // Minimum display time
   useEffect(() => {
     const timer = setTimeout(() => setMinTimeElapsed(true), minDisplayTime);
     return () => clearTimeout(timer);
   }, [minDisplayTime]);
+
+  // Animate the progress line. The bar always advances on a time curve so
+  // the wait reads as honest motion even when the splat loads instantly;
+  // real download progress pulls it ahead when the network reports it; and
+  // it holds below 100% until the splat has actually finished loading.
+  useEffect(() => {
+    let raf = 0;
+    const start = performance.now();
+    let current = 0.03;
+    const tick = () => {
+      const elapsed = performance.now() - start;
+      // Asymptotic estimate — approaches ~0.86 by 10s, never reaches 1.
+      const timed = 1 - Math.exp(-elapsed / 5000);
+      const target = isReadyRef.current
+        ? 1
+        : Math.min(0.92, Math.max(progressRef.current, timed));
+      current += (target - current) * (isReadyRef.current ? 0.16 : 0.07);
+      if (current > 0.999) current = 1;
+      const el = lineRef.current;
+      if (el) el.style.transform = `scaleX(${Math.max(0.03, current)})`;
+      if (current < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   // Fade out when ready and minimum time elapsed
   useEffect(() => {
@@ -37,8 +71,6 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
   if (isHidden) return null;
 
   const isFast = minDisplayTime < DEFAULT_MIN_DISPLAY_TIME;
-  // Keep a small floor so the line reads as "starting" rather than empty.
-  const displayProgress = Math.min(1, Math.max(0.03, progress));
 
   return (
     <div
@@ -57,10 +89,10 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
             padding: '0 0.15em',
           }}
         >
-          Doug's Found Wood
+          Doug&apos;s Found Wood
         </h1>
 
-        {/* Splat download progress line */}
+        {/* Splat load progress line */}
         <div
           className="mt-6 overflow-hidden"
           style={{
@@ -71,13 +103,13 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
           }}
         >
           <div
+            ref={lineRef}
             style={{
               width: '100%',
               height: '100%',
               background: 'linear-gradient(90deg, transparent, #a89279 10%, #8b7355 50%, #a89279 90%, transparent)',
               transformOrigin: 'left center',
-              transform: `scaleX(${displayProgress})`,
-              transition: 'transform 0.4s ease-out',
+              transform: 'scaleX(0.03)',
             }}
           />
         </div>
