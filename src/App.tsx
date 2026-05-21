@@ -214,6 +214,12 @@ function AppContent() {
     };
   }, []);
 
+  // Remove the static boot wordmark once React has rendered — LoadingScreen
+  // (or, in prerender mode, the app itself) has taken over the same view.
+  useEffect(() => {
+    document.getElementById('boot-screen')?.remove();
+  }, []);
+
   useEffect(() => {
     // Start showing the text after loading screen completes
     // This ensures text appears after animation actually starts

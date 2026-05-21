@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import rough from 'roughjs';
 import { fontFamilyMap } from '../constants';
 
 const DEFAULT_MIN_DISPLAY_TIME = 6000;
 
-// Warm, heartfelt lines shown while the splat loads. Kept short so they sit
-// on one line on all but the narrowest screens; the container reserves room
-// for two lines either way so rotation never shifts the layout.
+// Warm, heartfelt lines shown while the splat loads.
 const SAYINGS = [
   'Great furniture is worth the wait.',
   'Good things are built slowly.',
@@ -14,6 +13,12 @@ const SAYINGS = [
   'Built by hand in Athens, Maine.',
   'Crafted to last a lifetime.',
 ] as const;
+
+// Palette — warm workshop tones.
+const INK = '#5c4f3f';
+const CORNER_INK = '#c0b39c';
+const TRACK_INK = '#a89878';
+const WOOD = '#9c7c4c';
 
 // Fisher–Yates shuffle so the sayings don't always open on the same line.
 function shuffled<T>(arr: readonly T[]): T[] {
@@ -38,14 +43,16 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
-  // The progress line is animated directly via a ref (no per-frame React
-  // re-render). Latest props are mirrored into refs so the animation loop
-  // can read them without being torn down on every change.
-  const lineRef = useRef<HTMLDivElement>(null);
+  const cornerCanvasRef = useRef<HTMLCanvasElement>(null);
+  const barCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Latest props mirrored into refs for the animation loop.
   const isReadyRef = useRef(isReady);
   const progressRef = useRef(progress);
+  const fadingRef = useRef(false);
   useEffect(() => { isReadyRef.current = isReady; }, [isReady]);
   useEffect(() => { progressRef.current = progress; }, [progress]);
+  useEffect(() => { fadingRef.current = isFadingOut; }, [isFadingOut]);
 
   // Rotating saying — shuffled once per mount, crossfaded on a timer.
   const sayings = useMemo(() => shuffled(SAYINGS), []);
@@ -60,54 +67,146 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
 
   // Cycle the saying: fade the current line out, swap, fade the next in.
   useEffect(() => {
-    const ROTATE_MS = 3600;
-    const FADE_MS = 500;
     let swapTimer = 0;
     const interval = window.setInterval(() => {
       setSayingShown(false);
       swapTimer = window.setTimeout(() => {
         setSayingIndex((i) => (i + 1) % sayings.length);
         setSayingShown(true);
-      }, FADE_MS);
-    }, ROTATE_MS);
+      }, 500);
+    }, 3600);
     return () => {
       window.clearInterval(interval);
       window.clearTimeout(swapTimer);
     };
   }, [sayings.length]);
 
-  // Animate the progress line. The bar always advances on a time curve so
-  // the wait reads as honest motion even when the splat loads instantly;
-  // real download progress pulls it ahead when the network reports it; and
-  // it holds below 100% until the splat has actually finished loading.
+  // RoughJS: hand-sketched corner marks + progress bar that "boil" — they're
+  // re-sketched ~9×/second with a fresh seed so every line gently breathes,
+  // like watching a pencil at work. The bar's hatching fills in with progress;
+  // the fill advances on a time curve so the wait always shows honest motion
+  // and only completes once the splat has actually loaded.
   useEffect(() => {
+    const cornerCanvas = cornerCanvasRef.current;
+    const barCanvas = barCanvasRef.current;
+    if (!cornerCanvas || !barCanvas) return;
+
+    const cornerCtx = cornerCanvas.getContext('2d');
+    const barCtx = barCanvas.getContext('2d');
+    if (!cornerCtx || !barCtx) return;
+
+    const rcCorner = rough.canvas(cornerCanvas);
+    const rcBar = rough.canvas(barCanvas);
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let cw = 0, ch = 0, bw = 0, bh = 0;
+    const sizeCanvases = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      cw = window.innerWidth;
+      ch = window.innerHeight;
+      cornerCanvas.width = Math.round(cw * dpr);
+      cornerCanvas.height = Math.round(ch * dpr);
+      cornerCanvas.style.width = `${cw}px`;
+      cornerCanvas.style.height = `${ch}px`;
+      cornerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const rect = barCanvas.getBoundingClientRect();
+      bw = rect.width;
+      bh = rect.height;
+      barCanvas.width = Math.round(bw * dpr);
+      barCanvas.height = Math.round(bh * dpr);
+      barCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    sizeCanvases();
+    window.addEventListener('resize', sizeCanvases);
+
+    const drawCorners = (seed: number) => {
+      cornerCtx.clearRect(0, 0, cw, ch);
+      const inset = Math.max(16, Math.min(cw, ch) * 0.045);
+      const arm = inset * 0.82;
+      const o = { stroke: CORNER_INK, strokeWidth: 1.5, roughness: 1.3, bowing: 1.5, seed };
+      const corner = (x: number, y: number, dx: number, dy: number) => {
+        rcCorner.line(x, y, x + dx * arm, y, o);
+        rcCorner.line(x, y, x, y + dy * arm, o);
+      };
+      corner(inset, inset, 1, 1);
+      corner(cw - inset, inset, -1, 1);
+      corner(inset, ch - inset, 1, -1);
+      corner(cw - inset, ch - inset, -1, -1);
+    };
+
+    const drawBar = (p: number, seed: number) => {
+      barCtx.clearRect(0, 0, bw, bh);
+      const pad = 5;
+      const w = bw - pad * 2;
+      const h = bh - pad * 2;
+      const fillW = w * Math.min(1, Math.max(0, p));
+      if (fillW > 2) {
+        rcBar.rectangle(pad, pad, fillW, h, {
+          fill: WOOD,
+          fillStyle: 'hachure',
+          hachureGap: 5,
+          hachureAngle: -41,
+          fillWeight: 1.5,
+          stroke: 'none',
+          roughness: 1.1,
+          seed,
+        });
+      }
+      rcBar.rectangle(pad, pad, w, h, {
+        stroke: TRACK_INK,
+        strokeWidth: 1.6,
+        roughness: 1.15,
+        bowing: 1,
+        seed,
+      });
+    };
+
     let raf = 0;
-    const start = performance.now();
+    let lastBoil = -1000;
+    let seed = 1;
     let current = 0.03;
-    const tick = () => {
-      const elapsed = performance.now() - start;
-      // Asymptotic estimate — approaches ~0.86 by 10s, never reaches 1.
+    let lastDrawn = -1;
+    const start = performance.now();
+
+    const loop = (now: number) => {
+      if (fadingRef.current) return; // freeze the sketch once we start leaving
+      const elapsed = now - start;
+      // Asymptotic time estimate — approaches ~0.86 by 10s, never reaches 1.
       const timed = 1 - Math.exp(-elapsed / 5000);
       const target = isReadyRef.current
         ? 1
         : Math.min(0.92, Math.max(progressRef.current, timed));
       current += (target - current) * (isReadyRef.current ? 0.16 : 0.07);
       if (current > 0.999) current = 1;
-      const el = lineRef.current;
-      if (el) el.style.transform = `scaleX(${Math.max(0.03, current)})`;
-      if (current < 1) raf = requestAnimationFrame(tick);
+
+      if (reduce) {
+        // No boil — draw the marks once, redraw the bar only as it fills.
+        if (lastDrawn < 0) drawCorners(7);
+        if (lastDrawn < 0 || Math.abs(current - lastDrawn) > 0.004) {
+          drawBar(current, 7);
+          lastDrawn = current;
+        }
+      } else if (now - lastBoil > 110) {
+        lastBoil = now;
+        seed = (seed % 99989) + 1;
+        drawCorners(seed);
+        drawBar(current, seed);
+      }
+      raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(loop);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', sizeCanvases);
+    };
   }, []);
 
   // Fade out when ready and minimum time elapsed
   useEffect(() => {
     if (isReady && minTimeElapsed && !isFadingOut) {
       setIsFadingOut(true);
-      // Signal animation can start now
       onComplete?.();
-      // Hide completely after fade animation
       const timer = setTimeout(() => setIsHidden(true), 800);
       return () => clearTimeout(timer);
     }
@@ -119,108 +218,144 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#f8f5ef] transition-opacity duration-700 ${
-        isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
-      }`}
+      className="ls-root"
+      style={{
+        opacity: isFadingOut ? 0 : 1,
+        pointerEvents: isFadingOut ? 'none' : 'auto',
+      }}
     >
-      <div className="text-center flex flex-col items-center px-6">
-        {/* Brand name */}
-        <h1
-          className="text-4xl md:text-5xl text-[#6b5e4f] overflow-visible"
-          style={{
-            fontFamily: fontFamilyMap['Caveat'],
-            animation: `loadingFadeIn ${isFast ? '0.6s' : '1.5s'} ease-out forwards`,
-            opacity: 0,
-            padding: '0 0.15em',
-          }}
-        >
-          Doug&apos;s Found Wood
-        </h1>
+      <canvas ref={cornerCanvasRef} className="ls-corners" aria-hidden="true" />
 
-        {/* Splat load progress line */}
+      {/* Instant wordmark — matches the static boot screen exactly, dead-centered. */}
+      <h1 className="ls-mark" style={{ fontFamily: fontFamilyMap['Caveat'] }}>
+        Doug&apos;s Found Wood
+      </h1>
+
+      <div className="ls-support" style={{ animationDelay: isFast ? '0.15s' : '0.3s' }}>
+        <canvas ref={barCanvasRef} className="ls-bar" aria-hidden="true" />
         <div
-          className="mt-6 overflow-hidden"
-          style={{
-            width: 'clamp(200px, 40vw, 320px)',
-            height: '2px',
-            animation: `loadingFadeIn 0.8s ease-out ${isFast ? '0.3s' : '0.8s'} forwards`,
-            opacity: 0,
-          }}
+          role="status"
+          className="ls-caption"
+          style={{ fontFamily: fontFamilyMap['Patrick Hand'] }}
         >
-          <div
-            ref={lineRef}
-            style={{
-              width: '100%',
-              height: '100%',
-              background: 'linear-gradient(90deg, transparent, #a89279 10%, #8b7355 50%, #a89279 90%, transparent)',
-              transformOrigin: 'left center',
-              transform: 'scaleX(0.03)',
-            }}
-          />
+          Loading
+          <span className="ls-dots" aria-hidden="true">
+            <span>.</span>
+            <span>.</span>
+            <span>.</span>
+          </span>
         </div>
-
-        {/* Loading status + rotating saying */}
-        <div
-          className="mt-5 flex flex-col items-center"
-          style={{
-            animation: `loadingFadeIn 1s ease-out ${isFast ? '0.5s' : '1.4s'} forwards`,
-            opacity: 0,
-          }}
-        >
-          <div
-            role="status"
-            className="flex items-center text-xs uppercase text-[#b6a489]"
-            style={{ fontFamily: fontFamilyMap['Patrick Hand'], letterSpacing: '0.22em' }}
+        <div className="ls-saying-box">
+          <p
+            aria-hidden="true"
+            className="ls-saying"
+            data-shown={sayingShown}
+            style={{ fontFamily: fontFamilyMap['Caveat'] }}
           >
-            <span>Loading</span>
-            <span className="loading-dots" aria-hidden="true">
-              <span>.</span>
-              <span>.</span>
-              <span>.</span>
-            </span>
-          </div>
-          <div className="mt-2 flex min-h-[2.6em] items-center px-2">
-            <p
-              aria-hidden="true"
-              className="loading-saying text-lg md:text-xl text-[#8b7355]"
-              style={{
-                fontFamily: fontFamilyMap['Caveat'],
-                opacity: sayingShown ? 1 : 0,
-                transform: sayingShown ? 'translateY(0)' : 'translateY(5px)',
-                transition: 'opacity 0.5s ease, transform 0.5s ease',
-              }}
-            >
-              {sayings[sayingIndex]}
-            </p>
-          </div>
+            {sayings[sayingIndex]}
+          </p>
         </div>
       </div>
 
       <style>{`
-        @keyframes loadingFadeIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
+        .ls-root {
+          position: fixed;
+          inset: 0;
+          z-index: 50;
+          background: #f8f5ef;
+          transition: opacity 0.7s ease;
         }
-        @keyframes loadingDot {
+        .ls-corners {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          animation: lsFade 0.7s ease-out 0.15s both;
+        }
+        .ls-mark {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          margin: 0;
+          padding: 0 0.15em;
+          font-weight: 400;
+          line-height: 1;
+          white-space: nowrap;
+          font-size: clamp(2.75rem, 8.5vw, 4.75rem);
+          color: ${INK};
+        }
+        .ls-support {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          margin-top: clamp(4rem, 3.4rem + 4.4vh, 6rem);
+          transform: translateX(-50%);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          animation: lsRise 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .ls-bar {
+          display: block;
+          width: clamp(220px, 62vw, 300px);
+          height: 26px;
+        }
+        .ls-caption {
+          margin-top: 1.2rem;
+          display: flex;
+          align-items: center;
+          font-size: 0.72rem;
+          text-transform: uppercase;
+          letter-spacing: 0.24em;
+          color: #a3927a;
+        }
+        .ls-dots {
+          margin-left: 0.18em;
+          letter-spacing: 0.12em;
+        }
+        .ls-dots span {
+          animation: lsDot 1.4s ease-in-out infinite;
+        }
+        .ls-dots span:nth-child(2) { animation-delay: 0.18s; }
+        .ls-dots span:nth-child(3) { animation-delay: 0.36s; }
+        .ls-saying-box {
+          margin-top: 0.5rem;
+          display: flex;
+          align-items: center;
+          min-height: 2.6em;
+          padding: 0 1rem;
+        }
+        .ls-saying {
+          margin: 0;
+          font-size: clamp(1.05rem, 1rem + 0.85vw, 1.45rem);
+          color: #8b7355;
+          opacity: 0;
+          transform: translateY(5px);
+          transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .ls-saying[data-shown='true'] {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        @keyframes lsFade {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes lsRise {
+          from { opacity: 0; transform: translateX(-50%) translateY(14px); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes lsDot {
           0%, 70%, 100% { opacity: 0.25; }
           35% { opacity: 1; }
         }
-        .loading-dots {
-          margin-left: 0.18em;
-          letter-spacing: 0.1em;
-        }
-        .loading-dots span {
-          animation: loadingDot 1.4s ease-in-out infinite;
-        }
-        .loading-dots span:nth-child(2) { animation-delay: 0.18s; }
-        .loading-dots span:nth-child(3) { animation-delay: 0.36s; }
         @media (prefers-reduced-motion: reduce) {
-          @keyframes loadingFadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+          @keyframes lsRise {
+            from { opacity: 0; transform: translateX(-50%); }
+            to { opacity: 1; transform: translateX(-50%); }
           }
-          .loading-dots span { animation: none; opacity: 0.6; }
-          .loading-saying { transition: opacity 0.5s ease !important; transform: none !important; }
+          .ls-dots span { animation: none; opacity: 0.6; }
+          .ls-saying { transition: opacity 0.5s ease !important; transform: none !important; }
         }
       `}</style>
     </div>

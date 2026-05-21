@@ -28,6 +28,7 @@
     "react-dom": "^19.2.6",
     "react-photo-view": "^1.2.7",
     "react-router-dom": "^7.15.1",
+    "roughjs": "^4.6.6",
     "three": "^0.182.0",
     "zustand": "^5.0.13"
   },
