@@ -281,14 +281,15 @@ function AppContent() {
 
       {/* Hide default Leva panel in production, show custom panel in dev */}
       {/* Home controls use custom store, gallery controls use default panel */}
-      <Leva hidden={!showLeva} />
-      {showLeva && activeScene !== 'gallery' && <LevaPanel store={controlsStore} />}
+      <Leva hidden={!showLeva} collapsed />
+      {showLeva && activeScene !== 'gallery' && <LevaPanel store={controlsStore} collapsed />}
 
       {/* Mobile arrow controls - separate panel for arrow positioning (mobile only) */}
       {showArrowControls && isMobileView && (
         <LevaPanel
           store={arrowControlsStore}
           flat
+          collapsed
           titleBar={{ title: 'Mobile Arrow Controls' }}
           theme={{
             sizes: { rootWidth: '320px' },
@@ -301,6 +302,7 @@ function AppContent() {
         <LevaPanel
           store={mobileNavStore}
           flat
+          collapsed
           titleBar={{ title: 'Mobile Navigation' }}
           theme={{
             sizes: { rootWidth: '320px' },
