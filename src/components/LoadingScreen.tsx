@@ -19,6 +19,12 @@ const INK = '#5c4f3f';
 const CORNER_INK = '#c0b39c';
 const TRACK_INK = '#a89878';
 const WOOD = '#9c7c4c';
+const UNDERLINE = '#8c6f49';
+
+// Underline draw-on timing.
+const U_DELAY = 360;
+const U_DURATION = 820;
+const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3);
 
 // Fisher–Yates shuffle so the sayings don't always open on the same line.
 function shuffled<T>(arr: readonly T[]): T[] {
@@ -45,6 +51,7 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
 
   const cornerCanvasRef = useRef<HTMLCanvasElement>(null);
   const barCanvasRef = useRef<HTMLCanvasElement>(null);
+  const markRef = useRef<HTMLHeadingElement>(null);
 
   // Latest props mirrored into refs for the animation loop.
   const isReadyRef = useRef(isReady);
@@ -81,11 +88,12 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
     };
   }, [sayings.length]);
 
-  // RoughJS: hand-sketched corner marks + progress bar that "boil" — they're
-  // re-sketched ~9×/second with a fresh seed so every line gently breathes,
-  // like watching a pencil at work. The bar's hatching fills in with progress;
-  // the fill advances on a time curve so the wait always shows honest motion
-  // and only completes once the splat has actually loaded.
+  // RoughJS: hand-sketched corner marks, an underline that draws itself in
+  // beneath the wordmark, and a progress bar — all of which "boil": they're
+  // re-sketched ~9x/second with a fresh seed so every line gently breathes,
+  // like watching a pencil at work. The bar's hatching fills in with
+  // progress; the fill advances on a time curve so the wait always shows
+  // honest motion and only completes once the splat has actually loaded.
   useEffect(() => {
     const cornerCanvas = cornerCanvasRef.current;
     const barCanvas = barCanvasRef.current;
@@ -119,19 +127,38 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
     sizeCanvases();
     window.addEventListener('resize', sizeCanvases);
 
-    const drawCorners = (seed: number) => {
+    // Corner marks + the wordmark underline share the full-viewport canvas.
+    const drawFrame = (seed: number, underlineT: number) => {
       cornerCtx.clearRect(0, 0, cw, ch);
+
       const inset = Math.max(16, Math.min(cw, ch) * 0.045);
       const arm = inset * 0.82;
-      const o = { stroke: CORNER_INK, strokeWidth: 1.5, roughness: 1.3, bowing: 1.5, seed };
+      const co = { stroke: CORNER_INK, strokeWidth: 1.5, roughness: 1.3, bowing: 1.5, seed };
       const corner = (x: number, y: number, dx: number, dy: number) => {
-        rcCorner.line(x, y, x + dx * arm, y, o);
-        rcCorner.line(x, y, x, y + dy * arm, o);
+        rcCorner.line(x, y, x + dx * arm, y, co);
+        rcCorner.line(x, y, x, y + dy * arm, co);
       };
       corner(inset, inset, 1, 1);
       corner(cw - inset, inset, -1, 1);
       corner(inset, ch - inset, 1, -1);
       corner(cw - inset, ch - inset, -1, -1);
+
+      // Underline beneath the wordmark — drawn left-to-right, then it boils.
+      const mark = markRef.current;
+      if (mark && underlineT > 0) {
+        const r = mark.getBoundingClientRect();
+        const overshoot = Math.min(14, r.width * 0.04);
+        const x1 = r.left - overshoot;
+        const span = r.width + overshoot * 2;
+        const y = r.bottom - r.height * 0.04;
+        rcCorner.line(x1, y, x1 + span * underlineT, y, {
+          stroke: UNDERLINE,
+          strokeWidth: 2.4,
+          roughness: 1.5,
+          bowing: 2.6,
+          seed,
+        });
+      }
     };
 
     const drawBar = (p: number, seed: number) => {
@@ -178,10 +205,13 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
         : Math.min(0.92, Math.max(progressRef.current, timed));
       current += (target - current) * (isReadyRef.current ? 0.16 : 0.07);
       if (current > 0.999) current = 1;
+      const underlineT = easeOutCubic(
+        Math.min(1, Math.max(0, (elapsed - U_DELAY) / U_DURATION)),
+      );
 
       if (reduce) {
-        // No boil — draw the marks once, redraw the bar only as it fills.
-        if (lastDrawn < 0) drawCorners(7);
+        // No boil — draw the frame once, redraw the bar only as it fills.
+        if (lastDrawn < 0) drawFrame(7, 1);
         if (lastDrawn < 0 || Math.abs(current - lastDrawn) > 0.004) {
           drawBar(current, 7);
           lastDrawn = current;
@@ -189,7 +219,7 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
       } else if (now - lastBoil > 110) {
         lastBoil = now;
         seed = (seed % 99989) + 1;
-        drawCorners(seed);
+        drawFrame(seed, underlineT);
         drawBar(current, seed);
       }
       raf = requestAnimationFrame(loop);
@@ -227,7 +257,7 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
       <canvas ref={cornerCanvasRef} className="ls-corners" aria-hidden="true" />
 
       {/* Instant wordmark — matches the static boot screen exactly, dead-centered. */}
-      <h1 className="ls-mark" style={{ fontFamily: fontFamilyMap['Caveat'] }}>
+      <h1 ref={markRef} className="ls-mark" style={{ fontFamily: fontFamilyMap['Caveat'] }}>
         Doug&apos;s Found Wood
       </h1>
 
@@ -269,7 +299,7 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
           position: absolute;
           inset: 0;
           pointer-events: none;
-          animation: lsFade 0.7s ease-out 0.15s both;
+          animation: lsFade 0.55s ease-out 0.1s both;
         }
         .ls-mark {
           position: absolute;
@@ -288,11 +318,13 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
           position: absolute;
           left: 50%;
           top: 50%;
+          width: min(30rem, 90vw);
           margin-top: clamp(4rem, 3.4rem + 4.4vh, 6rem);
           transform: translateX(-50%);
           display: flex;
           flex-direction: column;
           align-items: center;
+          text-align: center;
           animation: lsRise 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
         .ls-bar {

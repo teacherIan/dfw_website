@@ -17,7 +17,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Preload the Caveat (latin) file so the instant boot wordmark renders in-brand fast -->
     <link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/caveat/v23/Wnz6HAc5bAfYB2Q7ZjYY.woff2">
-    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Architects+Daughter&family=Caveat:wght@400;700&family=Patrick+Hand&family=Indie+Flower&family=Permanent+Marker&family=Shadows+Into+Light&display=swap" rel="stylesheet">
+    <!-- Caveat uses display:block — the hero wordmark waits for the real font
+         instead of flashing a mismatched fallback and resizing on swap. -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=block" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Architects+Daughter&family=Patrick+Hand&family=Indie+Flower&family=Permanent+Marker&family=Shadows+Into+Light&display=swap" rel="stylesheet">
     <style>
       /* Static boot wordmark — paints on the first frame, before the JS
          bundle loads. React's LoadingScreen renders an identical dead-centered
