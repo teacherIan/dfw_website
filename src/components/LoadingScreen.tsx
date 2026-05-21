@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import rough from 'roughjs';
 import { fontFamilyMap } from '../constants';
+import { WORDMARK } from './loading/wordmarkPath';
 
 const DEFAULT_MIN_DISPLAY_TIME = 6000;
 
@@ -26,6 +27,9 @@ const U_DELAY = 360;
 const U_DURATION = 820;
 const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3);
 
+// Wordmark font size in px — mirrors the clamp the rough canvas replaces.
+const wordmarkPx = (vw: number) => Math.max(44, Math.min(0.085 * vw, 76));
+
 // Fisher–Yates shuffle so the sayings don't always open on the same line.
 function shuffled<T>(arr: readonly T[]): T[] {
   const a = [...arr];
@@ -50,8 +54,8 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
   const [isHidden, setIsHidden] = useState(false);
 
   const cornerCanvasRef = useRef<HTMLCanvasElement>(null);
+  const wordmarkCanvasRef = useRef<HTMLCanvasElement>(null);
   const barCanvasRef = useRef<HTMLCanvasElement>(null);
-  const markRef = useRef<HTMLHeadingElement>(null);
 
   // Latest props mirrored into refs for the animation loop.
   const isReadyRef = useRef(isReady);
@@ -88,75 +92,129 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
     };
   }, [sayings.length]);
 
-  // RoughJS: hand-sketched corner marks, an underline that draws itself in
-  // beneath the wordmark, and a progress bar — all of which "boil": they're
-  // re-sketched ~9x/second with a fresh seed so every line gently breathes,
-  // like watching a pencil at work. The bar's hatching fills in with
-  // progress; the fill advances on a time curve so the wait always shows
-  // honest motion and only completes once the splat has actually loaded.
+  // RoughJS: the whole intro is one hand-drawn sketch. The wordmark is
+  // rendered from baked glyph outlines so it shares the sketched character
+  // of the corner marks and progress bar. Corner marks and the bar "boil" —
+  // re-sketched ~9x/second so the lines gently breathe; the wordmark itself
+  // is drawn once (a steady logo), and the underline beneath it draws on,
+  // then drifts on a much slower, calmer cadence.
   useEffect(() => {
     const cornerCanvas = cornerCanvasRef.current;
+    const wordCanvas = wordmarkCanvasRef.current;
     const barCanvas = barCanvasRef.current;
-    if (!cornerCanvas || !barCanvas) return;
+    if (!cornerCanvas || !wordCanvas || !barCanvas) return;
 
     const cornerCtx = cornerCanvas.getContext('2d');
+    const wordCtx = wordCanvas.getContext('2d');
     const barCtx = barCanvas.getContext('2d');
-    if (!cornerCtx || !barCtx) return;
+    if (!cornerCtx || !wordCtx || !barCtx) return;
 
     const rcCorner = rough.canvas(cornerCanvas);
+    const rcWord = rough.canvas(wordCanvas);
     const rcBar = rough.canvas(barCanvas);
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    const refW = WORDMARK.bbox.x2 - WORDMARK.bbox.x1;
+    const refH = WORDMARK.bbox.y2 - WORDMARK.bbox.y1;
+
+    let dpr = 1;
     let cw = 0, ch = 0, bw = 0, bh = 0;
-    const sizeCanvases = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let scale = 1, marginH = 0, marginV = 0, textW = 0, textH = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let textDrawable: any = null;
+
+    const setup = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      // Corner canvas — full viewport.
       cw = window.innerWidth;
       ch = window.innerHeight;
       cornerCanvas.width = Math.round(cw * dpr);
       cornerCanvas.height = Math.round(ch * dpr);
       cornerCanvas.style.width = `${cw}px`;
       cornerCanvas.style.height = `${ch}px`;
-      cornerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const rect = barCanvas.getBoundingClientRect();
-      bw = rect.width;
-      bh = rect.height;
+
+      // Bar canvas — sized by CSS, measured here.
+      const barRect = barCanvas.getBoundingClientRect();
+      bw = barRect.width;
+      bh = barRect.height;
       barCanvas.width = Math.round(bw * dpr);
       barCanvas.height = Math.round(bh * dpr);
       barCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Wordmark canvas — sized to the scaled glyph outlines, with a margin
+      // that also reserves the underline below (kept symmetric so the text
+      // stays optically dead-centered).
+      scale = wordmarkPx(cw) / WORDMARK.size;
+      textW = refW * scale;
+      textH = refH * scale;
+      marginH = Math.max(20, textW * 0.05);
+      marginV = textH * 0.34 + 14;
+      const ww = textW + marginH * 2;
+      const wh = textH + marginV * 2;
+      wordCanvas.style.width = `${ww}px`;
+      wordCanvas.style.height = `${wh}px`;
+      wordCanvas.width = Math.round(ww * dpr);
+      wordCanvas.height = Math.round(wh * dpr);
+
+      // Bake the wordmark's rough rendering once — a steady logo, not boiling.
+      textDrawable = rcWord.generator.path(WORDMARK.d, {
+        fill: INK,
+        fillStyle: 'solid',
+        stroke: INK,
+        strokeWidth: 1.0 / scale,
+        roughness: 0.78 / scale,
+        bowing: 0.6,
+        seed: 1337,
+      });
     };
-    sizeCanvases();
-    window.addEventListener('resize', sizeCanvases);
+    setup();
+    window.addEventListener('resize', setup);
 
-    // Corner marks + the wordmark underline share the full-viewport canvas.
-    const drawFrame = (seed: number, underlineT: number) => {
+    const drawCorners = (seed: number) => {
+      cornerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       cornerCtx.clearRect(0, 0, cw, ch);
-
       const inset = Math.max(16, Math.min(cw, ch) * 0.045);
       const arm = inset * 0.82;
-      const co = { stroke: CORNER_INK, strokeWidth: 1.5, roughness: 1.3, bowing: 1.5, seed };
+      const o = { stroke: CORNER_INK, strokeWidth: 1.5, roughness: 1.3, bowing: 1.5, seed };
       const corner = (x: number, y: number, dx: number, dy: number) => {
-        rcCorner.line(x, y, x + dx * arm, y, co);
-        rcCorner.line(x, y, x, y + dy * arm, co);
+        rcCorner.line(x, y, x + dx * arm, y, o);
+        rcCorner.line(x, y, x, y + dy * arm, o);
       };
       corner(inset, inset, 1, 1);
       corner(cw - inset, inset, -1, 1);
       corner(inset, ch - inset, 1, -1);
       corner(cw - inset, ch - inset, -1, -1);
+    };
 
-      // Underline beneath the wordmark — drawn left-to-right, then it boils.
-      const mark = markRef.current;
-      if (mark && underlineT > 0) {
-        const r = mark.getBoundingClientRect();
-        const overshoot = Math.min(14, r.width * 0.04);
-        const x1 = r.left - overshoot;
-        const span = r.width + overshoot * 2;
-        const y = r.bottom - r.height * 0.04;
-        rcCorner.line(x1, y, x1 + span * underlineT, y, {
+    const drawWordmark = (underlineSeed: number, underlineT: number) => {
+      wordCtx.setTransform(1, 0, 0, 1, 0, 0);
+      wordCtx.clearRect(0, 0, wordCanvas.width, wordCanvas.height);
+
+      // Glyph outlines, drawn in reference units via a scaled transform.
+      wordCtx.setTransform(
+        scale * dpr,
+        0,
+        0,
+        scale * dpr,
+        (marginH - WORDMARK.bbox.x1 * scale) * dpr,
+        (marginV - WORDMARK.bbox.y1 * scale) * dpr,
+      );
+      if (textDrawable) rcWord.draw(textDrawable);
+
+      // Underline — drawn in CSS pixels, draws on left-to-right.
+      if (underlineT > 0) {
+        wordCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const over = Math.min(16, textW * 0.045);
+        const x1 = marginH - over;
+        const span = textW + over * 2;
+        const y = marginV + textH + textH * 0.12;
+        rcWord.line(x1, y, x1 + span * underlineT, y, {
           stroke: UNDERLINE,
           strokeWidth: 2.4,
-          roughness: 1.5,
-          bowing: 2.6,
-          seed,
+          roughness: 1.0,
+          bowing: 1.2,
+          seed: underlineSeed,
         });
       }
     };
@@ -190,7 +248,11 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
 
     let raf = 0;
     let lastBoil = -1000;
+    let lastUnderlineReseed = -1000;
     let seed = 1;
+    let underlineSeed = 9;
+    let lastUnderlineT = -1;
+    let lastUnderlineSeed = -1;
     let current = 0.03;
     let lastDrawn = -1;
     const start = performance.now();
@@ -210,17 +272,34 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
       );
 
       if (reduce) {
-        // No boil — draw the frame once, redraw the bar only as it fills.
-        if (lastDrawn < 0) drawFrame(7, 1);
+        if (lastDrawn < 0) {
+          drawCorners(7);
+          drawWordmark(9, 1);
+        }
         if (lastDrawn < 0 || Math.abs(current - lastDrawn) > 0.004) {
           drawBar(current, 7);
           lastDrawn = current;
         }
-      } else if (now - lastBoil > 110) {
-        lastBoil = now;
-        seed = (seed % 99989) + 1;
-        drawFrame(seed, underlineT);
-        drawBar(current, seed);
+      } else {
+        // Corner marks + bar boil briskly.
+        if (now - lastBoil > 110) {
+          lastBoil = now;
+          seed = (seed % 99989) + 1;
+          drawCorners(seed);
+          drawBar(current, seed);
+        }
+        // Underline drifts on a calm cadence — re-seeded only a couple of
+        // times a second so it reads as settled, not jittery.
+        if (now - lastUnderlineReseed > 520) {
+          lastUnderlineReseed = now;
+          underlineSeed = (underlineSeed % 99989) + 1;
+        }
+        // Redraw the wordmark only while the underline is actually changing.
+        if (underlineT !== lastUnderlineT || underlineSeed !== lastUnderlineSeed) {
+          lastUnderlineT = underlineT;
+          lastUnderlineSeed = underlineSeed;
+          drawWordmark(underlineSeed, underlineT);
+        }
       }
       raf = requestAnimationFrame(loop);
     };
@@ -228,7 +307,7 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
 
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener('resize', sizeCanvases);
+      window.removeEventListener('resize', setup);
     };
   }, []);
 
@@ -256,10 +335,13 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
     >
       <canvas ref={cornerCanvasRef} className="ls-corners" aria-hidden="true" />
 
-      {/* Instant wordmark — matches the static boot screen exactly, dead-centered. */}
-      <h1 ref={markRef} className="ls-mark" style={{ fontFamily: fontFamilyMap['Caveat'] }}>
-        Doug&apos;s Found Wood
-      </h1>
+      {/* Rough-rendered wordmark — dead-centered, drawn from baked glyph outlines. */}
+      <canvas
+        ref={wordmarkCanvasRef}
+        className="ls-mark"
+        role="img"
+        aria-label="Doug's Found Wood"
+      />
 
       <div className="ls-support" style={{ animationDelay: isFast ? '0.15s' : '0.3s' }}>
         <canvas ref={barCanvasRef} className="ls-bar" aria-hidden="true" />
@@ -306,13 +388,7 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
           left: 50%;
           top: 50%;
           transform: translate(-50%, -50%);
-          margin: 0;
-          padding: 0 0.15em;
-          font-weight: 400;
-          line-height: 1;
-          white-space: nowrap;
-          font-size: clamp(2.75rem, 8.5vw, 4.75rem);
-          color: ${INK};
+          display: block;
         }
         .ls-support {
           position: absolute;
