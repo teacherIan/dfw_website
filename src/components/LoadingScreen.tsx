@@ -1,7 +1,29 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { fontFamilyMap } from '../constants';
 
 const DEFAULT_MIN_DISPLAY_TIME = 6000;
+
+// Warm, heartfelt lines shown while the splat loads. Kept short so they sit
+// on one line on all but the narrowest screens; the container reserves room
+// for two lines either way so rotation never shifts the layout.
+const SAYINGS = [
+  'Great furniture is worth the wait.',
+  'Good things are built slowly.',
+  "Handmade can't be hurried.",
+  'Shaped by hand, one piece at a time.',
+  'Built by hand in Athens, Maine.',
+  'Crafted to last a lifetime.',
+] as const;
+
+// Fisher–Yates shuffle so the sayings don't always open on the same line.
+function shuffled<T>(arr: readonly T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 interface LoadingScreenProps {
   isReady: boolean;
@@ -25,11 +47,34 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
   useEffect(() => { isReadyRef.current = isReady; }, [isReady]);
   useEffect(() => { progressRef.current = progress; }, [progress]);
 
+  // Rotating saying — shuffled once per mount, crossfaded on a timer.
+  const sayings = useMemo(() => shuffled(SAYINGS), []);
+  const [sayingIndex, setSayingIndex] = useState(0);
+  const [sayingShown, setSayingShown] = useState(true);
+
   // Minimum display time
   useEffect(() => {
     const timer = setTimeout(() => setMinTimeElapsed(true), minDisplayTime);
     return () => clearTimeout(timer);
   }, [minDisplayTime]);
+
+  // Cycle the saying: fade the current line out, swap, fade the next in.
+  useEffect(() => {
+    const ROTATE_MS = 3600;
+    const FADE_MS = 500;
+    let swapTimer = 0;
+    const interval = window.setInterval(() => {
+      setSayingShown(false);
+      swapTimer = window.setTimeout(() => {
+        setSayingIndex((i) => (i + 1) % sayings.length);
+        setSayingShown(true);
+      }, FADE_MS);
+    }, ROTATE_MS);
+    return () => {
+      window.clearInterval(interval);
+      window.clearTimeout(swapTimer);
+    };
+  }, [sayings.length]);
 
   // Animate the progress line. The bar always advances on a time curve so
   // the wait reads as honest motion even when the splat loads instantly;
@@ -114,20 +159,41 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
           />
         </div>
 
-        {/* Tagline - skip for returning visitors */}
-        {!isFast && (
-          <p
-            className="mt-4 text-sm tracking-widest uppercase text-[#a89279]"
-            style={{
-              fontFamily: fontFamilyMap['Patrick Hand'],
-              letterSpacing: '0.15em',
-              animation: 'loadingFadeIn 1.2s ease-out 2.5s forwards',
-              opacity: 0,
-            }}
+        {/* Loading status + rotating saying */}
+        <div
+          className="mt-5 flex flex-col items-center"
+          style={{
+            animation: `loadingFadeIn 1s ease-out ${isFast ? '0.5s' : '1.4s'} forwards`,
+            opacity: 0,
+          }}
+        >
+          <div
+            role="status"
+            className="flex items-center text-xs uppercase text-[#b6a489]"
+            style={{ fontFamily: fontFamilyMap['Patrick Hand'], letterSpacing: '0.22em' }}
           >
-            Handcrafted in Athens, Maine
-          </p>
-        )}
+            <span>Loading</span>
+            <span className="loading-dots" aria-hidden="true">
+              <span>.</span>
+              <span>.</span>
+              <span>.</span>
+            </span>
+          </div>
+          <div className="mt-2 flex min-h-[2.6em] items-center px-2">
+            <p
+              aria-hidden="true"
+              className="loading-saying text-lg md:text-xl text-[#8b7355]"
+              style={{
+                fontFamily: fontFamilyMap['Caveat'],
+                opacity: sayingShown ? 1 : 0,
+                transform: sayingShown ? 'translateY(0)' : 'translateY(5px)',
+                transition: 'opacity 0.5s ease, transform 0.5s ease',
+              }}
+            >
+              {sayings[sayingIndex]}
+            </p>
+          </div>
+        </div>
       </div>
 
       <style>{`
@@ -135,11 +201,26 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes loadingDot {
+          0%, 70%, 100% { opacity: 0.25; }
+          35% { opacity: 1; }
+        }
+        .loading-dots {
+          margin-left: 0.18em;
+          letter-spacing: 0.1em;
+        }
+        .loading-dots span {
+          animation: loadingDot 1.4s ease-in-out infinite;
+        }
+        .loading-dots span:nth-child(2) { animation-delay: 0.18s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.36s; }
         @media (prefers-reduced-motion: reduce) {
           @keyframes loadingFadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
           }
+          .loading-dots span { animation: none; opacity: 0.6; }
+          .loading-saying { transition: opacity 0.5s ease !important; transform: none !important; }
         }
       `}</style>
     </div>
