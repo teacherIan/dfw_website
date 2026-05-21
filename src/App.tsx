@@ -1,11 +1,9 @@
-import { Canvas } from '@react-three/fiber';
-import { useEffect, useCallback, useRef, useState } from 'react';
+import { useEffect, useCallback, useRef, useState, lazy, Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { BrowserRouter } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useControls, useCreateStore, LevaPanel, Leva, folder } from 'leva';
-import Scene from './components/scene/Scene';
 import TextOverlay from './components/scene/TextOverlay';
 import HandDrawnText from './components/scene/HandDrawnText';
 import BlueprintPicker from './components/gallery/BlueprintPicker';
@@ -13,7 +11,6 @@ import BlueprintGalleryGrid from './components/gallery/BlueprintGalleryGrid';
 import BlueprintPhotoViewer from './components/gallery/BlueprintPhotoViewer';
 import MenuOverlay from './components/navigation/MenuOverlay';
 import BackButton from './components/navigation/BackButton';
-import ErrorBoundary from './components/ErrorBoundary';
 import LoadingScreen from './components/LoadingScreen';
 import DragHint from './components/scene/DragHint';
 import {
@@ -34,6 +31,10 @@ import { isPrerender } from './seo/prerender';
 import SeoContent from './components/seo/SeoContent';
 import { ArrowFilterDefs } from './components/navigation/ArrowFilters';
 import './types/r3f.d';
+
+// Lazy boundary — three.js / r3f / drei / Spark load in their own chunk so
+// the intro renders without waiting on the 3D engine.
+const Scene3D = lazy(() => import('./components/scene/Scene3D'));
 
 function AppContent() {
   useRouteSceneSync();
@@ -319,11 +320,9 @@ function AppContent() {
       {/* Main 3D Canvas - fixed fullscreen, status bar area controlled by OS theme-color */}
       {!isPrerender() && (
         <div className="fixed inset-0 z-0 bg-transparent" style={{ touchAction: 'none', pointerEvents: animationPhase === 'entering' ? 'none' : 'auto' }}>
-          <ErrorBoundary>
-            <Canvas gl={{ antialias: false }} camera={{ position: [0, 2, 4], fov: 50 }}>
-              <Scene controlsStore={controlsStore} mobileFov={mobileFov} isMobileView={isMobileView} cameraSpeedMultiplier={isReturningVisitor ? 2 : 1} />
-            </Canvas>
-          </ErrorBoundary>
+          <Suspense fallback={null}>
+            <Scene3D controlsStore={controlsStore} mobileFov={mobileFov} isMobileView={isMobileView} cameraSpeedMultiplier={isReturningVisitor ? 2 : 1} />
+          </Suspense>
         </div>
       )}
 
