@@ -212,8 +212,8 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
         rcWord.line(x1, y, x1 + span * underlineT, y, {
           stroke: UNDERLINE,
           strokeWidth: 2.4,
-          roughness: 1.0,
-          bowing: 1.2,
+          roughness: 1.2,
+          bowing: 1.7,
           seed: underlineSeed,
         });
       }
@@ -288,9 +288,9 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
           drawCorners(seed);
           drawBar(current, seed);
         }
-        // Underline drifts on a calm cadence — re-seeded only a couple of
-        // times a second so it reads as settled, not jittery.
-        if (now - lastUnderlineReseed > 520) {
+        // Underline drifts on a gentle cadence — re-seeded ~3x a second so
+        // it has a perceptible life without the jitter of a full boil.
+        if (now - lastUnderlineReseed > 300) {
           lastUnderlineReseed = now;
           underlineSeed = (underlineSeed % 99989) + 1;
         }
