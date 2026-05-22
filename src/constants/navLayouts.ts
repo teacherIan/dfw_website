@@ -33,9 +33,54 @@ const homeDesktop: NavLayout = {
   contact: { position: { top: `calc(45% + 2 * ${DESKTOP_STEP})`, right: DESKTOP_RIGHT }, side: 'right' },
 };
 
+// Mobile (portrait) — three buttons in a triangular layout near the bottom.
+// Baked from the old MobileNavLayout BREAKPOINT_CONFIGS (one source now).
+const mobileSlot = (leftPct: number, bottomSvh: number, side: NavButtonSide, size: number): NavSlot => ({
+  position: {
+    left: `${leftPct}%`,
+    bottom: `calc(${bottomSvh}svh + env(safe-area-inset-bottom, 0px))`,
+  },
+  side,
+  size,
+});
+
+const homeMobile = {
+  small: {
+    gallery: mobileSlot(82, 10, 'right', 70),
+    ethos: mobileSlot(14, 3, 'left', 70),
+    contact: mobileSlot(45, 8, 'left', 70),
+  },
+  mid: {
+    gallery: mobileSlot(82, 10, 'right', 70),
+    ethos: mobileSlot(14, 3, 'left', 70),
+    contact: mobileSlot(45, 8, 'left', 70),
+  },
+  tablet: {
+    gallery: mobileSlot(87, 9, 'right', 100),
+    ethos: mobileSlot(7, 3, 'left', 100),
+    contact: mobileSlot(44, 5, 'left', 100),
+  },
+  ipadPro: {
+    gallery: mobileSlot(82, 10, 'right', 110),
+    ethos: mobileSlot(14, 3, 'left', 110),
+    contact: mobileSlot(45, 8, 'left', 110),
+  },
+} as const satisfies Record<string, NavLayout>;
+
+export type NavBreakpoint = keyof typeof homeMobile;
+
+/** Resolve a portrait viewport width to its mobile breakpoint key. */
+export const mobileBreakpoint = (width: number): NavBreakpoint => {
+  if (width < 400) return 'small';
+  if (width < 700) return 'mid';
+  if (width < 1000) return 'tablet';
+  return 'ipadPro';
+};
+
 export const navLayouts = {
   home: {
     desktop: homeDesktop,
+    mobile: homeMobile,
   },
 } as const;
 
