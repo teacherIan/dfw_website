@@ -67,6 +67,24 @@ const homeMobile = {
   },
 } as const satisfies Record<string, NavLayout>;
 
+// Mobile label anchors — absolutely positioned (unlike desktop, where the
+// label sits inline beside the button). These don't vary by breakpoint.
+export interface NavLabelAnchor {
+  left: string;
+  bottom: string;
+}
+
+const labelAnchor = (leftPct: number, bottomSvh: number): NavLabelAnchor => ({
+  left: `${leftPct}%`,
+  bottom: `calc(${bottomSvh}svh + env(safe-area-inset-bottom, 0px))`,
+});
+
+const homeMobileLabels: Record<NavButtonId, NavLabelAnchor> = {
+  gallery: labelAnchor(67, 1),
+  ethos: labelAnchor(20, 14),
+  contact: labelAnchor(44, 15),
+};
+
 export type NavBreakpoint = keyof typeof homeMobile;
 
 /** Resolve a portrait viewport width to its mobile breakpoint key. */
@@ -81,6 +99,7 @@ export const navLayouts = {
   home: {
     desktop: homeDesktop,
     mobile: homeMobile,
+    mobileLabels: homeMobileLabels,
   },
 } as const;
 
