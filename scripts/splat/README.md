@@ -4,7 +4,7 @@ Tooling for shrinking the Gaussian-splat hero asset (`public/assets/v_one_final.
 
 ## TL;DR
 
-- The app loads **`v_one_final.opt.spz`** by default — **~33% smaller** (27.0 MB → 18.2 MB).
+- The app loads **`v_one_final.opt.spz`** by default — **~53% smaller** (27.0 MB → 12.6 MB).
 - The original **`v_one_final.spz`** is kept untouched. Load it with `?splat=v_one_final.spz`.
 - Re-generate any variant with `optimize.mjs` (below). The original is never modified,
   so every optimization is reversible.
@@ -36,6 +36,8 @@ node --max-old-space-size=4096 scripts/splat/optimize.mjs [options]
 | `--cull` | drop splats never inside the orbit-swept view frustum. |
 | `--cull-azimuth=DEG` / `--cull-polar=DEG` | orbit range the cull sweeps (default ±128.6° / ±60°). |
 | `--cull-fov=DEG` / `--cull-margin=DEG` | cull frustum FOV and safety margin. |
+| `--density-cap-percentile=P` | voxelise the splats and cap each voxel at the Pth-percentile count. Levels out over-captured regions. |
+| `--density-voxel=V` | voxel size for the density cap (default 0.15 scene-units). |
 | `--frac-bits=N` | position quantization bits (source is 12). |
 | `--dry` | report counts only, write nothing. |
 | `--out=PATH` | output path (default derived from the passes). |
@@ -46,12 +48,19 @@ Passes compose. `v_one_final.opt.spz` is built with:
 node --max-old-space-size=4096 scripts/splat/optimize.mjs \
   --sh=0 --min-alpha=0.1 --frac-bits=11 \
   --cull --cull-azimuth=20 --cull-polar=13 --cull-margin=12 --cull-fov=52 \
+  --density-cap-percentile=98 --density-voxel=0.15 \
   --out=public/assets/v_one_final.opt.spz
 ```
 
 ## What was measured (source: `v_one_final.spz`)
 
 1,393,816 splats, SH degree 3, 27.0 MB on disk (gzipped), 12-bit positions.
+
+Voxelising at 0.15-unit cells: 23,156 occupied voxels, **median 9 splats/voxel
+but max 5,574** — i.e. one region is ~600× denser than typical (the over-
+captured chair / logo). That extreme imbalance is the biggest single
+compression opportunity, and is the dominant cause of the chaotic-looking
+chair assembly during the entrance.
 
 | lever | result | risk |
 | --- | --- | --- |
@@ -60,6 +69,7 @@ node --max-old-space-size=4096 scripts/splat/optimize.mjs \
 | drop opacity < 0.1 (−7.7% splats) | −8% | low — those splats are near-invisible |
 | 12 → 11-bit positions | −2% | low — marginally coarser splat centres |
 | orbit-frustum cull (±20°/±13° orbit) | −5% | low — see below |
+| **density cap p98 (clip voxels >400 splats)** | **−39%** | **low — only clips pathological over-density** |
 
 `v_one_final.opt.spz` stacks SH0 + opacity<0.1 + 11-bit + cull ⇒ **−32.6%**
 (1.39M → 1.21M splats). Verified against the original at rest (desktop +

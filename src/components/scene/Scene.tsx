@@ -21,12 +21,13 @@ interface SceneProps {
 }
 
 /**
- * Splat asset filename. Defaults to the optimized splat (~33% smaller than
- * the original — SH3→0, faint-splat decimation, 11-bit positions, and a cull
- * matched to the ±20°/±13° orbit below; built by scripts/splat/optimize.mjs).
- * `?splat=<file>` overrides it at runtime — `?splat=v_one_final.spz` loads the
- * untouched original. That query override is the switch-back path if the
- * optimized asset ever regresses.
+ * Splat asset filename. Defaults to the optimized splat (~53% smaller than
+ * the original — SH3→0, faint-splat decimation, 11-bit positions, a cull
+ * matched to the ±20°/±13° orbit below, and a voxel density cap that
+ * levels out over-captured regions like the chair; built by
+ * scripts/splat/optimize.mjs). `?splat=<file>` overrides it at runtime —
+ * `?splat=v_one_final.spz` loads the untouched original. That query override
+ * is the switch-back path if the optimized asset ever regresses.
  */
 const DEFAULT_SPLAT = 'v_one_final.opt.spz';
 const resolveSplatUrl = (): string => {

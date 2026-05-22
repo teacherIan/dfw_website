@@ -38,6 +38,12 @@ const minAlpha = args['min-alpha'] != null ? Number(args['min-alpha']) : 0;
 const doCull = !!args.cull;
 const cullFov = args['cull-fov'] != null ? Number(args['cull-fov']) : 62;
 const cullMargin = args['cull-margin'] != null ? Number(args['cull-margin']) : 12;
+// Density-aware decimation: voxelise the splat, find the Pth-percentile
+// per-voxel splat count, then randomly drop excess from any voxel that's
+// denser. Levels out over-captured regions (e.g. a subject photographed
+// from more angles than the rest of the scene).
+const densityPct = args['density-cap-percentile'] != null ? Number(args['density-cap-percentile']) : null;
+const densityVoxel = args['density-voxel'] != null ? Number(args['density-voxel']) : 0.15;
 const dry = !!args.dry;
 
 // --- captured scene geometry (feature/splat-optimization) ----------------
@@ -151,8 +157,9 @@ async function main() {
   if (targetSh !== srcSh) console.log(`  • SH degree ${srcSh} → ${targetSh}`);
   if (minAlpha > 0) console.log(`  • drop opacity < ${minAlpha}`);
   if (doCull) console.log(`  • cull: orbit-swept frustum (orbit ±${(cullAzimuth / DEG).toFixed(0)}°az / ±${(cullPolar / DEG).toFixed(0)}°pol, fov ${cullFov}°, margin ${cullMargin}°)`);
+  if (densityPct != null) console.log(`  • density cap: p${densityPct} per ${densityVoxel}-unit voxel`);
   if (fracBits !== reader.fractionalBits) console.log(`  • fractionalBits ${reader.fractionalBits} → ${fracBits}`);
-  if (targetSh === srcSh && minAlpha <= 0 && !doCull && fracBits === reader.fractionalBits) {
+  if (targetSh === srcSh && minAlpha <= 0 && !doCull && densityPct == null && fracBits === reader.fractionalBits) {
     console.log(`  • (none — pure re-encode)`);
   }
 
@@ -188,6 +195,8 @@ async function main() {
   const keep = new Uint8Array(n).fill(1);
   let droppedAlpha = 0;
   let droppedCull = 0;
+  let droppedDensity = 0;
+  let densityStats = null;
   if (minAlpha > 0) {
     for (let i = 0; i < n; i++) {
       if (keep[i] && alpha[i] < minAlpha) { keep[i] = 0; droppedAlpha++; }
@@ -201,12 +210,55 @@ async function main() {
       if (!cullTest(wx, wy, wz)) { keep[i] = 0; droppedCull++; }
     }
   }
+  if (densityPct != null) {
+    // Voxelise the currently-kept splats and cap each voxel's count at the
+    // Pth percentile across all occupied voxels. Over-dense voxels get
+    // random excess dropped — flattens captures where one region was
+    // photographed from many more angles than the rest.
+    const buckets = new Map();
+    for (let i = 0; i < n; i++) {
+      if (!keep[i]) continue;
+      const vx = Math.floor(cx[i] / densityVoxel);
+      const vy = Math.floor(cy[i] / densityVoxel);
+      const vz = Math.floor(cz[i] / densityVoxel);
+      const key = `${vx},${vy},${vz}`;
+      let arr = buckets.get(key);
+      if (!arr) { arr = []; buckets.set(key, arr); }
+      arr.push(i);
+    }
+    const counts = [...buckets.values()].map((a) => a.length);
+    counts.sort((a, b) => a - b);
+    const pIndex = Math.max(0, Math.min(counts.length - 1, Math.floor((counts.length - 1) * (densityPct / 100))));
+    const cap = counts[pIndex];
+    const median = counts[counts.length >> 1];
+    const maxCount = counts[counts.length - 1];
+    for (const arr of buckets.values()) {
+      if (arr.length <= cap) continue;
+      // Fisher–Yates partial shuffle: place `cap` survivors at the front.
+      for (let i = 0; i < cap; i++) {
+        const j = i + Math.floor(Math.random() * (arr.length - i));
+        const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+      }
+      for (let i = cap; i < arr.length; i++) {
+        keep[arr[i]] = 0;
+        droppedDensity++;
+      }
+    }
+    densityStats = { voxels: buckets.size, median, p: densityPct, cap, maxCount, voxelSize: densityVoxel };
+  }
   let kept = 0;
   for (let i = 0; i < n; i++) if (keep[i]) kept++;
 
   console.log(`\nsplats : ${fmt(n)} → ${fmt(kept)}  (kept ${((kept / n) * 100).toFixed(1)}%)`);
   if (minAlpha > 0) console.log(`  dropped by opacity : ${fmt(droppedAlpha)}`);
   if (doCull) console.log(`  dropped by cull    : ${fmt(droppedCull)}`);
+  if (densityStats) {
+    console.log(
+      `  dropped by density : ${fmt(droppedDensity)}  ` +
+        `(${fmt(densityStats.voxels)} voxels @ ${densityStats.voxelSize}u, median ${densityStats.median}, ` +
+        `cap=${densityStats.cap} at p${densityStats.p}, max was ${densityStats.maxCount})`,
+    );
+  }
 
   if (dry) {
     console.log('\n--dry: nothing written.\n');
