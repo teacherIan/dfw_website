@@ -48,12 +48,7 @@ vec4 assemble(vec3 pos, vec3 scale, vec3 color, float t, float depthOffset, floa
   float brightness = (color.r + color.g + color.b) / 3.0;
   float saturation = max(color.r, max(color.g, color.b)) - min(color.r, min(color.g, color.b));
   float colorDelay = brightness * 4.0 + saturation * 6.0;
-  // Per-particle random spread. A dense, compact object (the chair) has very
-  // similar depth/size/colour across its splats, so without a wide random
-  // term they all cross their start window together and "dump in" as one
-  // overwhelming burst. A generous spread de-synchronises the cluster so it
-  // streams in gradually like the rest of the scene.
-  float start = depthFactor + normalizedScale * 8.0 + colorDelay + dist * 0.2 + h.x * 9.0;
+  float start = depthFactor + normalizedScale * 8.0 + colorDelay + dist * 0.2 + h.x * 1.5;
 
   float s = smoothstep(start, start + 5.0, t);
 
