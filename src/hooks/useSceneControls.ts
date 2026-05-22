@@ -190,7 +190,11 @@ export const useSceneControls = ({
       }, { collapsed: true }),
       animation: folder({
         animateCamera: { value: true, label: 'Animate on Start' },
-        animationDuration: { value: 20, min: 1, max: 30, step: 0.5, label: 'Duration (s)' },
+        // 25s (was 20): the gentler entrance — entranceAnimation.ts spreads
+        // the per-particle start times to de-clump the dense chair — pushed
+        // the splat's assembly out by ~5s, so the camera fly-in is lengthened
+        // to match and still arrive as the scene settles.
+        animationDuration: { value: 25, min: 1, max: 40, step: 0.5, label: 'Duration (s)' },
         startX: { value: -1.0, min: -10, max: 10, step: 0.1, label: 'Start X' },
         startY: { value: 15.0, min: -5, max: 25, step: 0.1, label: 'Start Y' },
         startZ: { value: 20.0, min: 0.5, max: 30, step: 0.1, label: 'Start Z' },
