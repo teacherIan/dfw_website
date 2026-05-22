@@ -95,9 +95,10 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
   // RoughJS: the whole intro is one hand-drawn sketch. The wordmark is
   // rendered from baked glyph outlines so it shares the sketched character
   // of the corner marks and progress bar. Corner marks and the bar "boil" —
-  // re-sketched ~9x/second so the lines gently breathe; the wordmark itself
-  // is drawn once (a steady logo), and the underline beneath it draws on,
-  // then drifts on a much slower, calmer cadence.
+  // re-sketched ~9x/second so the lines gently breathe. The wordmark and the
+  // underline beneath it share a slower, calmer cadence: the underline draws
+  // on, then both re-sketch ~3x/second so the logo quietly breathes without
+  // the jitter of a full boil.
   useEffect(() => {
     const cornerCanvas = cornerCanvasRef.current;
     const wordCanvas = wordmarkCanvasRef.current;
@@ -122,6 +123,21 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
     let scale = 1, marginH = 0, marginV = 0, textW = 0, textH = 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let textDrawable: any = null;
+    let wordSeed = 1337;
+
+    // (Re)generate the wordmark's rough sketch. Called on resize (the scale
+    // changes) and on the slow re-seed cadence so the logo quietly breathes.
+    const buildWordDrawable = (seed: number) => {
+      textDrawable = rcWord.generator.path(WORDMARK.d, {
+        fill: INK,
+        fillStyle: 'solid',
+        stroke: INK,
+        strokeWidth: 1.0 / scale,
+        roughness: 0.78 / scale,
+        bowing: 0.6,
+        seed,
+      });
+    };
 
     const setup = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -157,16 +173,9 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
       wordCanvas.width = Math.round(ww * dpr);
       wordCanvas.height = Math.round(wh * dpr);
 
-      // Bake the wordmark's rough rendering once — a steady logo, not boiling.
-      textDrawable = rcWord.generator.path(WORDMARK.d, {
-        fill: INK,
-        fillStyle: 'solid',
-        stroke: INK,
-        strokeWidth: 1.0 / scale,
-        roughness: 0.78 / scale,
-        bowing: 0.6,
-        seed: 1337,
-      });
+      // Generate the wordmark's rough sketch at the new scale; the loop
+      // re-sketches it on the slow cadence so the logo quietly breathes.
+      buildWordDrawable(wordSeed);
     };
     setup();
     window.addEventListener('resize', setup);
@@ -288,13 +297,16 @@ export default function LoadingScreen({ isReady, onComplete, minDisplayTime = DE
           drawCorners(seed);
           drawBar(current, seed);
         }
-        // Underline drifts on a gentle cadence — re-seeded ~3x a second so
-        // it has a perceptible life without the jitter of a full boil.
+        // Wordmark + underline drift together on a gentle cadence — re-seeded
+        // ~3x a second so they have a perceptible life without the jitter of
+        // a full boil.
         if (now - lastUnderlineReseed > 300) {
           lastUnderlineReseed = now;
           underlineSeed = (underlineSeed % 99989) + 1;
+          wordSeed = (wordSeed % 99989) + 1;
+          buildWordDrawable(wordSeed);
         }
-        // Redraw the wordmark only while the underline is actually changing.
+        // Redraw the wordmark while the underline draws in or either re-seeds.
         if (underlineT !== lastUnderlineT || underlineSeed !== lastUnderlineSeed) {
           lastUnderlineT = underlineT;
           lastUnderlineSeed = underlineSeed;
