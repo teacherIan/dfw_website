@@ -3,7 +3,11 @@ import rough from 'roughjs';
 import { fontFamilyMap } from '../constants';
 import { WORDMARK } from './loading/wordmarkPath';
 
-const DEFAULT_MIN_DISPLAY_TIME = 6000;
+// Floor for how long the intro is shown (the real gate is the splat being
+// ready). The hero splat is now ~33% smaller and downloads fast, so on a
+// decent connection it is ready well before this — keep the floor short
+// enough that the loading screen doesn't sit there with a full bar.
+const DEFAULT_MIN_DISPLAY_TIME = 3500;
 
 // Warm, heartfelt lines shown while the splat loads.
 const SAYINGS = [
