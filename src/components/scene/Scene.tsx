@@ -21,6 +21,24 @@ interface SceneProps {
 }
 
 /**
+ * Splat asset filename. Defaults to the optimized splat (~33% smaller than
+ * the original — SH3→0, faint-splat decimation, 11-bit positions, and a cull
+ * matched to the ±20°/±13° orbit below; built by scripts/splat/optimize.mjs).
+ * `?splat=<file>` overrides it at runtime — `?splat=v_one_final.spz` loads the
+ * untouched original. That query override is the switch-back path if the
+ * optimized asset ever regresses.
+ */
+const DEFAULT_SPLAT = 'v_one_final.opt.spz';
+const resolveSplatUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    const override = new URLSearchParams(window.location.search).get('splat');
+    // restrict to a bare .spz filename — no path traversal
+    if (override && /^[\w.-]+\.spz$/.test(override)) return `/assets/${override}`;
+  }
+  return `/assets/${DEFAULT_SPLAT}`;
+};
+
+/**
  * Scene component for the 3D splat visualization
  * Handles camera controls, splat mesh rendering, entrance and exit animations
  */
@@ -390,7 +408,7 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
       ({
         // spark v2: load via `url`. The `stream` option is a bring-your-own
         // ReadableStream in v2 (not a boolean flag), so it is omitted.
-        url: '/assets/v_one_final.spz',
+        url: resolveSplatUrl(),
         onProgress: (event: ProgressEvent) => {
           // Feed real download progress to the loading-screen bar when the
           // network reports it (the bar also advances on its own time curve).
@@ -1315,8 +1333,12 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
       global
       snap
       rotation={[0, 0, 0]}
-      polar={[-Math.PI / 3, Math.PI / 3]}
-      azimuth={[-Math.PI / 1.4, Math.PI / 1.4]}
+      // Orbit is deliberately a small peek (±13° polar / ±20° azimuth). It
+      // keeps the scene feeling 3-D without swinging round to the unmodelled,
+      // blown-out edges of the capture — and lets the optimizer cull splats
+      // outside this swept frustum (see scripts/splat/). Was ±60° / ±128.6°.
+      polar={[(-13 * Math.PI) / 180, (13 * Math.PI) / 180]}
+      azimuth={[(-20 * Math.PI) / 180, (20 * Math.PI) / 180]}
       enabled={enableInteractiveControls}
     >
       {splatContent}
