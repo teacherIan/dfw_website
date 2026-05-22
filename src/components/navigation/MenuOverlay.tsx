@@ -192,7 +192,6 @@ const MenuOverlay = ({
         <MobileNavLayout
           font={currentFont}
           isVisible={isVisible}
-          onNavigate={onNavigate}
           controlsStore={controlsStore}
           arrowControlsStore={arrowControlsStore}
           mobileNavStore={mobileNavStore}

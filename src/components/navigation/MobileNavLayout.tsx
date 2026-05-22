@@ -1,45 +1,34 @@
 import { memo, useLayoutEffect, useRef, useState, type MutableRefObject, type Ref } from 'react';
 import { useControls, folder } from 'leva';
 import { EthosArrow, ContactArrow, GalleryArrow } from './MobileArrows';
-import BlueprintButtonSVG from './BlueprintButtonSVG';
 import NavLabel from './NavLabel';
 import type { ArrowEffectsConfig } from './ArrowFilters';
-import { createFadeSlideStyle, createPopInStyle, createPopInCenteredStyle } from '../../utils/styles';
+import { createFadeSlideStyle } from '../../utils/styles';
 import { MOBILE_NAV_DELAYS } from '../../constants/animation';
-import type { SceneId } from '../../constants';
 import { useArrowUnravel } from '../../hooks';
-import { useAnimationStore, useIsContactOverlayOpen } from '../../stores/animationStore';
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
-// Breakpoint configuration for button positions, label positions, and button sizes
-// Triangular layout: Ethos (bottom-left), Gallery (bottom-right), Contact (center-top apex)
-// All positions use LEFT edge for consistency (galleryLeft: 92 = 8% from right edge)
-// Buttons must be BELOW the "Doug's Found Wood" title
+// Breakpoint configuration for label positions.
+// The buttons themselves now live in NavButtonLayer (positioned from
+// navLayouts.ts); MobileNavLayout only renders the labels + arrows.
+// Triangular layout: Ethos (bottom-left), Gallery (bottom-right), Contact (center).
 const BREAKPOINT_CONFIGS = {
   small: {
     name: 'Small (<400px)',
-    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 8, galleryLeft: 82, galleryBottom: 10 },
     labels: { ethosLeft: 20, ethosBottom: 14, contactLeft: 44, contactBottom: 15, galleryLeft: 67, galleryBottom: 1 },
-    sizes: { buttonSize: 70 },
   },
   mid: {
     name: 'Mid (400-699px)',
-    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 8, galleryLeft: 82, galleryBottom: 10 },
     labels: { ethosLeft: 20, ethosBottom: 14, contactLeft: 44, contactBottom: 15, galleryLeft: 67, galleryBottom: 1 },
-    sizes: { buttonSize: 70 },
   },
   tablet: {
     name: 'Tablet (700-999px)',
-    buttons: { ethosLeft: 7, ethosBottom: 3, contactLeft: 44, contactBottom: 5, galleryLeft: 87, galleryBottom: 9 },
     labels: { ethosLeft: 20, ethosBottom: 14, contactLeft: 44, contactBottom: 15, galleryLeft: 67, galleryBottom: 1 },
-    sizes: { buttonSize: 100 },
   },
   ipadPro: {
     name: 'iPad Pro (1000-1199px)',
-    buttons: { ethosLeft: 14, ethosBottom: 3, contactLeft: 45, contactBottom: 8, galleryLeft: 82, galleryBottom: 10 },
     labels: { ethosLeft: 20, ethosBottom: 14, contactLeft: 44, contactBottom: 15, galleryLeft: 67, galleryBottom: 1 },
-    sizes: { buttonSize: 110 },
   },
 } as const;
 
@@ -65,93 +54,29 @@ const createPositionControls = (defaults: PositionDefaults) => ({
   galleryBottom: { value: defaults.galleryBottom, min: -20, max: 100, step: 1, label: 'Gallery Bottom (svh)' },
 });
 
-// Hook to get all position controls for a breakpoint
+// Hook to get label position controls for a breakpoint
 const useBreakpointControls = (
   breakpoint: BreakpointKey,
-  type: 'buttons' | 'labels',
   mobileNavStore?: LevaStore
 ) => {
   const config = BREAKPOINT_CONFIGS[breakpoint];
-  const prefix = type === 'buttons' ? '📍 Button Positions' : '🏷️ Label Positions';
 
   return useControls({
-    [`${prefix}.${config.name}`]: folder(
-      createPositionControls(config[type]),
+    [`🏷️ Label Positions.${config.name}`]: folder(
+      createPositionControls(config.labels),
       { collapsed: true }
     ),
-  }, { store: mobileNavStore });
-};
-
-// Hook to get button size controls for a breakpoint
-const useSizeControls = (
-  breakpoint: BreakpointKey,
-  mobileNavStore?: LevaStore
-) => {
-  const config = BREAKPOINT_CONFIGS[breakpoint];
-
-  return useControls({
-    [`📏 Button Sizes.${config.name}`]: folder({
-      buttonSize: { value: config.sizes.buttonSize, min: 40, max: 200, step: 5, label: 'Size (px)' },
-    }, { collapsed: true }),
   }, { store: mobileNavStore });
 };
 
 interface MobileNavLayoutProps {
   font: string;
   isVisible: boolean;
-  onNavigate: (scene: SceneId) => void;
   controlsStore?: LevaStore;
   arrowControlsStore?: LevaStore;
   mobileNavStore?: LevaStore;
   arrowEffectsConfig?: ArrowEffectsConfig;
 }
-
-// Mobile button with spring rotation
-interface MobileButtonProps {
-  scene: SceneId;
-  label: string;
-  springRotation?: number;
-  hasCompletedAnimation: boolean;
-  className?: string;
-  buttonRef?: Ref<HTMLButtonElement>;
-  onNavigate: (scene: SceneId) => void;
-  onClick?: () => void;
-  isActive?: boolean;
-  size?: number;
-}
-
-const MobileButton = ({
-  scene,
-  label,
-  springRotation = 0,
-  hasCompletedAnimation,
-  className = '',
-  buttonRef,
-  onNavigate,
-  onClick,
-  isActive = false,
-  size,
-}: MobileButtonProps) => (
-  <span
-    style={{
-      display: 'inline-block',
-      transform: hasCompletedAnimation ? `rotate(${springRotation * 0.12}deg)` : undefined,
-      transition: 'transform 0.1s ease-out',
-    }}
-  >
-    <button
-      type="button"
-      className={`nav-button-circle nav-button-circle--mobile-large pointer-events-auto ${className} ${isActive ? 'nav-button-circle--active' : ''}`}
-      aria-label={`Open ${label}`}
-      onClick={onClick ?? (() => onNavigate(scene))}
-      ref={buttonRef}
-      style={size ? { width: `${size}px`, height: `${size}px` } : undefined}
-    >
-      <BlueprintButtonSVG />
-      <span className="sr-only">View {label}</span>
-    </button>
-  </span>
-);
 
 // Mobile label with spring sway
 interface MobileLabelProps {
@@ -238,16 +163,12 @@ const useVisibleElement = <T extends HTMLElement>(elementsRef: MutableRefObject<
 const MobileNavLayout = ({
   font,
   isVisible,
-  onNavigate,
   arrowControlsStore,
   mobileNavStore,
   arrowEffectsConfig,
 }: MobileNavLayoutProps) => {
-  // Contact toggle state
-  const toggleContactOverlay = useAnimationStore((state) => state.toggleContactOverlay);
-  const isContactOverlayOpen = useIsContactOverlayOpen();
-
-  // Arrow unravel hooks for spring-responsive animation
+  // Arrow unravel hooks for spring-responsive animation (drives both the
+  // label sway and the arrow's spring transform).
   const ethosUnravel = useArrowUnravel({
     isVisible,
     delay: MOBILE_NAV_DELAYS.ETHOS_ARROW,
@@ -263,135 +184,25 @@ const MobileNavLayout = ({
 
   // Use state for container to trigger re-render when mounted
   const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null);
-  const ethosButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const contactButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const galleryButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const ethosLabelRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const contactLabelRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const galleryLabelRefs = useRef<Array<HTMLSpanElement | null>>([]);
 
-  const ethosButtonElement = useVisibleElement(ethosButtonRefs);
-  const contactButtonElement = useVisibleElement(contactButtonRefs);
-  const galleryButtonElement = useVisibleElement(galleryButtonRefs);
   const ethosLabelElement = useVisibleElement(ethosLabelRefs);
   const contactLabelElement = useVisibleElement(contactLabelRefs);
   const galleryLabelElement = useVisibleElement(galleryLabelRefs);
 
-  // Button positions for each breakpoint
-  const btnPositionsSmall = useBreakpointControls('small', 'buttons', mobileNavStore);
-  const btnPositionsMid = useBreakpointControls('mid', 'buttons', mobileNavStore);
-  const btnPositionsTablet = useBreakpointControls('tablet', 'buttons', mobileNavStore);
-  const btnPositionsIpadPro = useBreakpointControls('ipadPro', 'buttons', mobileNavStore);
-
   // Label positions for each breakpoint
-  const labelPositionsSmall = useBreakpointControls('small', 'labels', mobileNavStore);
-  const labelPositionsMid = useBreakpointControls('mid', 'labels', mobileNavStore);
-  const labelPositionsTablet = useBreakpointControls('tablet', 'labels', mobileNavStore);
-  const labelPositionsIpadPro = useBreakpointControls('ipadPro', 'labels', mobileNavStore);
-
-  // Button sizes for each breakpoint
-  const sizeSmall = useSizeControls('small', mobileNavStore);
-  const sizeMid = useSizeControls('mid', mobileNavStore);
-  const sizeTablet = useSizeControls('tablet', mobileNavStore);
-  const sizeIpadPro = useSizeControls('ipadPro', mobileNavStore);
+  const labelPositionsSmall = useBreakpointControls('small', mobileNavStore);
+  const labelPositionsMid = useBreakpointControls('mid', mobileNavStore);
+  const labelPositionsTablet = useBreakpointControls('tablet', mobileNavStore);
+  const labelPositionsIpadPro = useBreakpointControls('ipadPro', mobileNavStore);
 
   return (
     <div className="mobile-nav-only" ref={setContainerElement}>
       {/* ============================================
           ETHOS - Bottom Left Corner
           ============================================ */}
-
-      {/* Ethos Button - Small (<400px) */}
-      <div
-        className="nav-mobile-ethos-btn hidden max-[399px]:block"
-        style={{
-          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
-          left: `${btnPositionsSmall.ethosLeft}%`,
-          bottom: `calc(${btnPositionsSmall.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="ethos"
-          label="ethos"
-          springRotation={ethosUnravel.curveOffset.x}
-          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
-          className="-ml-14 md:-ml-[55px]"
-          buttonRef={(element) => {
-            ethosButtonRefs.current[0] = element;
-          }}
-          onNavigate={onNavigate}
-          size={sizeSmall.buttonSize}
-        />
-      </div>
-
-      {/* Ethos Button - Mid (400-699px) */}
-      <div
-        className="nav-mobile-ethos-btn hidden min-[400px]:max-[699px]:block"
-        style={{
-          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
-          left: `${btnPositionsMid.ethosLeft}%`,
-          bottom: `calc(${btnPositionsMid.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="ethos"
-          label="ethos"
-          springRotation={ethosUnravel.curveOffset.x}
-          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
-          className="-ml-14 md:-ml-[55px]"
-          buttonRef={(element) => {
-            ethosButtonRefs.current[1] = element;
-          }}
-          onNavigate={onNavigate}
-          size={sizeMid.buttonSize}
-        />
-      </div>
-
-      {/* Ethos Button - Tablet (700-999px) */}
-      <div
-        className="nav-mobile-ethos-btn hidden min-[700px]:max-[999px]:block"
-        style={{
-          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
-          left: `${btnPositionsTablet.ethosLeft}%`,
-          bottom: `calc(${btnPositionsTablet.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="ethos"
-          label="ethos"
-          springRotation={ethosUnravel.curveOffset.x}
-          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
-          className="-ml-14 md:-ml-[55px]"
-          buttonRef={(element) => {
-            ethosButtonRefs.current[2] = element;
-          }}
-          onNavigate={onNavigate}
-          size={sizeTablet.buttonSize}
-        />
-      </div>
-
-      {/* Ethos Button - iPad Pro (1000-1199px) */}
-      <div
-        className="nav-mobile-ethos-btn hidden min-[1000px]:max-[1199px]:block"
-        style={{
-          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.ETHOS_BUTTON),
-          left: `${btnPositionsIpadPro.ethosLeft}%`,
-          bottom: `calc(${btnPositionsIpadPro.ethosBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="ethos"
-          label="ethos"
-          springRotation={ethosUnravel.curveOffset.x}
-          hasCompletedAnimation={ethosUnravel.hasCompletedInitialAnimation}
-          className="-ml-14 md:-ml-[55px]"
-          buttonRef={(element) => {
-            ethosButtonRefs.current[3] = element;
-          }}
-          onNavigate={onNavigate}
-          size={sizeIpadPro.buttonSize}
-        />
-      </div>
 
       {/* Ethos Label - Small (<400px) */}
       <div
@@ -473,15 +284,19 @@ const MobileNavLayout = ({
         />
       </div>
 
-      {/* Ethos Arrow */}
+      {/* Ethos Arrow.
+          curveOffset is passed unconditionally (not gated on
+          hasCompletedInitialAnimation): gating it makes the bezier control
+          point snap ~20px the instant the entrance completes — very visible
+          now that the arrow's endpoint is a static config value. Passing it
+          throughout keeps the curve continuous. */}
       <EthosArrow
         isVisible={isVisible}
         delay={MOBILE_NAV_DELAYS.ETHOS_ARROW}
         springTransform={ethosUnravel.hasCompletedInitialAnimation ? ethosUnravel.transform : undefined}
-        curveOffset={ethosUnravel.hasCompletedInitialAnimation ? ethosUnravel.curveOffset : undefined}
+        curveOffset={ethosUnravel.curveOffset}
         controlsStore={arrowControlsStore}
         labelElement={ethosLabelElement}
-        buttonElement={ethosButtonElement}
         containerElement={containerElement}
         effectsConfig={arrowEffectsConfig}
       />
@@ -489,106 +304,6 @@ const MobileNavLayout = ({
       {/* ============================================
           CONTACT - Center Bottom
           ============================================ */}
-
-      {/* Contact Button - Small (<400px) */}
-      <div
-        className="nav-mobile-contact-btn hidden max-[399px]:block"
-        style={{
-          ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
-          left: `${btnPositionsSmall.contactLeft}%`,
-          bottom: `calc(${btnPositionsSmall.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="contact"
-          label="contact"
-          springRotation={contactUnravel.curveOffset.x}
-          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
-          className="-mb-14 md:-mb-[55px]"
-          buttonRef={(element) => {
-            contactButtonRefs.current[0] = element;
-          }}
-          onNavigate={onNavigate}
-          onClick={toggleContactOverlay}
-          isActive={isContactOverlayOpen}
-          size={sizeSmall.buttonSize}
-        />
-      </div>
-
-      {/* Contact Button - Mid (400-699px) */}
-      <div
-        className="nav-mobile-contact-btn hidden min-[400px]:max-[699px]:block"
-        style={{
-          ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
-          left: `${btnPositionsMid.contactLeft}%`,
-          bottom: `calc(${btnPositionsMid.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="contact"
-          label="contact"
-          springRotation={contactUnravel.curveOffset.x}
-          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
-          className="-mb-14 md:-mb-[55px]"
-          buttonRef={(element) => {
-            contactButtonRefs.current[1] = element;
-          }}
-          onNavigate={onNavigate}
-          onClick={toggleContactOverlay}
-          isActive={isContactOverlayOpen}
-          size={sizeMid.buttonSize}
-        />
-      </div>
-
-      {/* Contact Button - Tablet (700-999px) */}
-      <div
-        className="nav-mobile-contact-btn hidden min-[700px]:max-[999px]:block"
-        style={{
-          ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
-          left: `${btnPositionsTablet.contactLeft}%`,
-          bottom: `calc(${btnPositionsTablet.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="contact"
-          label="contact"
-          springRotation={contactUnravel.curveOffset.x}
-          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
-          className="-mb-14 md:-mb-[55px]"
-          buttonRef={(element) => {
-            contactButtonRefs.current[2] = element;
-          }}
-          onNavigate={onNavigate}
-          onClick={toggleContactOverlay}
-          isActive={isContactOverlayOpen}
-          size={sizeTablet.buttonSize}
-        />
-      </div>
-
-      {/* Contact Button - iPad Pro (1000-1199px) */}
-      <div
-        className="nav-mobile-contact-btn hidden min-[1000px]:max-[1199px]:block"
-        style={{
-          ...createPopInCenteredStyle(isVisible, MOBILE_NAV_DELAYS.CONTACT_BUTTON),
-          left: `${btnPositionsIpadPro.contactLeft}%`,
-          bottom: `calc(${btnPositionsIpadPro.contactBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="contact"
-          label="contact"
-          springRotation={contactUnravel.curveOffset.x}
-          hasCompletedAnimation={contactUnravel.hasCompletedInitialAnimation}
-          className="-mb-14 md:-mb-[55px]"
-          buttonRef={(element) => {
-            contactButtonRefs.current[3] = element;
-          }}
-          onNavigate={onNavigate}
-          onClick={toggleContactOverlay}
-          isActive={isContactOverlayOpen}
-          size={sizeIpadPro.buttonSize}
-        />
-      </div>
 
       {/* Contact Label - Small (<400px) */}
       <div
@@ -675,10 +390,9 @@ const MobileNavLayout = ({
         isVisible={isVisible}
         delay={MOBILE_NAV_DELAYS.CONTACT_ARROW}
         springTransform={contactUnravel.hasCompletedInitialAnimation ? contactUnravel.transform : undefined}
-        curveOffset={contactUnravel.hasCompletedInitialAnimation ? contactUnravel.curveOffset : undefined}
+        curveOffset={contactUnravel.curveOffset}
         controlsStore={arrowControlsStore}
         labelElement={contactLabelElement}
-        buttonElement={contactButtonElement}
         containerElement={containerElement}
         effectsConfig={arrowEffectsConfig}
       />
@@ -686,98 +400,6 @@ const MobileNavLayout = ({
       {/* ============================================
           GALLERY - Bottom Right Corner
           ============================================ */}
-
-      {/* Gallery Button - Small (<400px) */}
-      <div
-        className="nav-mobile-gallery-btn hidden max-[399px]:block"
-        style={{
-          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
-          left: `${btnPositionsSmall.galleryLeft}%`,
-          bottom: `calc(${btnPositionsSmall.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="gallery"
-          label="gallery"
-          springRotation={galleryUnravel.curveOffset.x}
-          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
-          className="-mr-14 md:-mr-[55px]"
-          buttonRef={(element) => {
-            galleryButtonRefs.current[0] = element;
-          }}
-          onNavigate={onNavigate}
-          size={sizeSmall.buttonSize}
-        />
-      </div>
-
-      {/* Gallery Button - Mid (400-699px) */}
-      <div
-        className="nav-mobile-gallery-btn hidden min-[400px]:max-[699px]:block"
-        style={{
-          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
-          left: `${btnPositionsMid.galleryLeft}%`,
-          bottom: `calc(${btnPositionsMid.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="gallery"
-          label="gallery"
-          springRotation={galleryUnravel.curveOffset.x}
-          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
-          className="-mr-14 md:-mr-[55px]"
-          buttonRef={(element) => {
-            galleryButtonRefs.current[1] = element;
-          }}
-          onNavigate={onNavigate}
-          size={sizeMid.buttonSize}
-        />
-      </div>
-
-      {/* Gallery Button - Tablet (700-999px) */}
-      <div
-        className="nav-mobile-gallery-btn hidden min-[700px]:max-[999px]:block"
-        style={{
-          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
-          left: `${btnPositionsTablet.galleryLeft}%`,
-          bottom: `calc(${btnPositionsTablet.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="gallery"
-          label="gallery"
-          springRotation={galleryUnravel.curveOffset.x}
-          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
-          className="-mr-14 md:-mr-[55px]"
-          buttonRef={(element) => {
-            galleryButtonRefs.current[2] = element;
-          }}
-          onNavigate={onNavigate}
-          size={sizeTablet.buttonSize}
-        />
-      </div>
-
-      {/* Gallery Button - iPad Pro (1000-1199px) */}
-      <div
-        className="nav-mobile-gallery-btn hidden min-[1000px]:max-[1199px]:block"
-        style={{
-          ...createPopInStyle(isVisible, MOBILE_NAV_DELAYS.GALLERY_BUTTON),
-          left: `${btnPositionsIpadPro.galleryLeft}%`,
-          bottom: `calc(${btnPositionsIpadPro.galleryBottom}svh + env(safe-area-inset-bottom, 0px))`,
-        }}
-      >
-        <MobileButton
-          scene="gallery"
-          label="gallery"
-          springRotation={galleryUnravel.curveOffset.x}
-          hasCompletedAnimation={galleryUnravel.hasCompletedInitialAnimation}
-          className="-mr-14 md:-mr-[55px]"
-          buttonRef={(element) => {
-            galleryButtonRefs.current[3] = element;
-          }}
-          onNavigate={onNavigate}
-          size={sizeIpadPro.buttonSize}
-        />
-      </div>
 
       {/* Gallery Label - Small (<400px) */}
       <div
@@ -864,10 +486,9 @@ const MobileNavLayout = ({
         isVisible={isVisible}
         delay={MOBILE_NAV_DELAYS.GALLERY_ARROW}
         springTransform={galleryUnravel.hasCompletedInitialAnimation ? galleryUnravel.transform : undefined}
-        curveOffset={galleryUnravel.hasCompletedInitialAnimation ? galleryUnravel.curveOffset : undefined}
+        curveOffset={galleryUnravel.curveOffset}
         controlsStore={arrowControlsStore}
         labelElement={galleryLabelElement}
-        buttonElement={galleryButtonElement}
         containerElement={containerElement}
         effectsConfig={arrowEffectsConfig}
       />

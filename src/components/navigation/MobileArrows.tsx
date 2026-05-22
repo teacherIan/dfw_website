@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useControls, folder } from 'leva';
 import { AnimatedArrowhead, AnimatedDot } from './ArrowComponents';
@@ -7,6 +7,7 @@ import ScribeMarks from './ScribeMarks';
 import { getArrowFilterUrl, defaultArrowEffectsConfig } from './ArrowFilters';
 import type { ArrowEffectsConfig } from './ArrowFilters';
 import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls } from '../../hooks/useMobileArrowControls';
+import { mobileButtonCenter, type NavButtonId } from '../../constants/navLayouts';
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
@@ -103,6 +104,31 @@ const useViewportSize = (): ViewportSize => {
   }, []);
 
   return size;
+};
+
+/**
+ * Forces a re-render every frame for a short window after `active` turns true.
+ *
+ * The arrow's start point is measured from the label's live rect. The label
+ * slides in via a CSS transition, which fires no resize/scroll/ResizeObserver
+ * event — the things `useElementPoint` listens for — so without this the start
+ * point wouldn't follow the slide and would snap to the settled position
+ * whenever an unrelated re-render next occurred. Ticking through the entrance
+ * keeps the start point glued to the label as it slides.
+ */
+const useEntranceTracking = (active: boolean, durationMs = 1500) => {
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    let raf = 0;
+    const stopAt = performance.now() + durationMs;
+    const tick = () => {
+      force((n) => (n + 1) % 1_000_000);
+      if (performance.now() < stopAt) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [active, durationMs]);
 };
 
 interface AnchorPoint {
@@ -234,9 +260,9 @@ interface ArrowProps {
   springTransform?: SpringTransform;
   curveOffset?: CurveOffset;
   controlsStore?: LevaStore;
-  // Real elements for dynamic endpoint calculation
+  // Label element — the arrow start still measures the local label (its size
+  // is text-dependent). The endpoint is config-derived (see computeButtonEndpoint).
   labelElement?: HTMLElement | null;
-  buttonElement?: HTMLElement | null;
   containerElement?: HTMLElement | null;
   // Woodworker-style effects configuration
   effectsConfig?: ArrowEffectsConfig;
@@ -260,6 +286,32 @@ const getBreakpoint = (width: number): BreakpointKey => {
   if (width < 700) return 'mid';
   if (width < 1000) return 'tablet';
   return 'ipadPro';
+};
+
+/**
+ * Arrow endpoint = the button's centre, derived from the navLayouts config.
+ * The button is now rendered by NavButtonLayer (a different component tree),
+ * so the arrow no longer measures a button DOM element — it computes the same
+ * position the button uses. The result is made container-relative to match
+ * the arrow's SVG coordinate space.
+ */
+const computeButtonEndpoint = (
+  id: NavButtonId,
+  breakpoint: BreakpointKey,
+  viewport: ViewportSize,
+  containerElement: HTMLElement | null | undefined,
+  yOffset: number,
+): { x: number; y: number } | null => {
+  if (viewport.width <= 0 || viewport.height <= 0) return null;
+  const center = mobileButtonCenter(id, breakpoint, viewport);
+  let x = center.x;
+  let y = center.y + yOffset;
+  if (containerElement) {
+    const origin = containerElement.getBoundingClientRect();
+    x -= origin.left;
+    y -= origin.top;
+  }
+  return { x, y };
 };
 
 interface ArrowTemplate {
@@ -331,7 +383,8 @@ const buildMappedPath = (
 // ETHOS ARROW - Left side, loops up-left toward button
 // ViewBox: 120×160, starts near label (bottom-right), ends pointing at button (upper-left)
 // =============================================================================
-export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore, labelElement, buttonElement, containerElement, effectsConfig }: ArrowProps) => {
+export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore, labelElement, containerElement, effectsConfig }: ArrowProps) => {
+  useEntranceTracking(isVisible);
   const controls = useEthosArrowControls(controlsStore);
   const { endYOffset } = useArrowEndControls(controlsStore);
   const { ethosStartX, ethosStartY, ethosOffsetX, ethosOffsetY } = useEthosStartControls(controlsStore);
@@ -341,13 +394,16 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
   const template = controls[breakpoint] as ArrowTemplate;
 
   const startPoint = useElementPoint(labelElement, { x: ethosStartX, y: ethosStartY, offsetX: ethosOffsetX, offsetY: ethosOffsetY }, containerElement);
-  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: endYOffset }, containerElement);
+  const endPoint = computeButtonEndpoint('ethos', breakpoint, viewport, containerElement, endYOffset);
   // IMPORTANT: Use || not ?? here. Container may have height=0 before layout completes.
   // ?? only falls back on null/undefined, but || also falls back on 0.
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
 
-  const ready = !!(startPoint && endPoint && width > 0 && height > 0);
+  // Gate on isVisible too: the endpoint is now config-derived (always
+  // available), so without this the arrow's SVG — and its start dot — would
+  // render before the nav entrance has begun.
+  const ready = !!(isVisible && startPoint && endPoint && width > 0 && height > 0);
 
   if (!ready) {
     return <svg className="nav-mobile-ethos-arrow" style={{ opacity: 0, transition: 'opacity 0.15s ease' }} width={width || 1} height={height || 1} />;
@@ -424,7 +480,8 @@ export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore,
 // CONTACT ARROW - Center, spirals down toward button below
 // ViewBox: 80×120, starts near top (label area), ends pointing down at button
 // =============================================================================
-export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStore, labelElement, buttonElement, containerElement, effectsConfig }: ArrowProps) => {
+export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStore, labelElement, containerElement, effectsConfig }: ArrowProps) => {
+  useEntranceTracking(isVisible);
   const controls = useContactArrowControls(controlsStore);
   const { endYOffset } = useArrowEndControls(controlsStore);
   const { contactStartX, contactStartY, contactOffsetX, contactOffsetY } = useContactStartControls(controlsStore);
@@ -434,13 +491,16 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
   const template = controls[breakpoint] as ArrowTemplate;
 
   const startPoint = useElementPoint(labelElement, { x: contactStartX, y: contactStartY, offsetX: contactOffsetX, offsetY: contactOffsetY }, containerElement);
-  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: endYOffset }, containerElement);
+  const endPoint = computeButtonEndpoint('contact', breakpoint, viewport, containerElement, endYOffset);
   // IMPORTANT: Use || not ?? here. Container may have height=0 before layout completes.
   // ?? only falls back on null/undefined, but || also falls back on 0.
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
 
-  const ready = !!(startPoint && endPoint && width > 0 && height > 0);
+  // Gate on isVisible too: the endpoint is now config-derived (always
+  // available), so without this the arrow's SVG — and its start dot — would
+  // render before the nav entrance has begun.
+  const ready = !!(isVisible && startPoint && endPoint && width > 0 && height > 0);
 
   if (!ready) {
     return <svg className="nav-mobile-contact-arrow" style={{ opacity: 0, transition: 'opacity 0.15s ease' }} width={width || 1} height={height || 1} />;
@@ -517,7 +577,8 @@ export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStor
 // GALLERY ARROW - Right side, waves right toward button
 // ViewBox: 180×110, starts left, loops/waves, ends pointing right at button
 // =============================================================================
-export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStore, labelElement, buttonElement, containerElement, effectsConfig }: ArrowProps) => {
+export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStore, labelElement, containerElement, effectsConfig }: ArrowProps) => {
+  useEntranceTracking(isVisible);
   const controls = useGalleryArrowControls(controlsStore);
   const { endYOffset } = useArrowEndControls(controlsStore);
   const { galleryStartX, galleryStartY, galleryOffsetX, galleryOffsetY } = useGalleryStartControls(controlsStore);
@@ -527,13 +588,16 @@ export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStor
   const template = controls[breakpoint] as ArrowTemplate;
 
   const startPoint = useElementPoint(labelElement, { x: galleryStartX, y: galleryStartY, offsetX: galleryOffsetX, offsetY: galleryOffsetY }, containerElement);
-  const endPoint = useElementPoint(buttonElement, { x: 0.5, y: 0.5, offsetY: endYOffset }, containerElement);
+  const endPoint = computeButtonEndpoint('gallery', breakpoint, viewport, containerElement, endYOffset);
   // IMPORTANT: Use || not ?? here. Container may have height=0 before layout completes.
   // ?? only falls back on null/undefined, but || also falls back on 0.
   const width = containerRect?.width || viewport.width;
   const height = containerRect?.height || viewport.height;
 
-  const ready = !!(startPoint && endPoint && width > 0 && height > 0);
+  // Gate on isVisible too: the endpoint is now config-derived (always
+  // available), so without this the arrow's SVG — and its start dot — would
+  // render before the nav entrance has begun.
+  const ready = !!(isVisible && startPoint && endPoint && width > 0 && height > 0);
 
   if (!ready) {
     return <svg className="nav-mobile-gallery-arrow" style={{ opacity: 0, transition: 'opacity 0.15s ease' }} width={width || 1} height={height || 1} />;

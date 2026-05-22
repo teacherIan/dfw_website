@@ -38,32 +38,37 @@ Decisions already made with Ian:
   layout matches the old nav; clicks navigate; build/lint/typecheck clean; 0
   console errors.
 
+### Step 2 + 3 (committed on `feature/nav-buttons`)
+
+Mobile buttons moved to the layer; arrows decoupled from the button DOM.
+
+- `NavButtonLayer.tsx` — now renders portrait mobile too: a `useViewportWidth`
+  hook picks `navLayouts.home.mobile[mobileBreakpoint(width)]` and re-renders on
+  resize. Layer `zIndex` is `-1` (was `31`) so it sits just below the
+  label/arrow layers — arrowheads paint *on top of* the buttons, as before.
+- `navLayouts.ts` — mobile positions are now `mobileSpecs` (raw numbers) with
+  the old wrapper margins folded in as `leftPx` / `bottomPx`. The negative
+  margin lived on the **wrapper div** (`.nav-mobile-*-btn` CSS: ethos
+  `margin-left`, contact `margin-bottom` + `translateX(-50%)`, gallery's
+  `margin-right` was inert) — the Tailwind `-ml-14` etc. on the button never
+  generated. Offsets were measured against the live old layout; migrated
+  buttons land **pixel-identical** at all four breakpoints. Added
+  `mobileButtonCenter()` — config-derived button centre for arrow endpoints.
+- `MobileArrows.tsx` — each arrow's `endPoint` now comes from
+  `computeButtonEndpoint()` (→ `mobileButtonCenter()`), not a button DOM
+  measurement. `buttonElement` prop removed. `startPoint` still measures the
+  local label element.
+- `MobileNavLayout.tsx` — the 12 hardcoded button blocks, `MobileButton`, the
+  button refs, `useSizeControls`, and the button-position Leva controls are
+  gone (~879 → ~470 lines). Still renders the 12 label blocks + 3 arrows.
+- **Verified:** all 4 mobile breakpoints measured pixel-identical to the old
+  layout; desktop + landscape unaffected; contact toggle + ethos nav work;
+  build/lint/typecheck clean; 0 console errors.
+- **Note for review:** the mobile button entrance now staggers in
+  `NAV_BUTTON_IDS` order (gallery → ethos → contact) like desktop, instead of
+  the old centre-out order (contact first). Intentional unification.
+
 ## Remaining steps
-
-### Step 2 + 3 — Mobile buttons → layer, arrows decoupled (MUST land together)
-
-These are coupled: removing the mobile buttons from `MobileNavLayout` breaks the
-DOM-coupled arrows, so do them in one pass.
-
-- Extend `NavButtonLayer`: on portrait mobile, render the 3 `NavButton`s from
-  `navLayouts.home.mobile[mobileBreakpoint(innerWidth)]` (needs a viewport-width
-  hook; re-render on resize).
-- **GOTCHA — negative margins.** The old `MobileButton`s in `MobileNavLayout`
-  carry Tailwind classes `-ml-14` (ethos), `-mb-14` (contact), `-mr-14`
-  (gallery) — roughly ±56px (`md:` variants ~55px). The `left%` / `bottom` in
-  the old `BREAKPOINT_CONFIGS` is the *wrapper div* position; the real button is
-  shifted by these margins. The baked `navLayouts.home.mobile` values are the
-  wrapper values — they must be reconciled (fold the offset in) so migrated
-  `NavButton`s land pixel-identical. Verify against the live old positions
-  before deleting the old code.
-- `MobileArrows.tsx`: change each arrow's `endPoint` from
-  `useElementPoint(buttonElement, …)` to a **config-derived point** — compute
-  the button centre from `navLayouts.home.mobile[bp]` (left%, bottom, size)
-  resolved to viewport px, made container-relative. The `startPoint` (label)
-  KEEPS measuring its local label element (label size is text-dependent, can't
-  be pure config). Drop `buttonElement` and the button half of the
-  `useVisibleElement` machinery.
-- Delete the 12 hardcoded button blocks from `MobileNavLayout`.
 
 ### Step 4 — Mobile labels de-duplicated
 
@@ -108,8 +113,8 @@ errors.
 | File | State |
 | --- | --- |
 | `src/components/navigation/NavButton.tsx` | done |
-| `src/components/navigation/NavButtonLayer.tsx` | desktop done; extend for mobile (Step 2) |
+| `src/components/navigation/NavButtonLayer.tsx` | done — desktop + mobile |
 | `src/components/navigation/MenuOverlay.tsx` | desktop done |
-| `src/components/navigation/MobileNavLayout.tsx` | ~879 lines — gut it (Steps 2–5) |
-| `src/components/navigation/MobileArrows.tsx` | ~22 KB — decouple `endPoint` from DOM (Step 3) |
-| `src/constants/navLayouts.ts` | config done; reconcile margin offsets in Step 2/3 |
+| `src/components/navigation/MobileNavLayout.tsx` | ~470 lines — labels + arrows; collapse labels (Steps 4–5) |
+| `src/components/navigation/MobileArrows.tsx` | endpoint decoupled; retire Leva controls (Step 5) |
+| `src/constants/navLayouts.ts` | done — desktop + mobile, margin offsets reconciled |
