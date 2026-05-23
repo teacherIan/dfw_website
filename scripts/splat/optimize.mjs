@@ -44,6 +44,16 @@ const cullMargin = args['cull-margin'] != null ? Number(args['cull-margin']) : 1
 // from more angles than the rest of the scene).
 const densityPct = args['density-cap-percentile'] != null ? Number(args['density-cap-percentile']) : null;
 const densityVoxel = args['density-voxel'] != null ? Number(args['density-voxel']) : 0.15;
+// White-artifact removal: Polycam reconstructions often leave bright,
+// near-neutral floaters scattered in the middle of the scene (sky pixels
+// the matcher couldn't place properly). Drop splats that are bright AND
+// desaturated AND inside the scene's bounding sphere — the actual sky is
+// spatially distant (outside the sphere) and has blue saturation, so it
+// is spared on both counts.
+const removeWhites = !!args['remove-whites'];
+const whiteSat = args['white-sat-max'] != null ? Number(args['white-sat-max']) : 0.12;
+const whiteBright = args['white-brightness-min'] != null ? Number(args['white-brightness-min']) : 0.75;
+const whiteRadius = args['white-scene-radius'] != null ? Number(args['white-scene-radius']) : 5.5;
 const dry = !!args.dry;
 
 // --- captured scene geometry (feature/splat-optimization) ----------------
@@ -157,9 +167,10 @@ async function main() {
   if (targetSh !== srcSh) console.log(`  • SH degree ${srcSh} → ${targetSh}`);
   if (minAlpha > 0) console.log(`  • drop opacity < ${minAlpha}`);
   if (doCull) console.log(`  • cull: orbit-swept frustum (orbit ±${(cullAzimuth / DEG).toFixed(0)}°az / ±${(cullPolar / DEG).toFixed(0)}°pol, fov ${cullFov}°, margin ${cullMargin}°)`);
+  if (removeWhites) console.log(`  • remove white artifacts inside scene radius ${whiteRadius}`);
   if (densityPct != null) console.log(`  • density cap: p${densityPct} per ${densityVoxel}-unit voxel`);
   if (fracBits !== reader.fractionalBits) console.log(`  • fractionalBits ${reader.fractionalBits} → ${fracBits}`);
-  if (targetSh === srcSh && minAlpha <= 0 && !doCull && densityPct == null && fracBits === reader.fractionalBits) {
+  if (targetSh === srcSh && minAlpha <= 0 && !doCull && !removeWhites && densityPct == null && fracBits === reader.fractionalBits) {
     console.log(`  • (none — pure re-encode)`);
   }
 
@@ -210,6 +221,26 @@ async function main() {
       if (!cullTest(wx, wy, wz)) { keep[i] = 0; droppedCull++; }
     }
   }
+  let droppedWhite = 0;
+  if (removeWhites) {
+    const r2 = whiteRadius * whiteRadius;
+    for (let i = 0; i < n; i++) {
+      if (!keep[i]) continue;
+      const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
+      const maxC = Math.max(r, g, b);
+      if (maxC < whiteBright) continue; // fast reject — not bright enough
+      const minC = Math.min(r, g, b);
+      const brightness = (r + g + b) / 3;
+      const saturation = maxC > 1e-6 ? (maxC - minC) / maxC : 0;
+      if (brightness <= whiteBright || saturation >= whiteSat) continue;
+      // Near-white. Check we're inside the scene's core, not in the sky.
+      const [wx, wy, wz] = applyMat4(REST_MESH_MATRIX, cx[i], cy[i], cz[i]);
+      if (wx * wx + wy * wy + wz * wz < r2) {
+        keep[i] = 0;
+        droppedWhite++;
+      }
+    }
+  }
   if (densityPct != null) {
     // Voxelise the currently-kept splats and cap each voxel's count at the
     // Pth percentile across all occupied voxels. Over-dense voxels get
@@ -258,6 +289,7 @@ async function main() {
   console.log(`\nsplats : ${fmt(n)} → ${fmt(kept)}  (kept ${((kept / n) * 100).toFixed(1)}%)`);
   if (minAlpha > 0) console.log(`  dropped by opacity : ${fmt(droppedAlpha)}`);
   if (doCull) console.log(`  dropped by cull    : ${fmt(droppedCull)}`);
+  if (removeWhites) console.log(`  dropped by whites  : ${fmt(droppedWhite)}  (bright > ${whiteBright}, sat < ${whiteSat}, world-radius < ${whiteRadius})`);
   if (densityStats) {
     console.log(
       `  dropped by density : ${fmt(droppedDensity)}  ` +
