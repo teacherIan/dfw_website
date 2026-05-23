@@ -234,11 +234,17 @@ async function main() {
     const maxCount = counts[counts.length - 1];
     for (const arr of buckets.values()) {
       if (arr.length <= cap) continue;
-      // Fisher–Yates partial shuffle: place `cap` survivors at the front.
-      for (let i = 0; i < cap; i++) {
-        const j = i + Math.floor(Math.random() * (arr.length - i));
-        const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-      }
+      // Importance-based selection: keep the splats that actually carry
+      // the surface (high alpha × largest scale = a wide, opaque splat).
+      // Random selection drops big/opaque splats as readily as low-
+      // contribution filler — which pokes visible holes in detailed
+      // regions like the chair's wood grain. Sorting by importance and
+      // keeping the top `cap` removes only the redundant filler.
+      arr.sort((a, b) => {
+        const sa = Math.max(scale[a * 3], scale[a * 3 + 1], scale[a * 3 + 2]);
+        const sb = Math.max(scale[b * 3], scale[b * 3 + 1], scale[b * 3 + 2]);
+        return alpha[b] * sb - alpha[a] * sa; // descending importance
+      });
       for (let i = cap; i < arr.length; i++) {
         keep[arr[i]] = 0;
         droppedDensity++;
