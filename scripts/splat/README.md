@@ -4,7 +4,11 @@ Tooling for shrinking the Gaussian-splat hero asset (`public/assets/v_one_final.
 
 ## TL;DR
 
-- The app loads **`v_one_final.opt.spz`** by default — **~54% smaller** (27.0 MB → 12.5 MB).
+- The app loads **`v_one_final.opt.spz`** by default — **~41% smaller** (27.0 MB → 15.95 MB).
+- Splats within **1.5 world-units of the origin** (the chair) are exempt from
+  the destructive passes — without that, the density cap shaved the chair from
+  ~5,500 splats/voxel down to ~700, leaving rotten-wood blotches where the
+  wood grain used to be.
 - The original **`v_one_final.spz`** is kept untouched. Load it with `?splat=v_one_final.spz`.
 - Re-generate any variant with `optimize.mjs` (below). The original is never modified,
   so every optimization is reversible.
@@ -39,6 +43,7 @@ node --max-old-space-size=4096 scripts/splat/optimize.mjs [options]
 | `--density-cap-percentile=P` | voxelise the splats and cap each voxel at the Pth-percentile count. Levels out over-captured regions. |
 | `--density-voxel=V` | voxel size for the density cap (default 0.15 scene-units). |
 | `--frac-bits=N` | position quantization bits (source is 12). |
+| `--preserve-radius=R` | subject preservation. Splats within R world-units of origin are exempt from the density cap and dark removal — protects the chair from being thinned to "rotten wood". |
 | `--dry` | report counts only, write nothing. |
 | `--out=PATH` | output path (default derived from the passes). |
 
@@ -50,6 +55,7 @@ node --max-old-space-size=4096 scripts/splat/optimize.mjs \
   --cull --cull-azimuth=20 --cull-polar=13 --cull-margin=12 --cull-fov=52 \
   --remove-whites --remove-darks --dark-brightness-max=0.10 \
   --density-cap-percentile=99 --density-voxel=0.15 \
+  --preserve-radius=1.5 \
   --out=public/assets/v_one_final.opt.spz
 ```
 

@@ -66,6 +66,15 @@ const removeDarks = !!args['remove-darks'];
 const darkBright = args['dark-brightness-max'] != null ? Number(args['dark-brightness-max']) : 0.05;
 const darkRadius = args['dark-scene-radius'] != null ? Number(args['dark-scene-radius']) : 5.5;
 const darkScaleMax = args['dark-scale-max'] != null ? Number(args['dark-scale-max']) : Infinity;
+// Subject preservation: the chair sits at the world origin and is the hero
+// of the scene. The density-cap and dark-removal passes are aggressive enough
+// to visibly damage the chair (the cap thins ultra-dense chair voxels from
+// ~5,500 splats down to the global p99 of ~700 — an 87% loss — leaving dark
+// blotches where wood-grain texture used to be). Splats within
+// `--preserve-radius` world-units of origin are exempted from both passes.
+// Cull, opacity decimation, white removal, SH reduction, and frac-bits still
+// apply — they don't damage the chair.
+const preserveRadius = args['preserve-radius'] != null ? Number(args['preserve-radius']) : 0;
 const dry = !!args.dry;
 
 // --- captured scene geometry (feature/splat-optimization) ----------------
@@ -182,6 +191,7 @@ async function main() {
   if (removeWhites) console.log(`  • remove white artifacts inside scene radius ${whiteRadius}`);
   if (removeDarks) console.log(`  • remove dark floaters inside scene radius ${darkRadius}`);
   if (densityPct != null) console.log(`  • density cap: p${densityPct} per ${densityVoxel}-unit voxel`);
+  if (preserveRadius > 0) console.log(`  • preserve subject: skip density-cap & dark-removal within ${preserveRadius}u of origin`);
   if (fracBits !== reader.fractionalBits) console.log(`  • fractionalBits ${reader.fractionalBits} → ${fracBits}`);
   if (targetSh === srcSh && minAlpha <= 0 && !doCull && !removeWhites && !removeDarks && densityPct == null && fracBits === reader.fractionalBits) {
     console.log(`  • (none — pure re-encode)`);
@@ -256,11 +266,20 @@ async function main() {
       }
     }
   }
+  // Pre-compute subject-preservation mask. World-space distance from origin;
+  // splats inside this sphere are spared from the destructive passes.
+  const preserveR2 = preserveRadius > 0 ? preserveRadius * preserveRadius : -1;
+  const isPreserved = (i) => {
+    if (preserveR2 <= 0) return false;
+    const [wx, wy, wz] = applyMat4(REST_MESH_MATRIX, cx[i], cy[i], cz[i]);
+    return wx * wx + wy * wy + wz * wz < preserveR2;
+  };
   let droppedDark = 0;
   if (removeDarks) {
     const r2 = darkRadius * darkRadius;
     for (let i = 0; i < n; i++) {
       if (!keep[i]) continue;
+      if (isPreserved(i)) continue;
       const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
       const brightness = (r + g + b) / 3;
       if (brightness >= darkBright) continue; // not dark enough
@@ -281,10 +300,13 @@ async function main() {
     // Voxelise the currently-kept splats and cap each voxel's count at the
     // Pth percentile across all occupied voxels. Over-dense voxels get
     // random excess dropped — flattens captures where one region was
-    // photographed from many more angles than the rest.
+    // photographed from many more angles than the rest. Splats inside the
+    // preserve sphere (chair / subject) are excluded entirely — the cap is
+    // measured on, and applied to, only the non-preserved population.
     const buckets = new Map();
     for (let i = 0; i < n; i++) {
       if (!keep[i]) continue;
+      if (isPreserved(i)) continue;
       const vx = Math.floor(cx[i] / densityVoxel);
       const vy = Math.floor(cy[i] / densityVoxel);
       const vz = Math.floor(cz[i] / densityVoxel);
