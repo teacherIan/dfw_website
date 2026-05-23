@@ -4,7 +4,7 @@ Tooling for shrinking the Gaussian-splat hero asset (`public/assets/v_one_final.
 
 ## TL;DR
 
-- The app loads **`v_one_final.opt.spz`** by default — **~50% smaller** (27.0 MB → 13.4 MB).
+- The app loads **`v_one_final.opt.spz`** by default — **~54% smaller** (27.0 MB → 12.5 MB).
 - The original **`v_one_final.spz`** is kept untouched. Load it with `?splat=v_one_final.spz`.
 - Re-generate any variant with `optimize.mjs` (below). The original is never modified,
   so every optimization is reversible.
@@ -48,7 +48,7 @@ Passes compose. `v_one_final.opt.spz` is built with:
 node --max-old-space-size=4096 scripts/splat/optimize.mjs \
   --sh=0 --min-alpha=0.1 --frac-bits=11 \
   --cull --cull-azimuth=20 --cull-polar=13 --cull-margin=12 --cull-fov=52 \
-  --remove-whites --remove-darks \
+  --remove-whites --remove-darks --dark-brightness-max=0.10 \
   --density-cap-percentile=99 --density-voxel=0.15 \
   --out=public/assets/v_one_final.opt.spz
 ```

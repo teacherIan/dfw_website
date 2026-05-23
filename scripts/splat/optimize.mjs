@@ -58,12 +58,14 @@ const whiteRadius = args['white-scene-radius'] != null ? Number(args['white-scen
 // matcher errors. They sit hidden between overlapping coloured splats in
 // dense regions, but the density-cap thins those neighbours and the dark
 // dots get exposed (visible as flecks on the chair slats, etc.). Drop
-// splats darker than `--dark-brightness-max` inside the scene radius.
-// Legitimate dark surfaces (deep tree-bark shadows) are usually less black
-// than this threshold and survive.
+// splats darker than `--dark-brightness-max` AND smaller than
+// `--dark-scale-max` inside the scene radius. The scale gate spares
+// legitimate dark surfaces (deep slats-shadow, bark) which are usually
+// larger splats covering area — the artifacts are dot-like.
 const removeDarks = !!args['remove-darks'];
 const darkBright = args['dark-brightness-max'] != null ? Number(args['dark-brightness-max']) : 0.05;
 const darkRadius = args['dark-scene-radius'] != null ? Number(args['dark-scene-radius']) : 5.5;
+const darkScaleMax = args['dark-scale-max'] != null ? Number(args['dark-scale-max']) : Infinity;
 const dry = !!args.dry;
 
 // --- captured scene geometry (feature/splat-optimization) ----------------
@@ -262,6 +264,12 @@ async function main() {
       const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
       const brightness = (r + g + b) / 3;
       if (brightness >= darkBright) continue; // not dark enough
+      // Scale gate: dark artifacts are point-like; legitimate dark surfaces
+      // (deep slat-shadow, bark) are larger splats and survive this filter.
+      if (darkScaleMax !== Infinity) {
+        const sMax = Math.max(scale[i * 3], scale[i * 3 + 1], scale[i * 3 + 2]);
+        if (sMax > darkScaleMax) continue;
+      }
       const [wx, wy, wz] = applyMat4(REST_MESH_MATRIX, cx[i], cy[i], cz[i]);
       if (wx * wx + wy * wy + wz * wz < r2) {
         keep[i] = 0;
