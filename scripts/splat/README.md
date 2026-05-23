@@ -4,7 +4,7 @@ Tooling for shrinking the Gaussian-splat hero asset (`public/assets/v_one_final.
 
 ## TL;DR
 
-- The app loads **`v_one_final.opt.spz`** by default — **~53% smaller** (27.0 MB → 12.6 MB).
+- The app loads **`v_one_final.opt.spz`** by default — **~48% smaller** (27.0 MB → 14.2 MB).
 - The original **`v_one_final.spz`** is kept untouched. Load it with `?splat=v_one_final.spz`.
 - Re-generate any variant with `optimize.mjs` (below). The original is never modified,
   so every optimization is reversible.
@@ -48,9 +48,16 @@ Passes compose. `v_one_final.opt.spz` is built with:
 node --max-old-space-size=4096 scripts/splat/optimize.mjs \
   --sh=0 --min-alpha=0.1 --frac-bits=11 \
   --cull --cull-azimuth=20 --cull-polar=13 --cull-margin=12 --cull-fov=52 \
-  --density-cap-percentile=98 --density-voxel=0.15 \
+  --remove-whites \
+  --density-cap-percentile=99 --density-voxel=0.15 \
   --out=public/assets/v_one_final.opt.spz
 ```
+
+`--remove-whites` drops Polycam's bright, pale, blue-leaning floaters
+inside the scene radius (the actual sky is outside the radius and is
+spared spatially; warm wood highlights have `R > B` and are spared by
+colour). Tunable with `--white-sat-max`, `--white-brightness-min`, and
+`--white-scene-radius`.
 
 ## What was measured (source: `v_one_final.spz`)
 
@@ -69,7 +76,8 @@ chair assembly during the entrance.
 | drop opacity < 0.1 (−7.7% splats) | −8% | low — those splats are near-invisible |
 | 12 → 11-bit positions | −2% | low — marginally coarser splat centres |
 | orbit-frustum cull (±20°/±13° orbit) | −5% | low — see below |
-| **density cap p98 (clip voxels >400 splats)** | **−39%** | **low — only clips pathological over-density** |
+| white/pale-blue floater removal inside scene | −1% | low — colour + spatial; sky preserved |
+| **density cap p99 (clip voxels >846 splats)** | **−33%** | **low — clips only the worst over-density; chair stays detailed** |
 
 `v_one_final.opt.spz` stacks SH0 + opacity<0.1 + 11-bit + cull ⇒ **−32.6%**
 (1.39M → 1.21M splats). Verified against the original at rest (desktop +

@@ -44,15 +44,15 @@ const cullMargin = args['cull-margin'] != null ? Number(args['cull-margin']) : 1
 // from more angles than the rest of the scene).
 const densityPct = args['density-cap-percentile'] != null ? Number(args['density-cap-percentile']) : null;
 const densityVoxel = args['density-voxel'] != null ? Number(args['density-voxel']) : 0.15;
-// White-artifact removal: Polycam reconstructions often leave bright,
-// near-neutral floaters scattered in the middle of the scene (sky pixels
-// the matcher couldn't place properly). Drop splats that are bright AND
-// desaturated AND inside the scene's bounding sphere — the actual sky is
-// spatially distant (outside the sphere) and has blue saturation, so it
-// is spared on both counts.
+// White / sky-leak artifact removal: Polycam reconstructions seed bright,
+// pale floaters through the middle of the scene — pure white plus a band
+// of pale sky-blue. Drop splats that are bright AND not deeply saturated
+// AND blue-leaning (B ≥ R) AND inside the scene's bounding sphere. The
+// real sky is also outside the sphere and is spared spatially; warm
+// surfaces (wood highlights, chair) have R > B and are spared by colour.
 const removeWhites = !!args['remove-whites'];
-const whiteSat = args['white-sat-max'] != null ? Number(args['white-sat-max']) : 0.12;
-const whiteBright = args['white-brightness-min'] != null ? Number(args['white-brightness-min']) : 0.75;
+const whiteSat = args['white-sat-max'] != null ? Number(args['white-sat-max']) : 0.35;
+const whiteBright = args['white-brightness-min'] != null ? Number(args['white-brightness-min']) : 0.65;
 const whiteRadius = args['white-scene-radius'] != null ? Number(args['white-scene-radius']) : 5.5;
 const dry = !!args.dry;
 
@@ -227,13 +227,15 @@ async function main() {
     for (let i = 0; i < n; i++) {
       if (!keep[i]) continue;
       const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
+      if (r > b) continue; // warm tone — wood, chair highlights; spared by colour
       const maxC = Math.max(r, g, b);
       if (maxC < whiteBright) continue; // fast reject — not bright enough
       const minC = Math.min(r, g, b);
       const brightness = (r + g + b) / 3;
       const saturation = maxC > 1e-6 ? (maxC - minC) / maxC : 0;
       if (brightness <= whiteBright || saturation >= whiteSat) continue;
-      // Near-white. Check we're inside the scene's core, not in the sky.
+      // Pale and cool (white→sky-blue band). Check we're inside the scene's
+      // core; the actual sky is outside the sphere and is spared.
       const [wx, wy, wz] = applyMat4(REST_MESH_MATRIX, cx[i], cy[i], cz[i]);
       if (wx * wx + wy * wy + wz * wz < r2) {
         keep[i] = 0;
