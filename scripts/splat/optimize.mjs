@@ -54,6 +54,16 @@ const removeWhites = !!args['remove-whites'];
 const whiteSat = args['white-sat-max'] != null ? Number(args['white-sat-max']) : 0.35;
 const whiteBright = args['white-brightness-min'] != null ? Number(args['white-brightness-min']) : 0.65;
 const whiteRadius = args['white-scene-radius'] != null ? Number(args['white-scene-radius']) : 5.5;
+// Dark-floater removal: Polycam also leaves near-black point splats from
+// matcher errors. They sit hidden between overlapping coloured splats in
+// dense regions, but the density-cap thins those neighbours and the dark
+// dots get exposed (visible as flecks on the chair slats, etc.). Drop
+// splats darker than `--dark-brightness-max` inside the scene radius.
+// Legitimate dark surfaces (deep tree-bark shadows) are usually less black
+// than this threshold and survive.
+const removeDarks = !!args['remove-darks'];
+const darkBright = args['dark-brightness-max'] != null ? Number(args['dark-brightness-max']) : 0.05;
+const darkRadius = args['dark-scene-radius'] != null ? Number(args['dark-scene-radius']) : 5.5;
 const dry = !!args.dry;
 
 // --- captured scene geometry (feature/splat-optimization) ----------------
@@ -168,9 +178,10 @@ async function main() {
   if (minAlpha > 0) console.log(`  • drop opacity < ${minAlpha}`);
   if (doCull) console.log(`  • cull: orbit-swept frustum (orbit ±${(cullAzimuth / DEG).toFixed(0)}°az / ±${(cullPolar / DEG).toFixed(0)}°pol, fov ${cullFov}°, margin ${cullMargin}°)`);
   if (removeWhites) console.log(`  • remove white artifacts inside scene radius ${whiteRadius}`);
+  if (removeDarks) console.log(`  • remove dark floaters inside scene radius ${darkRadius}`);
   if (densityPct != null) console.log(`  • density cap: p${densityPct} per ${densityVoxel}-unit voxel`);
   if (fracBits !== reader.fractionalBits) console.log(`  • fractionalBits ${reader.fractionalBits} → ${fracBits}`);
-  if (targetSh === srcSh && minAlpha <= 0 && !doCull && !removeWhites && densityPct == null && fracBits === reader.fractionalBits) {
+  if (targetSh === srcSh && minAlpha <= 0 && !doCull && !removeWhites && !removeDarks && densityPct == null && fracBits === reader.fractionalBits) {
     console.log(`  • (none — pure re-encode)`);
   }
 
@@ -243,6 +254,21 @@ async function main() {
       }
     }
   }
+  let droppedDark = 0;
+  if (removeDarks) {
+    const r2 = darkRadius * darkRadius;
+    for (let i = 0; i < n; i++) {
+      if (!keep[i]) continue;
+      const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
+      const brightness = (r + g + b) / 3;
+      if (brightness >= darkBright) continue; // not dark enough
+      const [wx, wy, wz] = applyMat4(REST_MESH_MATRIX, cx[i], cy[i], cz[i]);
+      if (wx * wx + wy * wy + wz * wz < r2) {
+        keep[i] = 0;
+        droppedDark++;
+      }
+    }
+  }
   if (densityPct != null) {
     // Voxelise the currently-kept splats and cap each voxel's count at the
     // Pth percentile across all occupied voxels. Over-dense voxels get
@@ -292,6 +318,7 @@ async function main() {
   if (minAlpha > 0) console.log(`  dropped by opacity : ${fmt(droppedAlpha)}`);
   if (doCull) console.log(`  dropped by cull    : ${fmt(droppedCull)}`);
   if (removeWhites) console.log(`  dropped by whites  : ${fmt(droppedWhite)}  (bright > ${whiteBright}, sat < ${whiteSat}, world-radius < ${whiteRadius})`);
+  if (removeDarks) console.log(`  dropped by darks   : ${fmt(droppedDark)}  (bright < ${darkBright}, world-radius < ${darkRadius})`);
   if (densityStats) {
     console.log(
       `  dropped by density : ${fmt(droppedDensity)}  ` +
