@@ -43,6 +43,7 @@ node --max-old-space-size=4096 scripts/splat/optimize.mjs [options]
 | `--density-cap-percentile=P` | voxelise the splats and cap each voxel at the Pth-percentile count. Levels out over-captured regions. |
 | `--density-voxel=V` | voxel size for the density cap (default 0.15 scene-units). |
 | `--frac-bits=N` | position quantization bits (source is 12). |
+| `--scene-radius=R` | radius of the captured scene's bounding sphere (default 5.5). The white/dark removal passes act only inside it; the sky and far background outside are spared spatially. Override per-pass with `--white-scene-radius` / `--dark-scene-radius`. |
 | `--preserve-radius=R` | subject preservation. Splats within R world-units of origin are exempt from the density cap and dark removal — protects the chair from being thinned to "rotten wood". |
 | `--dry` | report counts only, write nothing. |
 | `--out=PATH` | output path (default derived from the passes). |
@@ -63,7 +64,7 @@ node --max-old-space-size=4096 scripts/splat/optimize.mjs \
 inside the scene radius (the actual sky is outside the radius and is
 spared spatially; warm wood highlights have `R > B` and are spared by
 colour). Tunable with `--white-sat-max`, `--white-brightness-min`, and
-`--white-scene-radius`.
+`--scene-radius` (or `--white-scene-radius` to size just this pass).
 
 ## What was measured (source: `v_one_final.spz`)
 

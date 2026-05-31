@@ -44,6 +44,12 @@ const cullMargin = args['cull-margin'] != null ? Number(args['cull-margin']) : 1
 // from more angles than the rest of the scene).
 const densityPct = args['density-cap-percentile'] != null ? Number(args['density-cap-percentile']) : null;
 const densityVoxel = args['density-voxel'] != null ? Number(args['density-voxel']) : 0.15;
+// Both artifact-removal passes below act only *inside* the captured scene's
+// bounding sphere (centred on the world origin), so the real sky and far
+// background — which sit outside it — are spared spatially. `--scene-radius`
+// is the single source of truth; `--white-scene-radius` / `--dark-scene-radius`
+// override it per-pass only if the two ever need to diverge.
+const sceneRadius = args['scene-radius'] != null ? Number(args['scene-radius']) : 5.5;
 // White / sky-leak artifact removal: Polycam reconstructions seed bright,
 // pale floaters through the middle of the scene — pure white plus a band
 // of pale sky-blue. Drop splats that are bright AND not deeply saturated
@@ -53,7 +59,7 @@ const densityVoxel = args['density-voxel'] != null ? Number(args['density-voxel'
 const removeWhites = !!args['remove-whites'];
 const whiteSat = args['white-sat-max'] != null ? Number(args['white-sat-max']) : 0.35;
 const whiteBright = args['white-brightness-min'] != null ? Number(args['white-brightness-min']) : 0.65;
-const whiteRadius = args['white-scene-radius'] != null ? Number(args['white-scene-radius']) : 5.5;
+const whiteRadius = args['white-scene-radius'] != null ? Number(args['white-scene-radius']) : sceneRadius;
 // Dark-floater removal: Polycam also leaves near-black point splats from
 // matcher errors. They sit hidden between overlapping coloured splats in
 // dense regions, but the density-cap thins those neighbours and the dark
@@ -64,7 +70,7 @@ const whiteRadius = args['white-scene-radius'] != null ? Number(args['white-scen
 // larger splats covering area — the artifacts are dot-like.
 const removeDarks = !!args['remove-darks'];
 const darkBright = args['dark-brightness-max'] != null ? Number(args['dark-brightness-max']) : 0.05;
-const darkRadius = args['dark-scene-radius'] != null ? Number(args['dark-scene-radius']) : 5.5;
+const darkRadius = args['dark-scene-radius'] != null ? Number(args['dark-scene-radius']) : sceneRadius;
 const darkScaleMax = args['dark-scale-max'] != null ? Number(args['dark-scale-max']) : Infinity;
 // Subject preservation: the chair sits at the world origin and is the hero
 // of the scene. The density-cap and dark-removal passes are aggressive enough
@@ -244,42 +250,59 @@ async function main() {
       if (!cullTest(wx, wy, wz)) { keep[i] = 0; droppedCull++; }
     }
   }
+  // World-space distance² from the origin, computed once. Positions never
+  // change between passes, so the three spatial gates below (white-removal,
+  // dark-removal, and subject-preservation) share this single pass instead of
+  // each re-running the rest-pose matrix multiply per splat.
+  const needsWorldDist = removeWhites || removeDarks || preserveRadius > 0;
+  const worldDist2 = needsWorldDist ? new Float64Array(n) : null;
+  if (worldDist2) {
+    const m = REST_MESH_MATRIX;
+    for (let i = 0; i < n; i++) {
+      const wx = m[0] * cx[i] + m[4] * cy[i] + m[8] * cz[i] + m[12];
+      const wy = m[1] * cx[i] + m[5] * cy[i] + m[9] * cz[i] + m[13];
+      const wz = m[2] * cx[i] + m[6] * cy[i] + m[10] * cz[i] + m[14];
+      worldDist2[i] = wx * wx + wy * wy + wz * wz;
+    }
+  }
+  // Subject-preservation mask: splats inside this sphere (the chair, at the
+  // origin) are exempt from the destructive dark-removal and density-cap
+  // passes — see the --preserve-radius note above.
+  const preserveR2 = preserveRadius > 0 ? preserveRadius * preserveRadius : -1;
+  const preserved = preserveR2 > 0 ? new Uint8Array(n) : null;
+  if (preserved) {
+    for (let i = 0; i < n; i++) if (worldDist2[i] < preserveR2) preserved[i] = 1;
+  }
   let droppedWhite = 0;
   if (removeWhites) {
+    // Unlike dark-removal and the density cap, this pass is intentionally NOT
+    // gated by the preserve sphere: the chair is warm (R > B) and is already
+    // spared by the colour test below, so a spatial exemption would be redundant.
     const r2 = whiteRadius * whiteRadius;
     for (let i = 0; i < n; i++) {
       if (!keep[i]) continue;
       const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
       if (r > b) continue; // warm tone — wood, chair highlights; spared by colour
-      const maxC = Math.max(r, g, b);
-      if (maxC < whiteBright) continue; // fast reject — not bright enough
-      const minC = Math.min(r, g, b);
       const brightness = (r + g + b) / 3;
+      if (brightness <= whiteBright) continue; // not bright enough
+      const maxC = Math.max(r, g, b);
+      const minC = Math.min(r, g, b);
       const saturation = maxC > 1e-6 ? (maxC - minC) / maxC : 0;
-      if (brightness <= whiteBright || saturation >= whiteSat) continue;
-      // Pale and cool (white→sky-blue band). Check we're inside the scene's
-      // core; the actual sky is outside the sphere and is spared.
-      const [wx, wy, wz] = applyMat4(REST_MESH_MATRIX, cx[i], cy[i], cz[i]);
-      if (wx * wx + wy * wy + wz * wz < r2) {
+      if (saturation >= whiteSat) continue;
+      // Pale and cool (white→sky-blue band) and inside the scene core; the
+      // actual sky is outside the sphere and is spared.
+      if (worldDist2[i] < r2) {
         keep[i] = 0;
         droppedWhite++;
       }
     }
   }
-  // Pre-compute subject-preservation mask. World-space distance from origin;
-  // splats inside this sphere are spared from the destructive passes.
-  const preserveR2 = preserveRadius > 0 ? preserveRadius * preserveRadius : -1;
-  const isPreserved = (i) => {
-    if (preserveR2 <= 0) return false;
-    const [wx, wy, wz] = applyMat4(REST_MESH_MATRIX, cx[i], cy[i], cz[i]);
-    return wx * wx + wy * wy + wz * wz < preserveR2;
-  };
   let droppedDark = 0;
   if (removeDarks) {
     const r2 = darkRadius * darkRadius;
     for (let i = 0; i < n; i++) {
       if (!keep[i]) continue;
-      if (isPreserved(i)) continue;
+      if (preserved && preserved[i]) continue;
       const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
       const brightness = (r + g + b) / 3;
       if (brightness >= darkBright) continue; // not dark enough
@@ -289,8 +312,7 @@ async function main() {
         const sMax = Math.max(scale[i * 3], scale[i * 3 + 1], scale[i * 3 + 2]);
         if (sMax > darkScaleMax) continue;
       }
-      const [wx, wy, wz] = applyMat4(REST_MESH_MATRIX, cx[i], cy[i], cz[i]);
-      if (wx * wx + wy * wy + wz * wz < r2) {
+      if (worldDist2[i] < r2) {
         keep[i] = 0;
         droppedDark++;
       }
@@ -306,7 +328,7 @@ async function main() {
     const buckets = new Map();
     for (let i = 0; i < n; i++) {
       if (!keep[i]) continue;
-      if (isPreserved(i)) continue;
+      if (preserved && preserved[i]) continue;
       const vx = Math.floor(cx[i] / densityVoxel);
       const vy = Math.floor(cy[i] / densityVoxel);
       const vz = Math.floor(cz[i] / densityVoxel);
