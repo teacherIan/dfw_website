@@ -19,7 +19,7 @@ export interface GalleryImage {
 const CATEGORY_PREVIEW: Partial<Record<CategoryKey, string>> = {
   chairs: 'chair_w_stool.png', // "Adirondack Chair with Ottoman"
   small_tables: 'coffee_table_side.jpeg', // same coffee table as the studio shot, better 3/4 angle (high-res copy of the grid's .png)
-  large_tables: 'table_snow_fixed.png', // snow photoshopped out (replaces the old snowy adult_picnic_table.jpg)
+  large_tables: 'picnic_table_nobg.png', // background removed entirely (replaces the old snowy adult_picnic_table.jpg)
 };
 
 // Get all images from the gallery folder and subfolders
