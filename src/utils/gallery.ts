@@ -7,9 +7,20 @@ export interface GalleryImage {
   src: string;
   category: string;
   name: string;
+  /** Original source path from the glob, e.g. /src/gallery/chairs/chair_w_stool.png. */
+  path: string;
   width?: number;
   height?: number;
 }
+
+// Curated preview image per category, by source filename. The picker shows
+// this image as the category's cover instead of whichever file happens to
+// sort first. Falls back to the first image if the named file isn't found.
+const CATEGORY_PREVIEW: Partial<Record<CategoryKey, string>> = {
+  chairs: 'chair_w_stool.png', // "Adirondack Chair with Ottoman"
+  small_tables: 'coffee_table_side.jpeg', // same coffee table as the studio shot, better 3/4 angle (high-res copy of the grid's .png)
+  large_tables: 'table_snow_fixed.png', // snow photoshopped out (replaces the old snowy adult_picnic_table.jpg)
+};
 
 // Get all images from the gallery folder and subfolders
 // We exclude the "cropped" folder as those might be processed assets, unless specified otherwise
@@ -48,6 +59,7 @@ export const getGalleryImages = (): GalleryImage[] => {
       src: imageModules[path] as string,
       category,
       name: name.charAt(0).toUpperCase() + name.slice(1),
+      path,
     });
   }
 
@@ -81,9 +93,11 @@ export const getCategoriesWithPreview = (): { category: CategoryKey; label: stri
 
   return (Object.entries(categoryConfig) as [CategoryKey, string][])
     .filter(([key]) => categoryMap[key]?.length > 0)
-    .map(([key, label]) => ({
-      category: key,
-      label,
-      preview: categoryMap[key][0],
-    }));
+    .map(([key, label]) => {
+      const images = categoryMap[key];
+      const preferred = CATEGORY_PREVIEW[key];
+      const preview =
+        (preferred && images.find((img) => img.path.endsWith(preferred))) || images[0];
+      return { category: key, label, preview };
+    });
 };

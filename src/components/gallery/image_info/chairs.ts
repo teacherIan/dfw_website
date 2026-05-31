@@ -7,14 +7,15 @@ import swingA from '../../../gallery/chairs/swing_a.jpg';
 import swingB from '../../../gallery/chairs/swingB.jpeg';
 import swingC from '../../../gallery/chairs/swingC.jpeg';
 import love_seat from '../../../gallery/chairs/love_seat.jpeg';
+import types, { type ProductImage } from './types';
 
-const types = {
-  chairs: 'chairs',
-  smallTable: 'smallTable',
-  largeTable: 'largeTable',
-  structure: 'structure',
-  other: 'other',
-};
+// Shared product copy — reused across several entries in this category.
+const ADIRONDACK_CHAIR =
+  'This comfortable chair has white cedar uprights cut and shaped for lumbar support and 6/4" cedar arms, screwed together and covered with mahogany plugs. Built to last with four coats of spar varnish heated into the wood. For indoor or sheltered use, a different, richer finish is available.';
+const FOUND_WOOD_SWING =
+  'The Found Wood Swing is made with 5/4 red cedar slats, mahogany plugs, and white cedar uprights. It is finished with multiple coats of spar varnish that is heated and rubbed in for lasting protection.';
+const ADIRONDACK_LOVESEAT =
+  'Like the Adirondack Chair, this loveseat is made with 5/4 red cedar slats, mahogany plugs, and white cedar uprights. It is finished with multiple coats of spar varnish that is heated and rubbed in.';
 
 export default [
   {
@@ -22,8 +23,7 @@ export default [
     img: doubleChair,
     type: types.chairs,
     name: 'Adirondack Loveseat',
-    description:
-      'Like the Adirondack Chair, this loveseat is made with 5/4 red cedar slats, mahogany plugs, and white cedar uprights. It is finished with multiple coats of spar varnish that is heated and rubbed in.',
+    description: ADIRONDACK_LOVESEAT,
     price: '$1,400 ~ $2,000',
   },
   {
@@ -38,8 +38,8 @@ export default [
   {
     orderNumber: '007',
     img: gaudiChair,
-    name: 'Gaudi Chair',
     type: types.chairs,
+    name: 'Gaudi Chair',
     description:
       'This double chair was inspired by the architect Gaudi. The angled seats allow two people to have an intimate conversation - when sitting back, their heads are close enough to talk in whispers. The chair is done entirely in cedar with five coats of finish and mahogany plugs.',
     price: '$1,400 ~ $2,000',
@@ -49,17 +49,15 @@ export default [
     img: adirondack_chair_w_stool,
     type: types.chairs,
     name: 'Adirondack Chair with Ottoman',
-    description:
-      'This comfortable chair has white cedar uprights cut and shaped for lumbar support and 6/4" cedar arms, screwed together and covered with mahogany plugs. Built to last with four coats of spar varnish heated into the wood. For indoor or sheltered use, a different, richer finish is available.',
+    description: ADIRONDACK_CHAIR,
     price: '$1,400 ~ $2,000',
   },
   {
     orderNumber: '028',
     img: outside_adirondack_chair,
-    name: 'Adirondack Chair',
     type: types.chairs,
-    description:
-      'This comfortable chair has white cedar uprights cut and shaped for lumbar support and 6/4" cedar arms, screwed together and covered with mahogany plugs. Built to last with four coats of spar varnish heated into the wood. For indoor or sheltered use, a different, richer finish is available.',
+    name: 'Adirondack Chair',
+    description: ADIRONDACK_CHAIR,
     price: '$1,400 ~ $2,000',
   },
   {
@@ -67,8 +65,7 @@ export default [
     img: swingA,
     type: types.chairs,
     name: 'Found Wood Swing',
-    description:
-      'The Found Wood Swing is made with 5/4 red cedar slats, mahogany plugs, and white cedar uprights. It is finished with multiple coats of spar varnish that is heated and rubbed in for lasting protection.',
+    description: FOUND_WOOD_SWING,
     price: '$1,400 ~ $2,000',
   },
   {
@@ -76,8 +73,7 @@ export default [
     img: swingB,
     type: types.chairs,
     name: 'Found Wood Swing',
-    description:
-      'The Found Wood Swing is made with 5/4 red cedar slats, mahogany plugs, and white cedar uprights. It is finished with multiple coats of spar varnish that is heated and rubbed in for lasting protection.',
+    description: FOUND_WOOD_SWING,
     price: '$1,400 ~ $2,000',
   },
   {
@@ -85,8 +81,7 @@ export default [
     img: swingC,
     type: types.chairs,
     name: 'Found Wood Swing',
-    description:
-      'The Found Wood Swing is made with 5/4 red cedar slats, mahogany plugs, and white cedar uprights. It is finished with multiple coats of spar varnish that is heated and rubbed in for lasting protection.',
+    description: FOUND_WOOD_SWING,
     price: '$1,400 ~ $2,000',
   },
   {
@@ -94,8 +89,7 @@ export default [
     img: love_seat,
     type: types.chairs,
     name: 'Adirondack Loveseat',
-    description:
-      'Like the Adirondack Chair, this loveseat is made with 5/4 red cedar slats, mahogany plugs, and white cedar uprights. It is finished with multiple coats of spar varnish that is heated and rubbed in.',
+    description: ADIRONDACK_LOVESEAT,
     price: '$1,400 ~ $2,000',
   },
-];
+] satisfies ProductImage[];

@@ -8,21 +8,13 @@ import { fontFamilyMap, BLUEPRINT_PICKER_TIMING } from '../../constants';
 import type { CategoryKey } from './image_info';
 import styles from './BlueprintPicker.module.css';
 
-// Default positions and settings for category images (desktop - 2x2 grid)
+// Default positions and settings for category images (desktop - 2x2 grid).
+// Desktop is hand-placed and Leva-tunable in dev (see useControls below).
 const CATEGORY_DEFAULTS_DESKTOP = {
   chairs: { x: 25, y: 30, size: 22, rotation: -3 },
   large_tables: { x: 75, y: 30, size: 22, rotation: 2 },
   small_tables: { x: 25, y: 70, size: 22, rotation: 1 },
   structures: { x: 75, y: 70, size: 22, rotation: -2 },
-} as const;
-
-// Mobile positions - staggered vertical layout with larger images
-// Starts on right side to avoid exit button overlap
-const CATEGORY_DEFAULTS_MOBILE = {
-  chairs: { x: 72, y: 20, size: 32, rotation: 2 },
-  large_tables: { x: 28, y: 38, size: 32, rotation: -3 },
-  small_tables: { x: 72, y: 58, size: 32, rotation: -2 },
-  structures: { x: 28, y: 78, size: 32, rotation: 1 },
 } as const;
 
 // Use mobile defaults on narrow screens
@@ -34,6 +26,47 @@ interface CategoryDefault {
   size: number;
   rotation: number;
 }
+
+// --- Mobile layout: structural rows + intentional scatter -----------------
+// A 2-column, 4-row staggered ladder. The rows are EVENLY spaced between TOP
+// and BOTTOM, so the vertical pitch is uniform and known. Each card then takes
+// a small scatter — a `dy` nudge off its row line plus a rotation — for the
+// hand-pinned, not-quite-aligned look. Because every card sits in its own
+// evenly-spaced row slot, and the size cap (maxWidth: 24vh, below) keeps a card
+// shorter than the same-column row pitch, cards cannot collide at any viewport
+// aspect ratio. (The previous version free-floated each card's x/y as a % of
+// width vs height, so short/wide windows pulled the rows together until cards
+// overlapped — that is the bug this structure removes.)
+const MOBILE_COLS = { left: 28, right: 72 } as const;
+const MOBILE_TOP = 23; // first row anchor (clears the compass rose, top-right)
+const MOBILE_BOTTOM = 78; // last row anchor (clears the bottom edge + label)
+const MOBILE_SIZE = 42; // card width as % of viewport (capped by maxWidth below)
+const MOBILE_ROW_COUNT = 4;
+const mobileRowY = (row: number): number =>
+  MOBILE_TOP + (row * (MOBILE_BOTTOM - MOBILE_TOP)) / (MOBILE_ROW_COUNT - 1);
+
+// `row` + `col` place the card in its structural slot; `dy` + `rotation` are
+// the scatter laid on top. dy values are tiny — just enough to break strict
+// row alignment — and stay well within the slot, so the no-collision guarantee
+// holds.
+const MOBILE_SCATTER: Record<
+  CategoryKey,
+  { row: number; col: keyof typeof MOBILE_COLS; dy: number; rotation: number }
+> = {
+  chairs: { row: 0, col: 'right', dy: 0, rotation: 2 },
+  large_tables: { row: 1, col: 'left', dy: -3.33, rotation: -3 },
+  small_tables: { row: 2, col: 'right', dy: -1.67, rotation: -2 },
+  structures: { row: 3, col: 'left', dy: 0, rotation: 1 },
+};
+
+const CATEGORY_DEFAULTS_MOBILE = Object.fromEntries(
+  (Object.entries(MOBILE_SCATTER) as [CategoryKey, (typeof MOBILE_SCATTER)[CategoryKey]][]).map(
+    ([key, s]) => [
+      key,
+      { x: MOBILE_COLS[s.col], y: mobileRowY(s.row) + s.dy, size: MOBILE_SIZE, rotation: s.rotation },
+    ],
+  ),
+) as Record<CategoryKey, CategoryDefault>;
 
 // Generate Leva control schema for category position
 const createCategoryControlSchema = (defaults: CategoryDefault) => ({
@@ -52,6 +85,7 @@ interface CategoryImageProps {
   onClick?: () => void;
   isVisible?: boolean;
   index?: number;
+  isMobile?: boolean;
 }
 
 const CategoryImage = ({
@@ -63,6 +97,7 @@ const CategoryImage = ({
   onClick,
   isVisible = true,
   index = 0,
+  isMobile = false,
 }: CategoryImageProps) => {
   return (
     // Outer div handles positioning and centering
@@ -73,13 +108,21 @@ const CategoryImage = ({
         left: `${position.x}%`,
         top: `${position.y}%`,
         width: `${size}%`,
-        maxWidth: '300px',
+        // Cards scale with viewport WIDTH but are positioned by viewport HEIGHT,
+        // so the cap has to be height-aware or they collide on short/wide windows.
+        // Mobile: cap by 24vh → width = min(42vw, 24vh). Tall phones stay width-bound
+        // (unchanged ~164px); short/wide windows become height-bound and shrink to
+        // fit the vertical gaps between the staggered rows.
+        // Desktop: let images breathe up to 400px instead of freezing at 300px.
+        maxWidth: isMobile ? '24vh' : 'clamp(300px, 23vw, 400px)',
       }}
     >
-      {/* Inner motion.div handles animation */}
-      <motion.div
+      {/* Inner motion.button handles animation + keyboard activation */}
+      <motion.button
+        type="button"
         onClick={onClick}
-        style={{ cursor: 'pointer' }}
+        aria-label={label}
+        className={styles.imageButton}
         initial={{ opacity: 0, scale: 0.9, rotate: rotation - 2 }}
         animate={isVisible ? {
           opacity: 1,
@@ -107,7 +150,7 @@ const CategoryImage = ({
       <div className={styles.imageFrame}>
         <img
           src={imageSrc}
-          alt={label}
+          alt=""
           style={{
             width: '100%',
             height: 'auto',
@@ -130,7 +173,7 @@ const CategoryImage = ({
       >
         {label}
       </div>
-      </motion.div>
+      </motion.button>
     </div>
   );
 };
@@ -345,6 +388,7 @@ export const BlueprintPicker = ({ onSelectCategory, onBack, wallReady = true, hi
               onClick={() => onSelectCategory?.(cat.category)}
               isVisible={contentVisible}
               index={index}
+              isMobile={isMobile}
             />
           );
         })}

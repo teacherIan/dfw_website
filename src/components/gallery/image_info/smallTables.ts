@@ -1,4 +1,4 @@
-import coffeeTableStudio from '../../../gallery/small_tables/coffee_table_side.png';
+import coffeeTableSide from '../../../gallery/small_tables/coffee_table_side.png';
 import coffeeTable from '../../../gallery/small_tables/real_tableA.jpg';
 import plantStand from '../../../gallery/small_tables/plantStand.jpeg';
 import plantStandCaryl from '../../../gallery/small_tables/plantStandD.jpeg';
@@ -7,14 +7,20 @@ import small_table from '../../../gallery/small_tables/smallTable.jpeg';
 import small_glass_table from '../../../gallery/small_tables/glass_coffee_table.jpg';
 import small_glass_table_side from '../../../gallery/small_tables/glass_table_side.png';
 
-import types from './types';
+import types, { type ProductImage } from './types';
+
+// Shared product copy — reused across several entries in this category.
+const END_TABLE =
+  'This three-tier table is a versatile piece that functions beautifully as an end table or plant stand. Each tier is made from polished spalted burl wood, showcasing natural edges and rich grain patterns. The organic shapes of the tiers give the piece a sculptural, earthy character. The legs are crafted from matching wood, with the bark left on and carefully treated to preserve its texture while ensuring durability. Standing 30 inches tall, this table brings a touch of the Maine forest into any space.';
+const TEMPERED_GLASS_TABLE =
+  'This table features a striking base sculpted from a single cedar root, showcasing its natural curves, textures, and grain patterns. A custom-cut tempered glass top rests above, following the contours of the root structure. The result is a functional piece of art that blends rustic charm with modern elegance.';
 
 export default [
   {
     orderNumber: '008',
-    img: coffeeTableStudio,
-    name: 'Coffee Table',
+    img: coffeeTableSide,
     type: types.smallTable,
+    name: 'Coffee Table',
     description:
       'This coffee table features a stunning tabletop cut from a single slab of maple burl, showcasing its natural edges, swirling grain, and rich character. The organic shape is preserved to highlight the wood\'s raw beauty. It stands on sturdy spalted maple legs that complement the top with their rustic texture and natural coloration.',
     price: '$1,000 ~ $1,200',
@@ -32,36 +38,33 @@ export default [
   {
     orderNumber: '009',
     img: plantStand,
-    name: 'End Table/Plant Table',
     type: types.smallTable,
-    description:
-      'This three-tier table is a versatile piece that functions beautifully as an end table or plant stand. Each tier is made from polished spalted burl wood, showcasing natural edges and rich grain patterns. The organic shapes of the tiers give the piece a sculptural, earthy character. The legs are crafted from matching wood, with the bark left on and carefully treated to preserve its texture while ensuring durability. Standing 30 inches tall, this table brings a touch of the Maine forest into any space.',
+    name: 'End Table/Plant Table',
+    description: END_TABLE,
     price: '$1,000',
   },
 
   {
     orderNumber: '024',
     img: plantStandCaryl,
-    name: 'End Table/Plant Table',
     type: types.smallTable,
-    description:
-      'This three-tier table is a versatile piece that functions beautifully as an end table or plant stand. Each tier is made from polished spalted burl wood, showcasing natural edges and rich grain patterns. The organic shapes of the tiers give the piece a sculptural, earthy character. The legs are crafted from matching wood, with the bark left on and carefully treated to preserve its texture while ensuring durability. Standing 30 inches tall, this table brings a touch of the Maine forest into any space.',
+    name: 'End Table/Plant Table',
+    description: END_TABLE,
     price: '$1,000',
   },
   {
     orderNumber: '027',
     img: tables,
-    name: 'End Table/Plant Table',
     type: types.smallTable,
-    description:
-      'This three-tier table is a versatile piece that functions beautifully as an end table or plant stand. Each tier is made from polished spalted burl wood, showcasing natural edges and rich grain patterns. The organic shapes of the tiers give the piece a sculptural, earthy character. The legs are crafted from matching wood, with the bark left on and carefully treated to preserve its texture while ensuring durability. Standing 30 inches tall, this table brings a touch of the Maine forest into any space.',
+    name: 'End Table/Plant Table',
+    description: END_TABLE,
     price: '$1,000',
   },
   {
     orderNumber: '033',
     img: small_table,
-    name: 'Burl Side Table with "C" Legs',
     type: types.smallTable,
+    name: 'Burl Side Table with "C" Legs',
     description:
       'This side table features a top made from a uniquely shaped Maine burl slab, showcasing natural edges and rich wood grain. The standout feature is its trio of "C"-shaped legs - three vertical wooden panels with circular cutouts that provide both visual interest and structural support. The rustic finish and organic form make this piece a perfect accent for nature-inspired interiors. Compact yet full of character, it works beautifully as a side table, plant stand, or sculptural decor.',
     price: '$500 ~ $600',
@@ -69,19 +72,17 @@ export default [
   {
     orderNumber: '133',
     img: small_glass_table,
-    name: 'Tempered Glass Table',
     type: types.smallTable,
-    description:
-      'This table features a striking base sculpted from a single cedar root, showcasing its natural curves, textures, and grain patterns. A custom-cut tempered glass top rests above, following the contours of the root structure. The result is a functional piece of art that blends rustic charm with modern elegance.',
+    name: 'Tempered Glass Table',
+    description: TEMPERED_GLASS_TABLE,
     price: '$1,000 ~ $1,500',
   },
   {
     orderNumber: '134',
     img: small_glass_table_side,
-    name: 'Tempered Glass Table',
     type: types.smallTable,
-    description:
-      'This table features a striking base sculpted from a single cedar root, showcasing its natural curves, textures, and grain patterns. A custom-cut tempered glass top rests above, following the contours of the root structure. The result is a functional piece of art that blends rustic charm with modern elegance.',
+    name: 'Tempered Glass Table',
+    description: TEMPERED_GLASS_TABLE,
     price: '$1,000 ~ $1,500',
   },
-];
+] satisfies ProductImage[];

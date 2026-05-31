@@ -8,10 +8,10 @@ export type { ProductImage, CategoryKey };
 export { categoryLabels };
 
 export const imagesByCategory: Record<CategoryKey, ProductImage[]> = {
-  chairs: chairs as ProductImage[],
-  large_tables: largeTables as ProductImage[],
-  small_tables: smallTables as ProductImage[],
-  structures: structures as ProductImage[],
+  chairs,
+  large_tables: largeTables,
+  small_tables: smallTables,
+  structures,
 };
 
 export const getImagesForCategory = (category: CategoryKey): ProductImage[] => {

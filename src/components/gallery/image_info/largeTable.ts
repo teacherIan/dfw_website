@@ -1,10 +1,14 @@
-import types from './types';
+import types, { type ProductImage } from './types';
 import kidsPicnicTable from '../../../gallery/real_picnic_table_rotated.png';
 import adult_picnic_table from '../../../gallery/large_tables/adult_picnic_table.png';
 import picnicTableC from '../../../gallery/large_tables/picnic_table_b.jpg';
 import diningTableTop from '../../../gallery/large_tables/dining_table_overhead.jpeg';
 import diningTableUnder from '../../../gallery/large_tables/dining_table_under.jpeg';
 import glass_table from '../../../gallery/large_tables/small_table.jpg';
+
+// Shared product copy — reused across several entries in this category.
+const PICNIC_TABLE =
+  'This large picnic table is made of Maine white cedar roots and planks, custom built to a variety of heights, lengths, and widths.';
 
 export default [
   {
@@ -21,8 +25,7 @@ export default [
     img: adult_picnic_table,
     type: types.largeTable,
     name: 'Picnic Table',
-    description:
-      'This large picnic table is made of Maine white cedar roots and planks, custom built to a variety of heights, lengths, and widths.',
+    description: PICNIC_TABLE,
     price: '$1,400 ~ $2,000',
   },
   {
@@ -30,8 +33,7 @@ export default [
     img: picnicTableC,
     type: types.largeTable,
     name: 'Picnic Table',
-    description:
-      'This large picnic table is made of Maine white cedar roots and planks, custom built to a variety of heights, lengths, and widths.',
+    description: PICNIC_TABLE,
     price: '$1,400 ~ $2,000',
   },
   {
@@ -61,4 +63,4 @@ export default [
       'Cedar grows slowly and underground often takes interesting shapes that support a glass top.',
     price: '$1,000 ~ $1,200',
   },
-];
+] satisfies ProductImage[];
