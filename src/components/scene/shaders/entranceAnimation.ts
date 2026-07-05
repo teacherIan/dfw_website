@@ -14,10 +14,13 @@ export const assembleFunction = `
 // Smaller particles appear before larger ones
 // Dark/grayscale objects appear first (sketch-like), then colorful elements
 // Mobile options: hide tiny, calm motion, skip animation, speed up small particles
-vec4 assemble(vec3 pos, vec3 scale, vec3 color, float t, float depthOffset, float speed,
-              float smallThreshold, float motionReduction, float skipSmall, float smallSpeed) {
-  vec3 h = hash(pos);
-
+// h is the per-splat hash, computed once by the caller and shared with the
+// exit animations. entranceDone is a uniform flag raised on the CPU once t is
+// past every splat's start+fade window (see Scene.tsx), letting the whole
+// scatter/swirl path be skipped coherently on settled frames.
+vec4 assemble(vec3 pos, vec3 scale, vec3 color, vec3 h, float t, float depthOffset, float speed,
+              float smallThreshold, float motionReduction, float skipSmall, float smallSpeed,
+              float entranceDone) {
   // Calculate particle size magnitude (average of scale components)
   float scaleMag = (scale.x + scale.y + scale.z) / 3.0;
 
@@ -27,6 +30,12 @@ vec4 assemble(vec3 pos, vec3 scale, vec3 color, float t, float depthOffset, floa
   // Option 1: Hide tiny particles (return early with -1 marker)
   if (normalizedScale < smallThreshold) {
     return vec4(pos, -1.0);
+  }
+
+  // Entrance fully settled: every remaining branch would evaluate to the
+  // identity anyway (s = 1, all offsets * 0), so skip the math.
+  if (entranceDone > 0.5) {
+    return vec4(pos, 1.0);
   }
 
   // Option 4: Speed up small particles (smaller = faster)

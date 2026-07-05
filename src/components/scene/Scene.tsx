@@ -42,6 +42,14 @@ const resolveSplatUrl = (): string => {
 };
 
 /**
+ * Headroom added to the scanned worst-case entrance start time before the
+ * entranceDone flag is raised: 1.5 covers the GPU-side hash jitter term
+ * (h.x * 1.5, bounded by 1), 5.0 is the smoothstep fade width in assemble(),
+ * and 1.0 is safety margin for float precision drift between JS and GLSL.
+ */
+const ENTRANCE_SETTLE_MARGIN = 1.5 + 5.0 + 1.0;
+
+/**
  * Scene component for the 3D splat visualization
  * Handles camera controls, splat mesh rendering, entrance and exit animations
  */
@@ -72,6 +80,9 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
   }, [setStreamingStarted]);
 
   const animateT = useRef(dyno.dynoFloat(0));
+  // Raised to 1 once t is past every splat's entrance window, so the shader
+  // can skip the assemble() scatter/swirl math on settled frames.
+  const entranceDoneRef = useRef(dyno.dynoFloat(0.0));
   const depthOffsetRef = useRef(dyno.dynoFloat(15.0));
   const animationSpeedRef = useRef(dyno.dynoFloat(1.0));
   const grassDarkenRef = useRef(dyno.dynoFloat(0.5));
@@ -197,6 +208,13 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
   const entranceTypeRef = useRef(dyno.dynoFloat(0.0));
   const exitStartTimeRef = useRef<number | null>(null);
   const baseTimeRef = useRef(0);
+  // Worst-case entrance start time across all splats (sans depthOffset, which
+  // is Leva-adjustable and added at frame time). Scanned once after load;
+  // null until then, which keeps entranceDone at 0 (current behavior).
+  const maxEntranceStartRef = useRef<number | null>(null);
+  // Set when any dyno uniform changed this frame; consumed at the end of
+  // useFrame to decide whether Spark needs to regenerate the splat pipeline.
+  const uniformsDirtyRef = useRef(false);
   const effectSetupRef = useRef(false);
   const cameraAnimationComplete = useRef(false);
   const cameraHoldRef = useRef<{ x: number; y: number; z: number } | null>(null);
@@ -445,6 +463,7 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
             inTypes: {
               gsplat: dyno.Gsplat,
               t: 'float',
+              entranceDone: 'float',
               depthOffset: 'float',
               animationSpeed: 'float',
               grassDarken: 'float',
@@ -554,6 +573,7 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
               vec3 localPos = ${inputs.gsplat}.center;
               vec3 particleColor = ${inputs.gsplat}.rgba.rgb;
               float t = ${inputs.t};
+              float entranceDone = ${inputs.entranceDone};
               float depthOffset = ${inputs.depthOffset};
               float animationSpeed = ${inputs.animationSpeed};
               float grassDarken = ${inputs.grassDarken};
@@ -666,8 +686,9 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
               vec3 h = hash(localPos);
 
               // Apply graceful entrance effect with mobile simplification options
-              vec4 effectResult = assemble(localPos, scales, particleColor, t, depthOffset, animationSpeed,
-                                           smallThreshold, motionReduction, skipSmall, smallSpeed);
+              // (h is shared with the exit animations below)
+              vec4 effectResult = assemble(localPos, scales, particleColor, h, t, depthOffset, animationSpeed,
+                                           smallThreshold, motionReduction, skipSmall, smallSpeed, entranceDone);
 
               // Handle hidden particles (threshold culling returns -1)
               if (effectResult.w < 0.0) {
@@ -864,6 +885,7 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
           gsplat = d.apply({
             gsplat,
             t: animateT.current,
+            entranceDone: entranceDoneRef.current,
             depthOffset: depthOffsetRef.current,
             animationSpeed: animationSpeedRef.current,
             grassDarken: grassDarkenRef.current,
@@ -966,9 +988,47 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
     }
   }, [meshReady]);
 
+  // Scan the splats once after load to find the worst-case entrance start
+  // time (the CPU mirror of the start formula in assemble(), minus the
+  // uniform-driven depthOffset). Once t is past it, useFrame clamps t and
+  // raises entranceDone so the shader can skip the entrance math entirely.
+  // Runs while the loading screen is still covering the scene.
+  useEffect(() => {
+    if (!meshReady || maxEntranceStartRef.current !== null) return;
+    let cancelled = false;
+    meshReady.initialized.then(() => {
+      if (cancelled) return;
+      let maxStart = -Infinity;
+      meshReady.forEachSplat((_index, center, scales, _quaternion, _opacity, color) => {
+        const scaleMag = (scales.x + scales.y + scales.z) / 3;
+        const normalizedScale = Math.min(Math.max(Math.log(scaleMag + 1) * 0.5, 0), 1);
+        const brightness = (color.r + color.g + color.b) / 3;
+        const saturation =
+          Math.max(color.r, color.g, color.b) - Math.min(color.r, color.g, color.b);
+        const start =
+          -center.y * 2.5 +
+          normalizedScale * 8 +
+          brightness * 4 +
+          saturation * 6 +
+          Math.hypot(center.x, center.z) * 0.2;
+        if (start > maxStart) maxStart = start;
+      });
+      if (Number.isFinite(maxStart)) {
+        maxEntranceStartRef.current = maxStart;
+        console.log('[Scene] Entrance settle scan: maxStart =', maxStart.toFixed(2));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [meshReady]);
+
   // Update exit animation when phase changes
   // Use useLayoutEffect to ensure animation state is set BEFORE paint (prevents flash)
   useLayoutEffect(() => {
+    // Every branch below writes dyno refs directly; make sure the next frame
+    // regenerates the splat pipeline even if useFrame writes nothing new.
+    uniformsDirtyRef.current = true;
     if (animationPhase === 'exiting') {
       // Set the exit animation type based on target scene or override
       // Use override if present, otherwise fallback to scene default
@@ -1032,15 +1092,35 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
     }
   }, [animationPhase, targetScene, activeScene, exitTypeOverride]);
 
+  // Write a dyno uniform, flagging the frame dirty only when the value
+  // actually changed. The flag is consumed at the end of useFrame to decide
+  // whether Spark must regenerate the splat pipeline.
+  const setUniform = (target: { value: number }, value: number) => {
+    if (target.value !== value) {
+      target.value = value;
+      uniformsDirtyRef.current = true;
+    }
+  };
+
   // Animate the entrance effect and camera
   useFrame((_, delta) => {
     // Only advance animation time after loading screen completes
     if (loadingComplete) {
       baseTimeRef.current += delta;
-      animateT.current.value = baseTimeRef.current;
     }
-    depthOffsetRef.current.value = depthOffset;
-    animationSpeedRef.current.value = animationSpeed;
+    // Once t is past the worst-case start+fade window (scanned at load), every
+    // splat has settled: clamp t (freezing it also stops needless pipeline
+    // regeneration) and raise entranceDone so the shader skips the entrance
+    // math. Falls back to Infinity (never done) until the scan completes.
+    const entranceSettleT =
+      maxEntranceStartRef.current !== null
+        ? (maxEntranceStartRef.current + depthOffset + ENTRANCE_SETTLE_MARGIN) /
+          Math.max(animationSpeed, 0.001)
+        : Infinity;
+    setUniform(animateT.current, Math.min(baseTimeRef.current, entranceSettleT));
+    setUniform(entranceDoneRef.current, baseTimeRef.current >= entranceSettleT ? 1 : 0);
+    setUniform(depthOffsetRef.current, depthOffset);
+    setUniform(animationSpeedRef.current, animationSpeed);
     // Only hold camera for non-gallery animations
     const isGalleryTransition = targetScene === 'gallery' || activeScene === 'gallery';
 
@@ -1068,7 +1148,7 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
       const linearProgress = Math.min(elapsed / duration, 1);
       // Use easeOutCubic for smooth deceleration at the end
       const easedProgress = easeOutCubic(linearProgress);
-      exitProgressRef.current.value = easedProgress;
+      setUniform(exitProgressRef.current, easedProgress);
     }
 
     // Update return-to-home animation progress (1 -> 0) with easing
@@ -1079,7 +1159,7 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
       const duration = Math.max(isGalleryEntrance ? GALLERY_WALL_DURATION : returnAnimationDuration, 0.001);
       const linearProgress = Math.min(elapsed / duration, 1);
       const easedProgress = 1 - easeInOutCubic(linearProgress);
-      returnProgressRef.current.value = easedProgress;
+      setUniform(returnProgressRef.current, easedProgress);
     }
 
     // Update transition progress for contact page
@@ -1088,7 +1168,7 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
       const duration = Math.max(exitAnimationDuration, 0.001);
       const linearProgress = Math.min(elapsed / duration, 1);
       const easedProgress = easeOutCubic(linearProgress);
-      exitProgressRef.current.value = easedProgress;
+      setUniform(exitProgressRef.current, easedProgress);
     }
 
     // Update transition back progress from contact page
@@ -1097,108 +1177,108 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
       const duration = Math.max(returnAnimationDuration, 0.001);
       const linearProgress = Math.min(elapsed / duration, 1);
       const easedProgress = 1 - easeOutCubic(linearProgress);
-      exitProgressRef.current.value = easedProgress;
+      setUniform(exitProgressRef.current, easedProgress);
     }
 
-    grassDarkenRef.current.value = grassDarkenAmount;
-    bottomLeftMultiplierRef.current.value = bottomLeftMultiplier;
-    bottomRightMultiplierRef.current.value = bottomRightMultiplier;
-    holeFillMultiplierRef.current.value = holeFillMultiplier;
-    holeXMinRef.current.value = holeXMin;
-    holeXMaxRef.current.value = holeXMax;
-    holeYMinRef.current.value = holeYMin;
-    holeYMaxRef.current.value = holeYMax;
-    holeZMinRef.current.value = holeZMin;
-    holeZMaxRef.current.value = holeZMax;
-    syntheticBrightnessRef.current.value = syntheticBrightness;
-    syntheticSaturationRef.current.value = syntheticSaturation;
-    syntheticOpacityRef.current.value = syntheticOpacity;
-    syntheticZMinRef.current.value = syntheticZMin;
-    syntheticZMaxRef.current.value = syntheticZMax;
-    syntheticYMinRef.current.value = syntheticYMin;
-    syntheticYMaxRef.current.value = syntheticYMax;
+    setUniform(grassDarkenRef.current, grassDarkenAmount);
+    setUniform(bottomLeftMultiplierRef.current, bottomLeftMultiplier);
+    setUniform(bottomRightMultiplierRef.current, bottomRightMultiplier);
+    setUniform(holeFillMultiplierRef.current, holeFillMultiplier);
+    setUniform(holeXMinRef.current, holeXMin);
+    setUniform(holeXMaxRef.current, holeXMax);
+    setUniform(holeYMinRef.current, holeYMin);
+    setUniform(holeYMaxRef.current, holeYMax);
+    setUniform(holeZMinRef.current, holeZMin);
+    setUniform(holeZMaxRef.current, holeZMax);
+    setUniform(syntheticBrightnessRef.current, syntheticBrightness);
+    setUniform(syntheticSaturationRef.current, syntheticSaturation);
+    setUniform(syntheticOpacityRef.current, syntheticOpacity);
+    setUniform(syntheticZMinRef.current, syntheticZMin);
+    setUniform(syntheticZMaxRef.current, syntheticZMax);
+    setUniform(syntheticYMinRef.current, syntheticYMin);
+    setUniform(syntheticYMaxRef.current, syntheticYMax);
     // Exit animation parameters
-    explodedExpansionStrengthRef.current.value = explodedExpansionStrength;
-    explodedRotationSpeedRef.current.value = explodedRotationSpeed;
-    explodedFadeStartRef.current.value = explodedFadeStart;
-    explodedFadeEndRef.current.value = explodedFadeEnd;
+    setUniform(explodedExpansionStrengthRef.current, explodedExpansionStrength);
+    setUniform(explodedRotationSpeedRef.current, explodedRotationSpeed);
+    setUniform(explodedFadeStartRef.current, explodedFadeStart);
+    setUniform(explodedFadeEndRef.current, explodedFadeEnd);
 
     // Pond ripple parameters
-    pondWaveSpeedRef.current.value = pondWaveSpeed;
-    pondWaveFrequencyRef.current.value = pondWaveFrequency;
-    pondWaveAmplitudeRef.current.value = pondWaveAmplitude;
-    pondWaveCountRef.current.value = pondWaveCount;
+    setUniform(pondWaveSpeedRef.current, pondWaveSpeed);
+    setUniform(pondWaveFrequencyRef.current, pondWaveFrequency);
+    setUniform(pondWaveAmplitudeRef.current, pondWaveAmplitude);
+    setUniform(pondWaveCountRef.current, pondWaveCount);
 
     // Physics explosion parameters
-    physicsStrengthRef.current.value = physicsStrength;
-    physicsGravityRef.current.value = physicsGravity;
-    physicsFrictionRef.current.value = physicsFriction;
-    physicsTumbleSpeedRef.current.value = physicsTumbleSpeed;
+    setUniform(physicsStrengthRef.current, physicsStrength);
+    setUniform(physicsGravityRef.current, physicsGravity);
+    setUniform(physicsFrictionRef.current, physicsFriction);
+    setUniform(physicsTumbleSpeedRef.current, physicsTumbleSpeed);
 
     // Sawdust drift parameters
-    sawdustFallSpeedRef.current.value = sawdustFallSpeed;
-    sawdustWindStrengthRef.current.value = sawdustWindStrength;
-    sawdustTurbulenceRef.current.value = sawdustTurbulence;
-    sawdustDissolveSpeedRef.current.value = sawdustDissolveSpeed;
+    setUniform(sawdustFallSpeedRef.current, sawdustFallSpeed);
+    setUniform(sawdustWindStrengthRef.current, sawdustWindStrength);
+    setUniform(sawdustTurbulenceRef.current, sawdustTurbulence);
+    setUniform(sawdustDissolveSpeedRef.current, sawdustDissolveSpeed);
 
     // Ash/Disintegration parameters
-    ashRiseSpeedRef.current.value = ashRiseSpeed;
-    ashSpreadRadiusRef.current.value = ashSpreadRadius;
-    ashEmberGlowRef.current.value = ashEmberGlow;
-    ashBurnSpeedRef.current.value = ashBurnSpeed;
+    setUniform(ashRiseSpeedRef.current, ashRiseSpeed);
+    setUniform(ashSpreadRadiusRef.current, ashSpreadRadius);
+    setUniform(ashEmberGlowRef.current, ashEmberGlow);
+    setUniform(ashBurnSpeedRef.current, ashBurnSpeed);
 
     // Shatter parameters
-    shatterForceRef.current.value = shatterForce;
-    shatterGravityRef.current.value = shatterGravity;
-    shatterSpreadRef.current.value = shatterSpread;
-    shatterRotationRef.current.value = shatterRotation;
+    setUniform(shatterForceRef.current, shatterForce);
+    setUniform(shatterGravityRef.current, shatterGravity);
+    setUniform(shatterSpreadRef.current, shatterSpread);
+    setUniform(shatterRotationRef.current, shatterRotation);
 
     // Glitch parameters
-    glitchIntensityRef.current.value = glitchIntensity;
-    glitchBlockSizeRef.current.value = glitchBlockSize;
-    glitchSpeedRef.current.value = glitchSpeed;
-    glitchChromaRef.current.value = glitchChroma;
+    setUniform(glitchIntensityRef.current, glitchIntensity);
+    setUniform(glitchBlockSizeRef.current, glitchBlockSize);
+    setUniform(glitchSpeedRef.current, glitchSpeed);
+    setUniform(glitchChromaRef.current, glitchChroma);
 
     // Black hole parameters
-    blackHoleStrengthRef.current.value = blackHoleStrength;
-    blackHoleSpinSpeedRef.current.value = blackHoleSpinSpeed;
-    blackHoleRadiusRef.current.value = blackHoleRadius;
-    blackHoleStretchRef.current.value = blackHoleStretch;
+    setUniform(blackHoleStrengthRef.current, blackHoleStrength);
+    setUniform(blackHoleSpinSpeedRef.current, blackHoleSpinSpeed);
+    setUniform(blackHoleRadiusRef.current, blackHoleRadius);
+    setUniform(blackHoleStretchRef.current, blackHoleStretch);
 
     // Pollen parameters
-    pollenDriftSpeedRef.current.value = pollenDriftSpeed;
-    pollenSpreadRef.current.value = pollenSpread;
-    pollenWaveStrengthRef.current.value = pollenWaveStrength;
-    pollenRiseSpeedRef.current.value = pollenRiseSpeed;
+    setUniform(pollenDriftSpeedRef.current, pollenDriftSpeed);
+    setUniform(pollenSpreadRef.current, pollenSpread);
+    setUniform(pollenWaveStrengthRef.current, pollenWaveStrength);
+    setUniform(pollenRiseSpeedRef.current, pollenRiseSpeed);
 
     // Freeze parameters
-    freezeSpeedRef.current.value = freezeSpeed;
-    freezeCrackDensityRef.current.value = freezeCrackDensity;
-    freezeShatterDelayRef.current.value = freezeShatterDelay;
-    freezeShardSpeedRef.current.value = freezeShardSpeed;
+    setUniform(freezeSpeedRef.current, freezeSpeed);
+    setUniform(freezeCrackDensityRef.current, freezeCrackDensity);
+    setUniform(freezeShatterDelayRef.current, freezeShatterDelay);
+    setUniform(freezeShardSpeedRef.current, freezeShardSpeed);
 
     // Sand parameters
-    sandFallSpeedRef.current.value = sandFallSpeed;
-    sandFunnelWidthRef.current.value = sandFunnelWidth;
-    sandSpreadRef.current.value = sandSpread;
-    sandGrainSizeRef.current.value = sandGrainSize;
+    setUniform(sandFallSpeedRef.current, sandFallSpeed);
+    setUniform(sandFunnelWidthRef.current, sandFunnelWidth);
+    setUniform(sandSpreadRef.current, sandSpread);
+    setUniform(sandGrainSizeRef.current, sandGrainSize);
 
     // Teleport parameters
-    teleportSpeedRef.current.value = teleportSpeed;
-    teleportSparkleRef.current.value = teleportSparkle;
-    teleportBandWidthRef.current.value = teleportBandWidth;
-    teleportDirectionRef.current.value = Math.max(0.0, teleportDirection);
+    setUniform(teleportSpeedRef.current, teleportSpeed);
+    setUniform(teleportSparkleRef.current, teleportSparkle);
+    setUniform(teleportBandWidthRef.current, teleportBandWidth);
+    setUniform(teleportDirectionRef.current, Math.max(0.0, teleportDirection));
 
     // Gallery transition parameters (type 16)
-    wallPlaneYRef.current.value = wallPlaneY;
-    screenCoverageRef.current.value = screenCoverage;
-    gustStrengthRef.current.value = gustStrength;
+    setUniform(wallPlaneYRef.current, wallPlaneY);
+    setUniform(screenCoverageRef.current, screenCoverage);
+    setUniform(gustStrengthRef.current, gustStrength);
 
     // Mobile simplification - reduce small particle chaos
-    smallParticleThresholdRef.current.value = smallParticleThreshold;
-    smallMotionReductionRef.current.value = smallMotionReduction;
-    skipSmallAnimationRef.current.value = skipSmallAnimation ? 1.0 : 0.0;
-    smallSpeedMultiplierRef.current.value = smallSpeedMultiplier;
+    setUniform(smallParticleThresholdRef.current, smallParticleThreshold);
+    setUniform(smallMotionReductionRef.current, smallMotionReduction);
+    setUniform(skipSmallAnimationRef.current, skipSmallAnimation ? 1.0 : 0.0);
+    setUniform(smallSpeedMultiplierRef.current, smallSpeedMultiplier);
 
     // Calculate ambient sway offset (runs from start for seamless feel)
     let swayX = 0;
@@ -1294,6 +1374,11 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
       camera.position.y = lerp(camera.position.y, targetY, 0.08);
     }
 
+    // Sand-exit view basis: kept fresh every frame but deliberately not
+    // flagged dirty — it is only read by applyExitAnimation, and whenever an
+    // exit/return is active the progress uniforms above already dirty the
+    // frame. Flagging it here would force pipeline regeneration on every
+    // sway-induced camera move while idle.
     const sandBasis = sandBasisRef.current;
     sandBasis.cameraRight.set(1, 0, 0).applyQuaternion(camera.quaternion);
     sandBasis.cameraUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
@@ -1311,9 +1396,14 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
     currentCameraY.current = Math.round(camera.position.y * 100) / 100;
     currentCameraZ.current = Math.round(camera.position.z * 100) / 100;
 
-    if (meshRef.current) {
+    // Regenerate the splat pipeline only on frames where a dyno uniform
+    // actually changed. Spark itself detects camera/transform changes that
+    // matter for sorting and view-dependent color, so settled frames (e.g.
+    // gallery idle, or home once entranceDone) skip the generate pass.
+    if (meshRef.current && uniformsDirtyRef.current) {
       meshRef.current.updateVersion();
     }
+    uniformsDirtyRef.current = false;
   });
 
   const splatContent = (
