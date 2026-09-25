@@ -21,12 +21,14 @@ interface SceneProps {
 }
 
 /**
- * Splat asset filename. Defaults to the optimized splat (~50% smaller than
+ * Splat asset filename. Defaults to the optimized splat (~46% smaller than
  * the original — SH3→0, faint-splat decimation, 11-bit positions, a cull
  * matched to the ±20°/±13° orbit below, removal of Polycam white/pale-blue
- * floaters and near-black dot artifacts inside the scene, and a voxel
- * density cap that levels out over-captured regions; built by
- * scripts/splat/optimize.mjs).
+ * floaters and near-black dot artifacts inside the scene, a voxel density
+ * cap that levels out over-captured regions, pruning of splats buried in
+ * every reachable view, and Morton file order; plus scene edits that fill
+ * the back-right capture gap with cloned foliage and replace sun-washed /
+ * white artifacts — built by scripts/splat/optimize.mjs, see its README).
  * `?splat=<file>` overrides it at runtime — `?splat=v_one_final.spz` loads
  * the untouched original. That query override is the switch-back path if
  * the optimized asset ever regresses.

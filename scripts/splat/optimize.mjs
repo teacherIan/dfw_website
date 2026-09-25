@@ -14,6 +14,12 @@
  *   --cull-fov=DEG   vertical FOV for the cull frustum (default 62).
  *   --cull-margin=DEG  extra degrees added to the orbit range (default 12).
  *   --frac-bits=N    position quantization bits (default: keep source).
+ *   --edits[=PATH]   apply scene edits (clone foliage into capture gaps, clear
+ *                    artifact splats) before the other passes. Default config
+ *                    scripts/splat/edits.json — see edits.mjs.
+ *   --prune-hidden[=PX]  last pass: drop splats buried behind others — ones
+ *                    that never cover more than PX pixels (default 0.003) in
+ *                    any reachable view (see buildVisibilityViews). ~5 min.
  *   --dry            report the plan + counts, write nothing.
  *
  * Each pass is independent, so any optimization that "doesn't work" can be
@@ -28,6 +34,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { decodeSpz, encodeSpz, selectSplats } from './spz.mjs';
+import { applyEdits } from './edits.mjs';
+import { splatCoverage } from './raster.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../..');
@@ -86,6 +94,16 @@ const darkScaleMax = args['dark-scale-max'] != null ? Number(args['dark-scale-ma
 // Cull, opacity decimation, white removal, SH reduction, and frac-bits still
 // apply — they don't damage the chair.
 const preserveRadius = args['preserve-radius'] != null ? Number(args['preserve-radius']) : 0;
+const editsPath = args.edits
+  ? resolve(repoRoot, args.edits === true ? 'scripts/splat/edits.json' : args.edits)
+  : null;
+// Occlusion pruning. Coverage is measured through a deliberately oversized
+// frustum (62° vertical, 2.6:1 — the same margin as the cull), so only splats
+// hidden *behind* others go; anything near a screen edge is the cull's call.
+// 0.003 px at 1300×500/62° ≈ 0.01 px of a 1280×720/50° desktop frame.
+const pruneHidden = args['prune-hidden'] != null
+  ? (args['prune-hidden'] === true ? 0.003 : Number(args['prune-hidden']))
+  : null;
 const dry = !!args.dry;
 
 // --- captured scene geometry (feature/splat-optimization) ----------------
@@ -169,6 +187,26 @@ const mortonOrder = (cx, cy, cz, keep) => {
   return idx.sort((a, b) => keyHi[a] - keyHi[b] || keyLo[a] - keyLo[b] || a - b);
 };
 
+// --- reachable views for occlusion pruning --------------------------------
+// Rest camera positions (useSceneControls: desktop / mobile+tablet; the
+// gallery transition eases the camera 0.3 closer), each across the orbit
+// (Scene.tsx: ±20° azimuth, ±13° polar), plus the entrance fly-in — a
+// straight line from Start (-1, 15, 20) to the rest position.
+const buildVisibilityViews = () => {
+  const view = (pos, az = 0, pol = 0) => ({ w: 1300, h: 500, fov: 62, pos, az, pol });
+  const views = [];
+  for (const pos of [[0, 1.6, 3.1], [0, 2.5, 4.0], [0, 1.6, 2.8]]) {
+    for (const az of [-20, -10, 0, 10, 20]) for (const pol of [-13, 0, 13]) views.push(view(pos, az, pol));
+  }
+  const start = [-1, 15, 20];
+  for (const rest of [[0, 1.6, 3.1], [0, 2.5, 4.0]]) {
+    const at = (e) => start.map((v, k) => v + (rest[k] - v) * e);
+    for (const e of [0.3, 0.5, 0.65, 0.8, 0.9, 0.97]) views.push(view(at(e)));
+    for (const e of [0.8, 0.9]) for (const az of [-20, 20]) views.push(view(at(e), az));
+  }
+  return views;
+};
+
 // --- cull: orbit-swept frustum visibility --------------------------------
 // A splat is kept if it lands inside the camera frustum for ANY reachable
 // orbit orientation. The orbit rotates the whole scene about the world
@@ -219,7 +257,7 @@ async function main() {
   const srcBytes = readFileSync(inPath);
   const requestedSh = args.sh != null ? Math.max(0, Math.min(3, Number(args.sh))) : null;
   // skip decoding SH bands entirely when the output drops them (SH0)
-  const splats = decodeSpz(srcBytes, { sh: requestedSh !== 0 });
+  let splats = decodeSpz(srcBytes, { sh: requestedSh !== 0 });
   const srcN = splats.numSplats;
   const srcSh = splats.shDegree;
   const targetSh = requestedSh != null ? Math.min(srcSh, requestedSh) : srcSh;
@@ -227,20 +265,33 @@ async function main() {
 
   console.log(`\nsource : ${inPath.replace(repoRoot + '/', '')}  (${mb(srcBytes.length)} MB, ${fmt(srcN)} splats, SH${srcSh})`);
   console.log(`passes :`);
+  if (editsPath) console.log(`  • scene edits: ${editsPath.replace(repoRoot + '/', '')}`);
   if (targetSh !== srcSh) console.log(`  • SH degree ${srcSh} → ${targetSh}`);
   if (minAlpha > 0) console.log(`  • drop opacity < ${minAlpha}`);
   if (doCull) console.log(`  • cull: orbit-swept frustum (orbit ±${(cullAzimuth / DEG).toFixed(0)}°az / ±${(cullPolar / DEG).toFixed(0)}°pol, fov ${cullFov}°, margin ${cullMargin}°)`);
   if (removeWhites) console.log(`  • remove white artifacts inside scene radius ${whiteRadius}`);
   if (removeDarks) console.log(`  • remove dark floaters inside scene radius ${darkRadius}`);
   if (densityPct != null) console.log(`  • density cap: p${densityPct} per ${densityVoxel}-unit voxel`);
-  if (preserveRadius > 0) console.log(`  • preserve subject: skip density-cap & dark-removal within ${preserveRadius}u of origin`);
+  if (pruneHidden != null) console.log(`  • prune hidden: splats never covering > ${pruneHidden} px in any reachable view`);
+  if (preserveRadius > 0) console.log(`  • preserve subject: skip density-cap, dark-removal & hidden-pruning within ${preserveRadius}u of origin`);
   if (fracBits !== splats.fractionalBits) console.log(`  • fractionalBits ${splats.fractionalBits} → ${fracBits}`);
-  if (targetSh === srcSh && minAlpha <= 0 && !doCull && !removeWhites && !removeDarks && densityPct == null && fracBits === splats.fractionalBits) {
+  if (!editsPath && targetSh === srcSh && minAlpha <= 0 && !doCull && !removeWhites && !removeDarks && densityPct == null && fracBits === splats.fractionalBits) {
     console.log(`  • (none — pure re-encode)`);
+  }
+
+  // --- scene edits (before the other passes, which then treat clones like
+  // any captured splat) -----------------------------------------------------
+  let editReport = null;
+  if (editsPath) {
+    console.log('\nedits  :');
+    editReport = applyEdits(splats, JSON.parse(readFileSync(editsPath, 'utf8')), (line) => console.log(line));
+    splats = editReport.splats;
   }
 
   // --- views onto the decoded splats -------------------------------------
   const n = splats.numSplats;
+  // applyEdits appends clones after the (surviving) captured splats
+  const firstClone = editReport ? n - editReport.added : n;
   const cx = new Float32Array(n);
   const cy = new Float32Array(n);
   const cz = new Float32Array(n);
@@ -346,11 +397,14 @@ async function main() {
     // random excess dropped — flattens captures where one region was
     // photographed from many more angles than the rest. Splats inside the
     // preserve sphere (chair / subject) are excluded entirely — the cap is
-    // measured on, and applied to, only the non-preserved population.
+    // measured on, and applied to, only the non-preserved population. Scene-
+    // edit clones are excluded too: their density is set by the edit, and
+    // counting them would shift the percentile for the rest of the capture.
     const buckets = new Map();
     for (let i = 0; i < n; i++) {
       if (!keep[i]) continue;
       if (preserved && preserved[i]) continue;
+      if (i >= firstClone) continue;
       const vx = Math.floor(cx[i] / densityVoxel);
       const vy = Math.floor(cy[i] / densityVoxel);
       const vz = Math.floor(cz[i] / densityVoxel);
@@ -385,10 +439,32 @@ async function main() {
     }
     densityStats = { voxels: buckets.size, median, p: densityPct, cap, maxCount, voxelSize: densityVoxel };
   }
+  let droppedHidden = 0;
+  let hiddenViews = 0;
+  if (pruneHidden != null) {
+    // Runs last: occlusion depends on the final population. The chair is
+    // exempt like in the other destructive passes.
+    const keptIdx = [];
+    for (let i = 0; i < n; i++) if (keep[i]) keptIdx.push(i);
+    const kept = selectSplats(splats, keptIdx);
+    const maxCover = new Float32Array(keptIdx.length);
+    const views = buildVisibilityViews();
+    hiddenViews = views.length;
+    views.forEach((v, k) => {
+      const cover = splatCoverage(kept, v);
+      for (let j = 0; j < cover.length; j++) if (cover[j] > maxCover[j]) maxCover[j] = cover[j];
+      process.stdout.write(`\r  prune-hidden: view ${k + 1}/${views.length}`);
+    });
+    process.stdout.write('\n');
+    keptIdx.forEach((i, j) => {
+      if (maxCover[j] < pruneHidden && !(preserved && preserved[i])) { keep[i] = 0; droppedHidden++; }
+    });
+  }
   let kept = 0;
   for (let i = 0; i < n; i++) if (keep[i]) kept++;
 
   console.log(`\nsplats : ${fmt(srcN)} → ${fmt(kept)}  (kept ${((kept / srcN) * 100).toFixed(1)}%)`);
+  if (editReport) console.log(`  scene edits        : -${fmt(editReport.removed)} cleared, +${fmt(editReport.added)} cloned`);
   if (minAlpha > 0) console.log(`  dropped by opacity : ${fmt(droppedAlpha)}`);
   if (doCull) console.log(`  dropped by cull    : ${fmt(droppedCull)}`);
   if (removeWhites) console.log(`  dropped by whites  : ${fmt(droppedWhite)}  (bright > ${whiteBright}, sat < ${whiteSat}, world-radius < ${whiteRadius})`);
@@ -400,6 +476,7 @@ async function main() {
         `cap=${densityStats.cap} at p${densityStats.p}, max was ${densityStats.maxCount})`,
     );
   }
+  if (pruneHidden != null) console.log(`  dropped as hidden  : ${fmt(droppedHidden)}  (never > ${pruneHidden} px in ${hiddenViews} views)`);
 
   if (dry) {
     console.log('\n--dry: nothing written.\n');
@@ -419,6 +496,7 @@ async function main() {
     outPath = resolve(repoRoot, args.out);
   } else {
     const tag = [];
+    if (editsPath) tag.push('edits');
     if (targetSh !== srcSh) tag.push(`sh${targetSh}`);
     if (minAlpha > 0) tag.push(`a${minAlpha}`);
     if (doCull) tag.push('cull');
