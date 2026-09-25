@@ -13,7 +13,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { SpzReader } from '@sparkjsdev/spark';
+import { decodeSpz } from './spz.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../..');
@@ -64,9 +64,9 @@ async function main() {
   console.log(`\n=== ${spzPath.replace(repoRoot + '/', '')} ===`);
   console.log(`file on disk (gzipped) : ${(bytes.length / 1024 / 1024).toFixed(2)} MB`);
 
-  const reader = new SpzReader({ fileBytes: new Uint8Array(bytes) });
-  await reader.parseHeader();
-  const { numSplats, shDegree, fractionalBits, version, flagAntiAlias, flagLod } = reader;
+  const splats = decodeSpz(bytes, { sh: false });
+  const { numSplats, shDegree, fractionalBits, version, flagAntiAlias } = splats;
+  const flagLod = false; // decodeSpz rejects LoD-tree files
   console.log(`version                : ${version}`);
   console.log(`splats                 : ${fmt(numSplats)}`);
   console.log(`SH degree              : ${shDegree}`);
@@ -91,21 +91,16 @@ async function main() {
     }
   }
 
-  // --- Decode centers + alpha -------------------------------------------
+  // --- Centers + alpha ----------------------------------------------------
   const cx = new Float32Array(numSplats);
   const cy = new Float32Array(numSplats);
   const cz = new Float32Array(numSplats);
-  const alpha = new Float32Array(numSplats);
-  await reader.parseSplats(
-    (i, x, y, z) => {
-      cx[i] = x;
-      cy[i] = y;
-      cz[i] = z;
-    },
-    (i, a) => {
-      alpha[i] = a;
-    },
-  );
+  for (let i = 0; i < numSplats; i++) {
+    cx[i] = splats.centers[i * 3];
+    cy[i] = splats.centers[i * 3 + 1];
+    cz[i] = splats.centers[i * 3 + 2];
+  }
+  const alpha = splats.alphas;
 
   // --- Local + world bounding boxes -------------------------------------
   const local = { x: makeAxis(), y: makeAxis(), z: makeAxis() };

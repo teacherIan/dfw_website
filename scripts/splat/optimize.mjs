@@ -18,11 +18,16 @@
  *
  * Each pass is independent, so any optimization that "doesn't work" can be
  * dropped by leaving its flag off and regenerating.
+ *
+ * Output splats are always written in Morton (Z-order) order: neighbours in
+ * space become neighbours in the file, so gzip finds far more repetition in
+ * positions and colours (~7% smaller, lossless). Spark depth-sorts every
+ * frame, so file order never affects rendering.
  */
-import { readFileSync, writeFileSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { SpzReader, SpzWriter } from '@sparkjsdev/spark';
+import { decodeSpz, encodeSpz, selectSplats } from './spz.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../..');
@@ -106,8 +111,6 @@ const DEG = Math.PI / 180;
 const cullAzimuth = args['cull-azimuth'] != null ? Number(args['cull-azimuth']) * DEG : Math.PI / 1.4;
 const cullPolar = args['cull-polar'] != null ? Number(args['cull-polar']) * DEG : Math.PI / 3;
 
-// SH coefficient counts per degree band (RGB interleaved): deg1=9, deg2=15, deg3=21.
-const SH_BAND = { 1: 9, 2: 15, 3: 21 };
 const fmt = (n) => n.toLocaleString('en-US');
 const mb = (b) => (b / 1024 / 1024).toFixed(2);
 
@@ -132,6 +135,38 @@ const toCameraSpace = (x, y, z) => {
     camC1[0] * dx + camC1[1] * dy + camC1[2] * dz,
     camC2[0] * dx + camC2[1] * dy + camC2[2] * dz,
   ];
+};
+
+// --- Morton (Z-order) ordering -------------------------------------------
+// Interleave 16-bit-per-axis quantised positions (two 10+6-bit halves, since
+// a 48-bit key doesn't fit a 32-bit int) and sort. Returns the kept indices.
+const spread10 = (v) => {
+  v &= 0x3ff;
+  v = (v | (v << 16)) & 0x030000ff;
+  v = (v | (v << 8)) & 0x0300f00f;
+  v = (v | (v << 4)) & 0x030c30c3;
+  v = (v | (v << 2)) & 0x09249249;
+  return v >>> 0;
+};
+const mortonOrder = (cx, cy, cz, keep) => {
+  const idx = [];
+  const lo = [Infinity, Infinity, Infinity];
+  const hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < cx.length; i++) {
+    if (!keep[i]) continue;
+    idx.push(i);
+    const p = [cx[i], cy[i], cz[i]];
+    for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], p[k]); hi[k] = Math.max(hi[k], p[k]); }
+  }
+  const q = (v, k) => Math.min(0xffff, Math.floor(((v - lo[k]) / (hi[k] - lo[k] || 1)) * 0x10000));
+  const keyHi = new Uint32Array(cx.length);
+  const keyLo = new Uint32Array(cx.length);
+  for (const i of idx) {
+    const x = q(cx[i], 0), y = q(cy[i], 1), z = q(cz[i], 2);
+    keyHi[i] = (spread10(x >> 6) | (spread10(y >> 6) << 1) | (spread10(z >> 6) << 2)) >>> 0;
+    keyLo[i] = (spread10(x & 63) | (spread10(y & 63) << 1) | (spread10(z & 63) << 2)) >>> 0;
+  }
+  return idx.sort((a, b) => keyHi[a] - keyHi[b] || keyLo[a] - keyLo[b] || a - b);
 };
 
 // --- cull: orbit-swept frustum visibility --------------------------------
@@ -182,14 +217,15 @@ const buildCullTest = () => {
 
 async function main() {
   const srcBytes = readFileSync(inPath);
-  const reader = new SpzReader({ fileBytes: new Uint8Array(srcBytes) });
-  await reader.parseHeader();
-  const n = reader.numSplats;
-  const srcSh = reader.shDegree;
-  const targetSh = args.sh != null ? Math.max(0, Math.min(srcSh, Number(args.sh))) : srcSh;
-  const fracBits = args['frac-bits'] != null ? Number(args['frac-bits']) : reader.fractionalBits;
+  const requestedSh = args.sh != null ? Math.max(0, Math.min(3, Number(args.sh))) : null;
+  // skip decoding SH bands entirely when the output drops them (SH0)
+  const splats = decodeSpz(srcBytes, { sh: requestedSh !== 0 });
+  const srcN = splats.numSplats;
+  const srcSh = splats.shDegree;
+  const targetSh = requestedSh != null ? Math.min(srcSh, requestedSh) : srcSh;
+  const fracBits = args['frac-bits'] != null ? Number(args['frac-bits']) : splats.fractionalBits;
 
-  console.log(`\nsource : ${inPath.replace(repoRoot + '/', '')}  (${mb(srcBytes.length)} MB, ${fmt(n)} splats, SH${srcSh})`);
+  console.log(`\nsource : ${inPath.replace(repoRoot + '/', '')}  (${mb(srcBytes.length)} MB, ${fmt(srcN)} splats, SH${srcSh})`);
   console.log(`passes :`);
   if (targetSh !== srcSh) console.log(`  • SH degree ${srcSh} → ${targetSh}`);
   if (minAlpha > 0) console.log(`  • drop opacity < ${minAlpha}`);
@@ -198,38 +234,24 @@ async function main() {
   if (removeDarks) console.log(`  • remove dark floaters inside scene radius ${darkRadius}`);
   if (densityPct != null) console.log(`  • density cap: p${densityPct} per ${densityVoxel}-unit voxel`);
   if (preserveRadius > 0) console.log(`  • preserve subject: skip density-cap & dark-removal within ${preserveRadius}u of origin`);
-  if (fracBits !== reader.fractionalBits) console.log(`  • fractionalBits ${reader.fractionalBits} → ${fracBits}`);
-  if (targetSh === srcSh && minAlpha <= 0 && !doCull && !removeWhites && !removeDarks && densityPct == null && fracBits === reader.fractionalBits) {
+  if (fracBits !== splats.fractionalBits) console.log(`  • fractionalBits ${splats.fractionalBits} → ${fracBits}`);
+  if (targetSh === srcSh && minAlpha <= 0 && !doCull && !removeWhites && !removeDarks && densityPct == null && fracBits === splats.fractionalBits) {
     console.log(`  • (none — pure re-encode)`);
   }
 
-  // --- decode ------------------------------------------------------------
+  // --- views onto the decoded splats -------------------------------------
+  const n = splats.numSplats;
   const cx = new Float32Array(n);
   const cy = new Float32Array(n);
   const cz = new Float32Array(n);
-  const alpha = new Float32Array(n);
-  const rgb = new Float32Array(n * 3);
-  const scale = new Float32Array(n * 3);
-  const quat = new Float32Array(n * 4);
-  // store SH only for the bands the output keeps
-  const shFloats = (targetSh >= 1 ? SH_BAND[1] : 0) + (targetSh >= 2 ? SH_BAND[2] : 0) + (targetSh >= 3 ? SH_BAND[3] : 0);
-  const sh = shFloats ? new Float32Array(n * shFloats) : null;
-
-  await reader.parseSplats(
-    (i, x, y, z) => { cx[i] = x; cy[i] = y; cz[i] = z; },
-    (i, a) => { alpha[i] = a; },
-    (i, r, g, b) => { rgb[i * 3] = r; rgb[i * 3 + 1] = g; rgb[i * 3 + 2] = b; },
-    (i, sx, sy, sz) => { scale[i * 3] = sx; scale[i * 3 + 1] = sy; scale[i * 3 + 2] = sz; },
-    (i, qx, qy, qz, qw) => { quat[i * 4] = qx; quat[i * 4 + 1] = qy; quat[i * 4 + 2] = qz; quat[i * 4 + 3] = qw; },
-    sh
-      ? (i, sh1, sh2, sh3) => {
-          let o = i * shFloats;
-          for (let k = 0; k < SH_BAND[1]; k++) sh[o++] = sh1[k];
-          if (targetSh >= 2 && sh2) for (let k = 0; k < SH_BAND[2]; k++) sh[o++] = sh2[k];
-          if (targetSh >= 3 && sh3) for (let k = 0; k < SH_BAND[3]; k++) sh[o++] = sh3[k];
-        }
-      : undefined,
-  );
+  for (let i = 0; i < n; i++) {
+    cx[i] = splats.centers[i * 3];
+    cy[i] = splats.centers[i * 3 + 1];
+    cz[i] = splats.centers[i * 3 + 2];
+  }
+  const alpha = splats.alphas;
+  const rgb = splats.rgb;
+  const scale = splats.scales;
 
   // --- keep mask ---------------------------------------------------------
   const keep = new Uint8Array(n).fill(1);
@@ -366,7 +388,7 @@ async function main() {
   let kept = 0;
   for (let i = 0; i < n; i++) if (keep[i]) kept++;
 
-  console.log(`\nsplats : ${fmt(n)} → ${fmt(kept)}  (kept ${((kept / n) * 100).toFixed(1)}%)`);
+  console.log(`\nsplats : ${fmt(srcN)} → ${fmt(kept)}  (kept ${((kept / srcN) * 100).toFixed(1)}%)`);
   if (minAlpha > 0) console.log(`  dropped by opacity : ${fmt(droppedAlpha)}`);
   if (doCull) console.log(`  dropped by cull    : ${fmt(droppedCull)}`);
   if (removeWhites) console.log(`  dropped by whites  : ${fmt(droppedWhite)}  (bright > ${whiteBright}, sat < ${whiteSat}, world-radius < ${whiteRadius})`);
@@ -384,39 +406,12 @@ async function main() {
     return;
   }
 
-  // --- re-encode ---------------------------------------------------------
-  const writer = new SpzWriter({
-    numSplats: kept,
+  // --- re-encode (Morton order) ------------------------------------------
+  const order = mortonOrder(cx, cy, cz, keep);
+  const outBytes = encodeSpz(selectSplats(splats, order), {
     shDegree: targetSh,
     fractionalBits: fracBits,
-    flagAntiAlias: reader.flagAntiAlias,
   });
-  const sh1 = new Float32Array(SH_BAND[1]);
-  const sh2 = new Float32Array(SH_BAND[2]);
-  const sh3 = new Float32Array(SH_BAND[3]);
-  let j = 0;
-  for (let i = 0; i < n; i++) {
-    if (!keep[i]) continue;
-    writer.setCenter(j, cx[i], cy[i], cz[i]);
-    writer.setAlpha(j, alpha[i]);
-    writer.setRgb(j, rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
-    writer.setScale(j, scale[i * 3], scale[i * 3 + 1], scale[i * 3 + 2]);
-    writer.setQuat(j, quat[i * 4], quat[i * 4 + 1], quat[i * 4 + 2], quat[i * 4 + 3]);
-    if (sh && targetSh >= 1) {
-      let o = i * shFloats;
-      for (let k = 0; k < SH_BAND[1]; k++) sh1[k] = sh[o++];
-      if (targetSh >= 2) for (let k = 0; k < SH_BAND[2]; k++) sh2[k] = sh[o++];
-      if (targetSh >= 3) for (let k = 0; k < SH_BAND[3]; k++) sh3[k] = sh[o++];
-      writer.setSh(
-        j,
-        sh1,
-        targetSh >= 2 ? sh2 : undefined,
-        targetSh >= 3 ? sh3 : undefined,
-      );
-    }
-    j++;
-  }
-  const outBytes = await writer.finalize();
 
   // --- output path -------------------------------------------------------
   let outPath;

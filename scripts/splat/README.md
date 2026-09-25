@@ -15,8 +15,14 @@ Tooling for shrinking the Gaussian-splat hero asset (`public/assets/v_one_final.
 
 ## Scripts
 
-Run from the repo root. They use `@sparkjsdev/spark`'s `SpzReader` / `SpzWriter`
-(already a dependency — no extra tooling).
+Run from the repo root. No extra dependencies: `spz.mjs` is a small, dependency-
+free SPZ codec (Spark 2.2 moved its SPZ parsing into WASM and no longer exports
+the `SpzReader` / `SpzWriter` classes these scripts used to rely on).
+
+Output is always written in **Morton (Z-order)**: neighbours in space become
+neighbours in the file, so gzip finds far more repetition in positions and
+colours — ~7% smaller, lossless (Spark depth-sorts every frame, so file order
+never affects rendering).
 
 ### `measure.mjs` — inspect a splat (read-only)
 
@@ -30,7 +36,7 @@ opacity histogram, and a rough behind-camera count.
 ### `optimize.mjs` — produce a smaller splat
 
 ```
-node --max-old-space-size=4096 scripts/splat/optimize.mjs [options]
+node --max-old-space-size=6000 scripts/splat/optimize.mjs [options]
 ```
 
 | option | effect |
