@@ -34,6 +34,7 @@ the `SpzReader` / `SpzWriter` classes these scripts used to rely on).
 | `optimize.mjs` | the build: scene edits + size-reduction passes → a new `.spz` |
 | `edits.mjs` / `edits.json` | scene-edit engine and the edits applied to the hero splat |
 | `raster.mjs` | CPU splat rasteriser matching Spark's shaders (~42 dB PSNR vs Spark), used to measure per-splat screen coverage |
+| `render.mjs` / `render-page.js` | screenshots a splat the way the site shows it (site camera poses + colour grade) in headless Chrome, for before/after checks |
 
 ### `measure.mjs` — inspect a splat (read-only)
 
@@ -94,6 +95,21 @@ order never affects rendering). Without `--edits` / `--prune-hidden` the build
 reproduces the previous `v_one_final.opt.spz` splat-for-splat, just reordered:
 15.95 MB → 14.85 MB.
 
+### `render.mjs` — see a splat the way the site shows it
+
+```
+node scripts/splat/render.mjs [--spz=A.spz[,B.spz]] [--views=LIST|all] [--out=DIR]
+```
+
+Screenshots each splat in headless Chrome (puppeteer, with three + Spark from
+`node_modules`), from the site's own camera poses and with the settled-state
+colour grade from `Scene.tsx`. The views cover the desktop and mobile rest
+positions, the orbit dragged fully left / right / up / down, a 21:9 window and
+the gallery zoom (`--views=all`). Pass two splats for a before/after pair; each
+view is written as `<view>--<splat>.png` to `splat-renders/` (git-ignored).
+`--shots=FILE` takes custom poses and `--no-grade` shows raw colours. On a
+machine without a usable GPU, add `--swiftshader` (~25 s a frame at 1280×720).
+
 ## Scene edits
 
 `edits.json` is a list of **clears** (drop artifact splats in a region) and
@@ -124,6 +140,10 @@ Background leaking through (share of pixels at ≥25% transmittance, CPU
 raster) drops from **2–4% to 0.1–0.8%** across the reachable views — e.g.
 2.59% → 0.39% in the default desktop view, 4.34% → 0.11% on mobile at full
 right drag.
+
+To try a change to `edits.json`, build to a scratch path with the command above
+(`--out=/tmp/new.spz`) and render it next to the shipped splat:
+`node scripts/splat/render.mjs --spz=public/assets/v_one_final.opt.spz,/tmp/new.spz`.
 
 ## Hidden-splat pruning
 
