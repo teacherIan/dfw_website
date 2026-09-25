@@ -502,6 +502,13 @@ From `ideas.txt`:
 - **Speed up the particle assembly for returning visitors too.** The returning-visitor speed-up covers the camera (2×), the title and the menu, but not the particles, which still take ~18 s. The nearest grass keeps flying in after the camera has stopped.
 - **Respect `prefers-reduced-motion` in the 3D intro** (the loading screen and drag hint already do): skip the crane and the swirl, fade the scene in.
 
+### Layout
+- **Menu and title collide on phones held sideways.** On landscape screens up to 900 px tall the title sits 2svh from the bottom (`--title-bottom-landscape-small`). The menu stack starts 45% down and steps ~80–110 px per button (`homeDesktop` in `src/constants/navLayouts.ts`).
+  - **Broken:** at 844×390 the title runs through Ethos and Contact, and the Contact button is cut off at the bottom. At ~800×450, Contact sits on the title.
+  - **Tight:** at 1280×720 they only just clear.
+  - **Fine:** portrait phones and tablets, iPad landscape, 1366×768 and larger.
+  - **Possible fix:** a short-landscape rule (e.g. `max-height: 500px`) that starts the stack higher with smaller steps, or shrinks the title.
+
 ### Splat and loading
 - **Start the splat download earlier.** It begins only after the lazy 3D chunk has loaded and the scene has mounted. Fetching it from the start (e.g. in `main.tsx`, handing Spark the bytes) would shorten the loading screen on slow connections. A `<link rel="preload">` would have to match Spark's fetch exactly or the file downloads twice.
 - **A lighter splat for phones**, e.g. ~8 MB with a stronger density cap, picked when `isMobileView`. `scripts/splat/optimize.mjs` can build it; check it with `node scripts/splat/render.mjs --views=mobile,mobile-right`.
