@@ -109,7 +109,7 @@ The heart of the 3D experience. Handles all 3D rendering, animations, and visual
 - Real-time position monitoring via Leva controls
 
 **Entrance Animation:**
-- **Duration:** ~20 seconds after the loading screen (back to front; the grass nearest the camera settles last)
+- **Duration:** ~18 seconds after the loading screen (back to front; the grass nearest the camera and the chair settle last)
 - **Particle Behavior:**
   - Assemble from scattered positions with swirl effect
   - Depth-based staggering: far particles appear first
@@ -294,13 +294,17 @@ Loading - loading screen for at least 3.5 s and until the splat has downloaded;
           the times below count from when it fades
 0-20s   - Camera cranes down from [startX, startY, startZ] to its target
           (ease-out cubic: ~60% of the way by 5 s, ~90% by 10 s)
-0-20s   - Splat particles swirl into place back to front: sky and far trees
-          first, the grass nearest the camera last
-13s     - Title fades in ("Doug's Found Wood")
+0-2s    - Nothing on screen yet; the first particles appear at ~2 s
+2-10s   - Particles swirl into place back to front: a small cloud mid-screen
+          grows into the sky, trees and the DFW sculpture (readable by ~8 s)
+10-14s  - The grass sweeps in towards the camera
+13-17s  - Title writes itself in ("Doug's Found Wood")
+14-18s  - The chair forms out of a cloud of wood-coloured particles
 16.5s   - Menu animates in (staggered: Gallery→Ethos→Contact)
+~18s    - Settled (the shader's entrance math switches off at ~21 s)
 ```
 
-On a reload in the same browser session the loading screen lasts at least 2 s, the camera takes 10 s, the title comes in at 10.5 s and the menu at 13 s (`FAST_ANIMATION_TIMING`); the particles still take ~20 s.
+Timings observed in a frame-by-frame capture of the production build. On a reload in the same browser session the loading screen lasts at least 2 s, the camera takes 10 s, the title comes in at 10.5 s and the menu at 13 s (`FAST_ANIMATION_TIMING`); the particles still take ~18 s.
 
 **Reset Functionality:**
 - Reset button in Leva controls (Entrance Animation panel)
@@ -493,7 +497,9 @@ From `ideas.txt`:
 ### Intro
 - **Let visitors skip or shorten the intro.** A first visit shows the loading screen (≥ 3.5 s), then waits 16.5 s for the menu. Options: a tap / click / drag that jumps to the settled scene; bringing the menu in earlier than the title; a shorter camera move than 20 s.
 - **Remember returning visitors across visits.** `dfw_visited` lives in `sessionStorage`, so only a reload in the same tab gets the faster intro; `localStorage` (perhaps with a date) would give it to people who come back another day.
-- **Speed up the particle assembly for returning visitors too.** The returning-visitor speed-up covers the camera (2×), the title and the menu, but not the particles, which still take ~20 s. The nearest grass keeps flying in after the camera has stopped.
+- **Fill the gap after the loading screen.** For ~2 s after it fades the page is blank, then a few specks appear mid-screen. Starting the particles a little earlier (a lower depth offset — these docs used to list 10.5; the code has 14, and each 1.5 less starts everything 1 s sooner) or overlapping them with the loading screen's fade would remove the dead air.
+- **Give the chair its own moment.** The chair — the product — forms last (14–18 s), landing together with the title and the menu. Bringing it in earlier, right after the sculpture, would put the furniture first.
+- **Speed up the particle assembly for returning visitors too.** The returning-visitor speed-up covers the camera (2×), the title and the menu, but not the particles, which still take ~18 s. The nearest grass keeps flying in after the camera has stopped.
 - **Respect `prefers-reduced-motion` in the 3D intro** (the loading screen and drag hint already do): skip the crane and the swirl, fade the scene in.
 
 ### Splat and loading
