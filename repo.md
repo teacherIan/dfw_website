@@ -466,6 +466,20 @@ Contains global styles, custom animations, and Tailwind utilities.
 3. Optimized and minified
 4. Preview with `npm run preview`
 
+### Checking layout and the intro (`scripts/ui-shots.mjs`)
+Screenshots the production build at device sizes in headless Chrome, on a controlled clock. Each frame shows an exact moment of the intro however slowly it renders. Run `npm run build` first.
+
+```bash
+node scripts/ui-shots.mjs --light                  # settled home screen, default sizes
+node scripts/ui-shots.mjs --light --sizes=844x390,1280x720
+node scripts/ui-shots.mjs --film --until=20 --sizes=1280x720   # intro, one frame per second
+```
+
+- `--light` serves a thinned splat (every 40th splat). It's fast and fine for layout, but use the full splat when judging the scene.
+- Output goes to `ui-shots/` (git-ignored).
+- On a machine without a usable GPU, add `--swiftshader`. Settled shots then take ~30 s each; full-splat film frames take about a minute each.
+- To screenshot the splat on its own, use `scripts/splat/render.mjs`.
+
 ## Performance Considerations
 
 ### Gaussian Splat Files
