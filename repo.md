@@ -502,9 +502,8 @@ node scripts/ui-shots.mjs --film --until=20 --sizes=1280x720   # intro, one fram
 ## Browser Compatibility
 
 **Requirements:**
-- Modern browser with WebGL 2 support
-- Desktop: Chrome 56+, Firefox 51+, Safari 15+, Edge 79+
-- Mobile: iOS Safari 15+, Chrome Mobile 100+
+- WebGL 2 (the splat renderer)
+- CSS `svh` units, which the menu and title positions use: Chrome / Edge 108+, Firefox 101+, Safari and iOS Safari 15.4+
 
 **Recommended:**
 - Desktop with discrete GPU for best experience
@@ -512,30 +511,7 @@ node scripts/ui-shots.mjs --film --until=20 --sizes=1280x720   # intro, one fram
 
 ## Future Ideas
 
-From `ideas.txt`:
-- White cursive writing in the bottom left of "DFW" for enhanced branding
-
-### Intro
-- **Let visitors skip or shorten the intro.** A first visit shows the loading screen (≥ 3.5 s), then waits 16.5 s for the menu. Options: a tap / click / drag that jumps to the settled scene; bringing the menu in earlier than the title; a shorter camera move than 20 s.
-- **Remember returning visitors across visits.** `dfw_visited` lives in `sessionStorage`, so only a reload in the same tab gets the faster intro; `localStorage` (perhaps with a date) would give it to people who come back another day.
-- **Fill the gap after the loading screen.** For ~2 s after it fades the page is blank, then a few specks appear mid-screen. Starting the particles a little earlier (a lower depth offset — these docs used to list 10.5; the code has 14, and each 1.5 less starts everything 1 s sooner) or overlapping them with the loading screen's fade would remove the dead air.
-- **Give the chair its own moment.** The chair — the product — forms last (14–18 s), landing together with the title and the menu. Bringing it in earlier, right after the sculpture, would put the furniture first.
-- **Speed up the particle assembly for returning visitors too.** The returning-visitor speed-up covers the camera (2×), the title and the menu, but not the particles, which still take ~18 s. The nearest grass keeps flying in after the camera has stopped.
-- **Respect `prefers-reduced-motion` in the 3D intro** (the loading screen and drag hint already do): skip the crane and the swirl, fade the scene in.
-
-### Splat and loading
-- **Start the splat download earlier.** It begins only after the lazy 3D chunk has loaded and the scene has mounted. Fetching it from the start (e.g. in `main.tsx`, handing Spark the bytes) would shorten the loading screen on slow connections. A `<link rel="preload">` would have to match Spark's fetch exactly or the file downloads twice.
-- **A lighter splat for phones**, e.g. ~8 MB with a stronger density cap, picked when `isMobileView`. `scripts/splat/optimize.mjs` can build it; check it with `node scripts/splat/render.mjs --views=mobile,mobile-right`.
-- **Idle cost of the ambient sway.** The sway moves the camera every frame, which keeps Spark re-sorting even when nothing else changes. Worth measuring on a phone (battery, heat). If it shows, `SparkRenderer`'s `minSortIntervalMs` can throttle the sort.
-- **Trim the font request.** Production only uses Caveat and Patrick Hand. Architects Daughter, Indie Flower, Permanent Marker and Shadows Into Light are menu-font options in the dev controls, and Pinyon Script (`--font-cursive`) isn't used. Loading only the two in production shortens the render-blocking CSS request.
-- **Drop unused files from `public/`.** `dfw_logo.spz` isn't referenced anywhere, and `v_one_final.spz` is only for the `?splat=` comparison. Visitors never download them, but every deploy carries them.
-
-### Open questions
-- Can the back-right of the garden be photographed again? Real photos would replace the cloned trees that fill that gap. A new capture would also mean redoing the scene edits in `scripts/splat/edits.json`.
-- Is the ±20° / ±13° orbit final? The optimized splat is culled and pruned for it, so a wider orbit means rebuilding it (`scripts/splat/README.md`).
-- Should the `?splat=` switch (loading the untouched original) stay in production?
-- Which devices matter most? That decides whether a phone-specific splat is worth making.
-- Is the 20-second intro deliberate, or a candidate for a shorter / skippable version?
+Ideas, open questions and things that still need checking on real devices are in [`docs/ideas-and-open-questions.md`](docs/ideas-and-open-questions.md).
 
 ## Assets
 
@@ -548,7 +524,7 @@ From `ideas.txt`:
 - **dfw_logo_3d.png** - 3D logo render, used as favicon and social image (299.45 KB)
 
 ### Additional
-- **spritesheet/** - UI sprite assets
+- **spritesheet/** - UI sprite sheet (4 MB PNG + JSON); not referenced by the app
 
 ## Development Notes
 
