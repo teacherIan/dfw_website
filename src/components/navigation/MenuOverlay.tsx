@@ -23,10 +23,11 @@ const ArrowComponents: Record<ArrowType, typeof LoopArrow> = {
 const MENU_RETURN_DELAY = 160;
 
 // Desktop nav layout — baked (was Leva-tunable). The label/arrow column is
-// pinned top-right; the buttons (NavButtonLayer) are placed from navLayouts
-// to land exactly over the reserved button slot in each row.
-const DESKTOP_NAV = { top: '45%', right: '1.25rem', gap: '1.25rem', labelEm: 3.6 };
-const DESKTOP_BTN_SIZE = 'clamp(60px, 8vw, 90px)';
+// pinned on the right; the buttons (NavButtonLayer) are placed from navLayouts
+// to land exactly over the reserved button slot in each row. Top, gap and
+// button size are the shared CSS variables (variables.css).
+const DESKTOP_NAV = { top: 'var(--nav-stack-top)', right: '1.25rem', gap: 'var(--nav-gap)', labelEm: 3.6 };
+const DESKTOP_BTN_SIZE = 'var(--nav-btn)';
 
 interface MenuOverlayProps {
   onNavigate: (scene: SceneId) => void;
@@ -85,7 +86,9 @@ const DesktopNavRow = ({
           textShadow: '0 3px 6px rgba(0, 0, 0, 0.5)',
           WebkitTextStroke: '1.2px rgba(0, 0, 0, 0.7)',
           paintOrder: 'stroke fill',
-          fontSize: `${fontSize}em`,
+          // Shrinks with the button on short screens so the row stays one
+          // button tall (the buttons are placed assuming exactly that).
+          fontSize: `min(${fontSize}em, calc(${DESKTOP_BTN_SIZE} * 0.8))`,
           opacity: isVisible ? 1 : 0,
           transform: !isVisible
             ? 'translateX(20px)'
