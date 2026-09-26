@@ -26,7 +26,12 @@ const MENU_RETURN_DELAY = 160;
 // pinned on the right; the buttons (NavButtonLayer) are placed from navLayouts
 // to land exactly over the reserved button slot in each row. Top, gap and
 // button size are the shared CSS variables (variables.css).
-const DESKTOP_NAV = { top: 'var(--nav-stack-top)', right: '1.25rem', gap: 'var(--nav-gap)', labelEm: 3.6 };
+const DESKTOP_NAV = {
+  top: 'var(--nav-stack-top)',
+  right: '1.25rem',
+  gap: 'var(--nav-gap)',
+  labelEm: 3.6,
+};
 const DESKTOP_BTN_SIZE = 'var(--nav-btn)';
 
 interface MenuOverlayProps {

@@ -32,8 +32,14 @@ const DESKTOP_STEP = '(var(--nav-btn) + var(--nav-gap))';
 
 const homeDesktop: NavLayout = {
   gallery: { position: { top: DESKTOP_TOP, right: DESKTOP_RIGHT }, side: 'right' },
-  ethos: { position: { top: `calc(${DESKTOP_TOP} + ${DESKTOP_STEP})`, right: DESKTOP_RIGHT }, side: 'right' },
-  contact: { position: { top: `calc(${DESKTOP_TOP} + 2 * ${DESKTOP_STEP})`, right: DESKTOP_RIGHT }, side: 'right' },
+  ethos: {
+    position: { top: `calc(${DESKTOP_TOP} + ${DESKTOP_STEP})`, right: DESKTOP_RIGHT },
+    side: 'right',
+  },
+  contact: {
+    position: { top: `calc(${DESKTOP_TOP} + 2 * ${DESKTOP_STEP})`, right: DESKTOP_RIGHT },
+    side: 'right',
+  },
 };
 
 // Mobile (portrait) — three buttons in a triangular layout near the bottom.

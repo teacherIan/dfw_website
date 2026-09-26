@@ -431,8 +431,15 @@ Contains global styles, custom animations, and Tailwind utilities.
 - Labels inline with buttons (left of button)
 - Horizontal decorative arrows between labels and buttons
 - Tighter spacing for cleaner look
-- Lower title position (10vh from bottom)
+- Lower title position (10svh from bottom; 2svh on landscape screens up to 900px tall)
 - Standard camera positioning (closer to scene)
+
+### Landscape & Desktop Nav Stack
+- **Where it's used:** any landscape screen, and anything ≥ 1280px wide (`NavButtonLayer`). Portrait phones and tablets use the corner layout.
+- **Shared variables:** button size, gap and top are CSS variables in `src/styles/variables.css` (`--nav-btn`, `--nav-gap`, `--nav-stack-top`). The buttons (`navLayouts.ts`) and the label/arrow column (`MenuOverlay.tsx`) both read them, so each label stays level with its button.
+- **Positioning:** the stack sits at 45% of the height unless that would run it into the title. On short screens it rises to end 1rem above the title box instead. The title box (`--title-block`) comes from the title's own `--title-bottom`, `--title-pad-bottom` and `--title-width`.
+- **Sizing:** on short screens (phones held sideways, small windows) the buttons, label font and arrows shrink with the height, down to 44px buttons.
+- **Checked sizes:** 667×375, 844×390, 915×412, 932×430, 800×450, 1024×600, 1280×720, 1366×768, 1536×864, 1440×900, 1920×1080, 1024×768 and 1180×820. On 1440×900 and larger the stack stays at 45%.
 
 ## Build & Development
 
@@ -501,13 +508,6 @@ From `ideas.txt`:
 - **Give the chair its own moment.** The chair — the product — forms last (14–18 s), landing together with the title and the menu. Bringing it in earlier, right after the sculpture, would put the furniture first.
 - **Speed up the particle assembly for returning visitors too.** The returning-visitor speed-up covers the camera (2×), the title and the menu, but not the particles, which still take ~18 s. The nearest grass keeps flying in after the camera has stopped.
 - **Respect `prefers-reduced-motion` in the 3D intro** (the loading screen and drag hint already do): skip the crane and the swirl, fade the scene in.
-
-### Layout
-- **Menu and title collide on phones held sideways.** On landscape screens up to 900 px tall the title sits 2svh from the bottom (`--title-bottom-landscape-small`). The menu stack starts 45% down and steps ~80–110 px per button (`homeDesktop` in `src/constants/navLayouts.ts`).
-  - **Broken:** at 844×390 the title runs through Ethos and Contact, and the Contact button is cut off at the bottom. At ~800×450, Contact sits on the title.
-  - **Tight:** at 1280×720 they only just clear.
-  - **Fine:** portrait phones and tablets, iPad landscape, 1366×768 and larger.
-  - **Possible fix:** a short-landscape rule (e.g. `max-height: 500px`) that starts the stack higher with smaller steps, or shrinks the title.
 
 ### Splat and loading
 - **Start the splat download earlier.** It begins only after the lazy 3D chunk has loaded and the scene has mounted. Fetching it from the start (e.g. in `main.tsx`, handing Spark the bytes) would shorten the loading screen on slow connections. A `<link rel="preload">` would have to match Spark's fetch exactly or the file downloads twice.
