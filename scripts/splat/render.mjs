@@ -127,7 +127,10 @@ const server = createServer((req, res) => {
   try {
     if (!file) throw new Error('not served');
     const { size } = statSync(file);
-    res.writeHead(200, { 'Content-Type': MIME[extname(file)] ?? 'application/octet-stream', 'Content-Length': size });
+    res.writeHead(200, {
+      'Content-Type': MIME[extname(file)] ?? 'application/octet-stream',
+      'Content-Length': size,
+    });
     createReadStream(file).pipe(res);
   } catch {
     res.writeHead(404);
@@ -165,8 +168,14 @@ try {
   mkdirSync(outDir, { recursive: true });
   for (let i = 0; i < spzPaths.length; i++) {
     const t0 = Date.now();
-    const count = await page.evaluate((url, g) => window.viewer.load(url, { grade: g }), `/spz/${i}.spz`, grade);
-    console.log(`${labels[i]}: ${count.toLocaleString()} splats, loaded in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+    const count = await page.evaluate(
+      (url, g) => window.viewer.load(url, { grade: g }),
+      `/spz/${i}.spz`,
+      grade
+    );
+    console.log(
+      `${labels[i]}: ${count.toLocaleString()} splats, loaded in ${((Date.now() - t0) / 1000).toFixed(1)} s`
+    );
     for (const view of views) {
       const t1 = Date.now();
       await page.setViewport({ width: view.w, height: view.h });
@@ -174,7 +183,9 @@ try {
       const file = join(outDir, `${view.name}--${labels[i]}.png`);
       await (await page.$('canvas')).screenshot({ path: file });
       const shown = relative(process.cwd(), file);
-      console.log(`  ${shown.startsWith('..') ? file : shown}  (${((Date.now() - t1) / 1000).toFixed(1)} s)`);
+      console.log(
+        `  ${shown.startsWith('..') ? file : shown}  (${((Date.now() - t1) / 1000).toFixed(1)} s)`
+      );
     }
   }
 } finally {

@@ -69,7 +69,10 @@ if (args.light) {
 const serve = sirv(dist, { dev: false, single: true, etag: false });
 const server = createServer((req, res) => {
   if (lightSplat && req.url.split('?')[0] === HERO) {
-    res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': lightSplat.length });
+    res.writeHead(200, {
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': lightSplat.length,
+    });
     res.end(lightSplat);
     return;
   }
@@ -160,7 +163,9 @@ try {
     for (let waited = 0; ; waited += 200) {
       await step(page, 200);
       await sleep(60);
-      const fading = await page.evaluate(() => document.querySelector('.ls-root')?.style.opacity === '0');
+      const fading = await page.evaluate(
+        () => document.querySelector('.ls-root')?.style.opacity === '0'
+      );
       if (fading) break;
       if (waited > 60_000) throw new Error(`${w}x${h}: the loading screen never finished`);
     }
