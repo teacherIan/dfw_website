@@ -22,15 +22,24 @@ export interface NavSlot {
 
 export type NavLayout = Record<NavButtonId, NavSlot>;
 
-// Desktop / landscape — a vertical stack pinned to the top-right corner.
-// The vertical step is one button height (the CSS responsive clamp) + gap.
+// Desktop / landscape — a vertical stack on the right. Button size, gap and
+// top come from CSS variables (variables.css) shared with MenuOverlay's label
+// column: the stack sits at 45% unless that would run it into the title (short
+// landscape screens), and the step is one button height + gap.
 const DESKTOP_RIGHT = '1.25rem';
-const DESKTOP_STEP = '(clamp(60px, 8vw, 90px) + 1.25rem)';
+const DESKTOP_TOP = 'var(--nav-stack-top)';
+const DESKTOP_STEP = '(var(--nav-btn) + var(--nav-gap))';
 
 const homeDesktop: NavLayout = {
-  gallery: { position: { top: '45%', right: DESKTOP_RIGHT }, side: 'right' },
-  ethos: { position: { top: `calc(45% + ${DESKTOP_STEP})`, right: DESKTOP_RIGHT }, side: 'right' },
-  contact: { position: { top: `calc(45% + 2 * ${DESKTOP_STEP})`, right: DESKTOP_RIGHT }, side: 'right' },
+  gallery: { position: { top: DESKTOP_TOP, right: DESKTOP_RIGHT }, side: 'right' },
+  ethos: {
+    position: { top: `calc(${DESKTOP_TOP} + ${DESKTOP_STEP})`, right: DESKTOP_RIGHT },
+    side: 'right',
+  },
+  contact: {
+    position: { top: `calc(${DESKTOP_TOP} + 2 * ${DESKTOP_STEP})`, right: DESKTOP_RIGHT },
+    side: 'right',
+  },
 };
 
 // Mobile (portrait) — three buttons in a triangular layout near the bottom.

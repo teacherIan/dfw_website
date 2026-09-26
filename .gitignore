@@ -38,3 +38,9 @@ skills-lock.json
 *.ply
 
 .playwright-mcp/
+
+# Splat screenshots from scripts/splat/render.mjs
+splat-renders/
+
+# Screenshots from scripts/ui-shots.mjs
+ui-shots/

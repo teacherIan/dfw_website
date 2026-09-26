@@ -1,0 +1,201 @@
+{
+  "about": "Scene edits applied by optimize.mjs --edits. Angles/heights are the site's rest pose; see edits.mjs for the coordinate conventions. Donor foliage comes from the capture's back-right hedge (theta 84-122), off-screen in every standard view (only a 21:9 window at full right drag shows a sliver of it at the far edge), so no clone appears next to its source.",
+  "seed": 7,
+  "clear": [
+    {
+      "name": "gap-white-dots",
+      "note": "Sparse pale shell splats where the back-right capture has no data: read as a white wall behind the trees. Hidden behind the new foliage anyway.",
+      "kind": "pale",
+      "theta": [14, 56],
+      "y": [-1.05, 0.6],
+      "h": [6.0, 99]
+    },
+    {
+      "name": "edge-house",
+      "note": "White/grey house wall glimpsed through the trees at the right edge of the orbit (full right drag, ultrawide). Replaced by the house-cover patch.",
+      "kind": "grey",
+      "theta": [66, 102],
+      "y": [0.55, 2.1],
+      "h": [5.3, 7.2]
+    },
+    {
+      "name": "left-washed-blobs",
+      "note": "Sun-washed background foliage on the left: a few dozen huge (0.12-0.6u), low-detail pale sage splats that read as a flat white-green smear behind the left tree. Replaced by the left-bushes patch.",
+      "kind": "big",
+      "minScale": 0.12,
+      "theta": [-64, -42],
+      "y": [-1.5, 0.4],
+      "h": [5.8, 7.2]
+    },
+    {
+      "name": "left-edge-blobs",
+      "note": "More of the same washed blobs at the lower-left screen edge, where the background also leaked through behind the dark near-left bush. Below the horizon, so bluish blobs go too.",
+      "kind": "big",
+      "minScale": 0.12,
+      "spareSky": false,
+      "theta": [-72, -62],
+      "y": [-1.6, -0.2],
+      "h": [5.8, 7.2]
+    },
+    {
+      "name": "far-left-structure",
+      "note": "Grey/white wall under a dark roof line at the left edge of the orbit (full left drag) - the left-hand twin of edge-house. Replaced by the far-left-cover patch.",
+      "kind": "grey",
+      "theta": [-80, -58],
+      "y": [-0.75, 0.3],
+      "h": [5.8, 7.2]
+    },
+    {
+      "name": "near-camera-blue-a",
+      "note": "Sky reflected in the leaves of a plant right beside the camera: a blue-white smear at the bottom-right when the orbit tilts down. The leaves themselves stay.",
+      "kind": "blue",
+      "theta": [120, 180.1],
+      "y": [-1.0, 0.6],
+      "h": [0.0, 2.8]
+    },
+    {
+      "name": "near-camera-blue-b",
+      "note": "Sky reflected in the leaves of a plant right beside the camera: a blue-white smear at the bottom-right when the orbit tilts down. The leaves themselves stay.",
+      "kind": "blue",
+      "theta": [-180.1, -150],
+      "y": [-1.0, 0.6],
+      "h": [0.0, 2.8]
+    },
+    {
+      "name": "left-canopy-flecks",
+      "note": "Sun-glare 'white leaves' scattered through the big left tree's canopy: pale splats much brighter than their 32 nearest neighbours. Canopy only (above the lawn, in front of the dome).",
+      "kind": "fleck",
+      "k": 32,
+      "delta": 0.25,
+      "maxSat": 0.3,
+      "minBright": 0.55,
+      "theta": [-80, -15],
+      "y": [-0.6, 99],
+      "h": [1.5, 6.0]
+    }
+  ],
+  "patches": [
+    {
+      "name": "front-hedge",
+      "note": "Back-right gap, front row: the hedge set down on the gap's ground (1.17u lower than the donor's) and scaled 1.2x to reach the pines.",
+      "donor": [
+        {"theta": [84, 122], "h": [4.6, 6.3], "y": [0.05, 0.85]},
+        {"theta": [101, 122], "h": [4.6, 6.3], "y": [0.85, 2.4]}
+      ],
+      "pivot": {"theta": 103, "h": 5.4, "y": 0.05},
+      "placeAt": 35,
+      "placeY": -1.12,
+      "scale": 1.2,
+      "target": {"theta": [16, 54], "feather": 3.0, "yTop": 1.0},
+      "palette": {"left": [4, 16], "right": [54, 72], "strength": 0.7, "jitter": 0.02},
+      "sor": {"k": 8, "std": 2.5}
+    },
+    {
+      "name": "back-row",
+      "note": "Back-right gap, second row: mirrored, pushed back and raised so it peeks over the front row; slightly larger splats read as softer, deeper foliage and close pin-holes.",
+      "donor": [
+        {"theta": [84, 122], "h": [4.6, 6.3], "y": [0.05, 0.85]},
+        {"theta": [101, 122], "h": [4.6, 6.3], "y": [0.85, 2.4]}
+      ],
+      "pivot": {"theta": 103, "h": 5.4, "y": 0.05},
+      "mirror": true,
+      "placeAt": 33,
+      "placeY": -0.57,
+      "scale": 1.1,
+      "push": 0.75,
+      "splatScale": 1.25,
+      "target": {"theta": [15, 55], "feather": 3.5, "yTop": 1.1},
+      "palette": {"left": [4, 16], "right": [54, 72], "strength": 0.85, "gain": 1.05, "jitter": 0.025},
+      "sor": {"k": 8, "std": 2.5}
+    },
+    {
+      "name": "house-cover",
+      "note": "Foliage in front of where the edge-house wall was.",
+      "donor": [
+        {"theta": [84, 122], "h": [4.6, 6.3], "y": [0.05, 0.85]},
+        {"theta": [101, 122], "h": [4.6, 6.3], "y": [0.85, 2.4]}
+      ],
+      "pivot": {"theta": 103, "h": 5.4, "y": 0.05},
+      "placeAt": 77,
+      "placeY": 0.4,
+      "scale": 1.1,
+      "push": 0.75,
+      "splatScale": 1.15,
+      "target": {"theta": [63, 92], "feather": 3.0, "yTop": 2.2},
+      "palette": {"left": [50, 63], "right": [92, 104], "strength": 0.8, "jitter": 0.025},
+      "sor": {"k": 8, "std": 2.5}
+    },
+    {
+      "name": "left-bushes",
+      "note": "Real foliage where the sun-washed blobs were; palette pulled toward a healthy mid green rather than the washed-out neighbours.",
+      "donor": [
+        {"theta": [84, 122], "h": [4.6, 6.3], "y": [0.05, 0.85]},
+        {"theta": [101, 122], "h": [4.6, 6.3], "y": [0.85, 2.4]}
+      ],
+      "pivot": {"theta": 103, "h": 5.4, "y": 0.05},
+      "placeAt": -54,
+      "placeY": -1.45,
+      "scale": 1.3,
+      "push": 0.8,
+      "splatScale": 1.1,
+      "target": {"theta": [-71, -42], "feather": 3.0, "yTop": 1.3},
+      "palette": {
+        "left": [-85, -71],
+        "right": [-42, -30],
+        "mu": [0.4, 0.49, 0.3],
+        "muBlend": 0.6,
+        "strength": 0.85,
+        "jitter": 0.025
+      },
+      "sor": {"k": 8, "std": 2.5}
+    },
+    {
+      "name": "far-left-cover",
+      "note": "Foliage over the far-left structure; mirrored so the donor's canopy lands on this side.",
+      "donor": [
+        {"theta": [84, 122], "h": [4.6, 6.3], "y": [0.05, 0.85]},
+        {"theta": [101, 122], "h": [4.6, 6.3], "y": [0.85, 2.4]}
+      ],
+      "pivot": {"theta": 103, "h": 5.4, "y": 0.05},
+      "mirror": true,
+      "placeAt": -70,
+      "placeY": -0.8,
+      "scale": 1.1,
+      "push": 0.7,
+      "splatScale": 1.15,
+      "target": {"theta": [-82, -58], "feather": 3.0, "yTop": 0.9},
+      "palette": {
+        "left": [-95, -82],
+        "right": [-58, -45],
+        "mu": [0.4, 0.49, 0.3],
+        "muBlend": 0.5,
+        "strength": 0.85,
+        "jitter": 0.025
+      },
+      "sor": {"k": 8, "std": 2.5}
+    },
+    {
+      "name": "left-edge-bush",
+      "note": "Low bush at the lower-left capture edge, where the ground was never captured and the background showed through at the bottom-left of the default view. Sits just behind the real (dark) near-left bush.",
+      "donor": [
+        {"theta": [84, 122], "h": [4.6, 6.3], "y": [0.05, 0.85]},
+        {"theta": [101, 122], "h": [4.6, 6.3], "y": [0.85, 2.4]}
+      ],
+      "pivot": {"theta": 103, "h": 5.4, "y": 0.05},
+      "placeAt": -68,
+      "placeY": -1.4,
+      "scale": 0.9,
+      "push": -1.1,
+      "target": {"theta": [-80, -60], "feather": 3.0, "yTop": -0.3},
+      "palette": {
+        "left": [-90, -79],
+        "right": [-57, -45],
+        "mu": [0.3, 0.42, 0.25],
+        "muBlend": 0.5,
+        "strength": 0.85,
+        "jitter": 0.025
+      },
+      "sor": {"k": 8, "std": 2.5}
+    }
+  ]
+}

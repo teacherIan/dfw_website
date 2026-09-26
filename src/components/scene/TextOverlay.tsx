@@ -51,15 +51,13 @@ const TextOverlay = ({ show }: TextOverlayProps) => {
             'z-40'
           )}
         >
-          <div className="px-4 pb-4 lg:pb-8 pt-2">
+          {/* Same size variables as HandDrawnText (variables.css). */}
+          <div className="px-4 pt-2" style={{ paddingBottom: 'var(--title-pad-bottom)' }}>
             <svg
               viewBox="0 0 646.076 89.889"
-              className={clsx(
-                'w-[85vw] sm:w-[500px] md:w-[600px] lg:w-[650px] xl:w-[700px]',
-                'h-auto',
-                'drop-shadow-lg'
-              )}
+              className={clsx('h-auto', 'drop-shadow-lg')}
               style={{
+                width: 'var(--title-width)',
                 filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5))'
               }}
             >

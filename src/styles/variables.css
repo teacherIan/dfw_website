@@ -47,6 +47,62 @@
   --title-bottom-mobile: 19svh;
   --title-bottom-landscape-small: 2svh;
   --title-bottom-desktop: 10svh;
+
+  /* Home title box — bottom offset, padding and width (see the media queries
+     below). Its height is width × 0.1391 (the SVG's 646 × 90 viewBox). */
+  --title-bottom: var(--title-bottom-mobile);
+  --title-pad-bottom: 1rem;
+  --title-width: 85vw;
+  --title-block: calc(var(--title-bottom) + var(--title-pad-bottom) + var(--title-width) * 0.1391);
+
+  /* Home nav stack (desktop / landscape): three rows of button + gap.
+     Buttons shrink with height on short screens (phones held sideways), and
+     the stack sits at 45% unless that would run it into the title — then it
+     rises to end 1rem above it. */
+  --nav-btn: clamp(44px, min(8vw, 13svh), 90px);
+  --nav-gap: min(1.25rem, 3svh);
+  --nav-stack-top: max(
+    1rem,
+    min(45%, calc(100% - var(--title-block) - 3 * var(--nav-btn) - 2 * var(--nav-gap) - 1rem))
+  );
+}
+
+@media (min-width: 640px) {
+  :root {
+    --title-width: 500px;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --title-width: 600px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --title-width: 650px;
+    --title-pad-bottom: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --title-width: 700px;
+  }
+}
+
+/* Desktop or landscape — then short landscape (listed last so it wins) */
+@media (min-width: 1280px), (orientation: landscape) {
+  :root {
+    --title-bottom: var(--title-bottom-desktop);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 900px) {
+  :root {
+    --title-bottom: var(--title-bottom-landscape-small);
+  }
 }
 
 /* Small screen adjustments (Mobile < 400px, includes iPhone SE 375px) */

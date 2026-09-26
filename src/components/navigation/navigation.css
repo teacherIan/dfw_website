@@ -58,7 +58,8 @@
 
 /* --- Navigation Arrows --- */
 .nav-arrow {
-  width: clamp(70px, 10vw, 120px);
+  /* Capped so the arrow (70:50) is never taller than its row's button. */
+  width: min(clamp(70px, 10vw, 120px), calc(var(--nav-btn) * 1.4));
   height: auto;
   flex-shrink: 0;
   filter: drop-shadow(var(--shadow-nav-arrow));
@@ -118,12 +119,12 @@
   }
 }
 
-/* Desktop/Landscape: responsive sizing */
+/* Desktop/Landscape: responsive sizing (--nav-btn, variables.css) */
 @media (min-width: 1280px), (orientation: landscape) {
   .nav-button-circle,
   .nav-button-circle--size-md {
-    width: clamp(60px, 8vw, 90px);
-    height: clamp(60px, 8vw, 90px);
+    width: var(--nav-btn);
+    height: var(--nav-btn);
   }
 
   /* Keep exit button small on desktop too */
@@ -424,29 +425,10 @@
    Responsive bottom positioning
    ======================================== */
 
+/* --title-bottom switches between mobile / desktop / short-landscape offsets
+   in variables.css, where the nav stack also reads it to stay clear. */
 .title-overlay {
-  bottom: var(--title-bottom-mobile);
-}
-
-/* Landscape with small height */
-@media (orientation: landscape) and (max-height: 900px) {
-  .title-overlay {
-    bottom: var(--title-bottom-landscape-small);
-  }
-}
-
-/* Desktop or large landscape */
-@media (min-width: 1280px), (orientation: landscape) {
-  .title-overlay {
-    bottom: var(--title-bottom-desktop);
-  }
-
-  /* Override for small landscape */
-  @media (max-height: 900px) {
-    .title-overlay {
-      bottom: var(--title-bottom-landscape-small);
-    }
-  }
+  bottom: var(--title-bottom);
 }
 
 /* ========================================

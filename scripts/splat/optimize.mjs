@@ -14,15 +14,28 @@
  *   --cull-fov=DEG   vertical FOV for the cull frustum (default 62).
  *   --cull-margin=DEG  extra degrees added to the orbit range (default 12).
  *   --frac-bits=N    position quantization bits (default: keep source).
+ *   --edits[=PATH]   apply scene edits (clone foliage into capture gaps, clear
+ *                    artifact splats) before the other passes. Default config
+ *                    scripts/splat/edits.json — see edits.mjs.
+ *   --prune-hidden[=PX]  last pass: drop splats buried behind others — ones
+ *                    that never cover more than PX pixels (default 0.003) in
+ *                    any reachable view (see buildVisibilityViews). ~5 min.
  *   --dry            report the plan + counts, write nothing.
  *
  * Each pass is independent, so any optimization that "doesn't work" can be
  * dropped by leaving its flag off and regenerating.
+ *
+ * Output splats are always written in Morton (Z-order) order: neighbours in
+ * space become neighbours in the file, so gzip finds far more repetition in
+ * positions and colours (~7% smaller, lossless). Spark depth-sorts every
+ * frame, so file order never affects rendering.
  */
-import { readFileSync, writeFileSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { SpzReader, SpzWriter } from '@sparkjsdev/spark';
+import { decodeSpz, encodeSpz, selectSplats } from './spz.mjs';
+import { applyEdits } from './edits.mjs';
+import { splatCoverage } from './raster.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../..');
@@ -81,6 +94,16 @@ const darkScaleMax = args['dark-scale-max'] != null ? Number(args['dark-scale-ma
 // Cull, opacity decimation, white removal, SH reduction, and frac-bits still
 // apply — they don't damage the chair.
 const preserveRadius = args['preserve-radius'] != null ? Number(args['preserve-radius']) : 0;
+const editsPath = args.edits
+  ? resolve(repoRoot, args.edits === true ? 'scripts/splat/edits.json' : args.edits)
+  : null;
+// Occlusion pruning. Coverage is measured through a deliberately oversized
+// frustum (62° vertical, 2.6:1 — the same margin as the cull), so only splats
+// hidden *behind* others go; anything near a screen edge is the cull's call.
+// 0.003 px at 1300×500/62° ≈ 0.01 px of a 1280×720/50° desktop frame.
+const pruneHidden = args['prune-hidden'] != null
+  ? (args['prune-hidden'] === true ? 0.003 : Number(args['prune-hidden']))
+  : null;
 const dry = !!args.dry;
 
 // --- captured scene geometry (feature/splat-optimization) ----------------
@@ -106,8 +129,6 @@ const DEG = Math.PI / 180;
 const cullAzimuth = args['cull-azimuth'] != null ? Number(args['cull-azimuth']) * DEG : Math.PI / 1.4;
 const cullPolar = args['cull-polar'] != null ? Number(args['cull-polar']) * DEG : Math.PI / 3;
 
-// SH coefficient counts per degree band (RGB interleaved): deg1=9, deg2=15, deg3=21.
-const SH_BAND = { 1: 9, 2: 15, 3: 21 };
 const fmt = (n) => n.toLocaleString('en-US');
 const mb = (b) => (b / 1024 / 1024).toFixed(2);
 
@@ -132,6 +153,58 @@ const toCameraSpace = (x, y, z) => {
     camC1[0] * dx + camC1[1] * dy + camC1[2] * dz,
     camC2[0] * dx + camC2[1] * dy + camC2[2] * dz,
   ];
+};
+
+// --- Morton (Z-order) ordering -------------------------------------------
+// Interleave 16-bit-per-axis quantised positions (two 10+6-bit halves, since
+// a 48-bit key doesn't fit a 32-bit int) and sort. Returns the kept indices.
+const spread10 = (v) => {
+  v &= 0x3ff;
+  v = (v | (v << 16)) & 0x030000ff;
+  v = (v | (v << 8)) & 0x0300f00f;
+  v = (v | (v << 4)) & 0x030c30c3;
+  v = (v | (v << 2)) & 0x09249249;
+  return v >>> 0;
+};
+const mortonOrder = (cx, cy, cz, keep) => {
+  const idx = [];
+  const lo = [Infinity, Infinity, Infinity];
+  const hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < cx.length; i++) {
+    if (!keep[i]) continue;
+    idx.push(i);
+    const p = [cx[i], cy[i], cz[i]];
+    for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], p[k]); hi[k] = Math.max(hi[k], p[k]); }
+  }
+  const q = (v, k) => Math.min(0xffff, Math.floor(((v - lo[k]) / (hi[k] - lo[k] || 1)) * 0x10000));
+  const keyHi = new Uint32Array(cx.length);
+  const keyLo = new Uint32Array(cx.length);
+  for (const i of idx) {
+    const x = q(cx[i], 0), y = q(cy[i], 1), z = q(cz[i], 2);
+    keyHi[i] = (spread10(x >> 6) | (spread10(y >> 6) << 1) | (spread10(z >> 6) << 2)) >>> 0;
+    keyLo[i] = (spread10(x & 63) | (spread10(y & 63) << 1) | (spread10(z & 63) << 2)) >>> 0;
+  }
+  return idx.sort((a, b) => keyHi[a] - keyHi[b] || keyLo[a] - keyLo[b] || a - b);
+};
+
+// --- reachable views for occlusion pruning --------------------------------
+// Rest camera positions (useSceneControls: desktop / mobile+tablet; the
+// gallery transition eases the camera 0.3 closer), each across the orbit
+// (Scene.tsx: ±20° azimuth, ±13° polar), plus the entrance fly-in — a
+// straight line from Start (-1, 15, 20) to the rest position.
+const buildVisibilityViews = () => {
+  const view = (pos, az = 0, pol = 0) => ({ w: 1300, h: 500, fov: 62, pos, az, pol });
+  const views = [];
+  for (const pos of [[0, 1.6, 3.1], [0, 2.5, 4.0], [0, 1.6, 2.8]]) {
+    for (const az of [-20, -10, 0, 10, 20]) for (const pol of [-13, 0, 13]) views.push(view(pos, az, pol));
+  }
+  const start = [-1, 15, 20];
+  for (const rest of [[0, 1.6, 3.1], [0, 2.5, 4.0]]) {
+    const at = (e) => start.map((v, k) => v + (rest[k] - v) * e);
+    for (const e of [0.3, 0.5, 0.65, 0.8, 0.9, 0.97]) views.push(view(at(e)));
+    for (const e of [0.8, 0.9]) for (const az of [-20, 20]) views.push(view(at(e), az));
+  }
+  return views;
 };
 
 // --- cull: orbit-swept frustum visibility --------------------------------
@@ -182,54 +255,54 @@ const buildCullTest = () => {
 
 async function main() {
   const srcBytes = readFileSync(inPath);
-  const reader = new SpzReader({ fileBytes: new Uint8Array(srcBytes) });
-  await reader.parseHeader();
-  const n = reader.numSplats;
-  const srcSh = reader.shDegree;
-  const targetSh = args.sh != null ? Math.max(0, Math.min(srcSh, Number(args.sh))) : srcSh;
-  const fracBits = args['frac-bits'] != null ? Number(args['frac-bits']) : reader.fractionalBits;
+  const requestedSh = args.sh != null ? Math.max(0, Math.min(3, Number(args.sh))) : null;
+  // skip decoding SH bands entirely when the output drops them (SH0)
+  let splats = decodeSpz(srcBytes, { sh: requestedSh !== 0 });
+  const srcN = splats.numSplats;
+  const srcSh = splats.shDegree;
+  const targetSh = requestedSh != null ? Math.min(srcSh, requestedSh) : srcSh;
+  const fracBits = args['frac-bits'] != null ? Number(args['frac-bits']) : splats.fractionalBits;
 
-  console.log(`\nsource : ${inPath.replace(repoRoot + '/', '')}  (${mb(srcBytes.length)} MB, ${fmt(n)} splats, SH${srcSh})`);
+  console.log(`\nsource : ${inPath.replace(repoRoot + '/', '')}  (${mb(srcBytes.length)} MB, ${fmt(srcN)} splats, SH${srcSh})`);
   console.log(`passes :`);
+  if (editsPath) console.log(`  • scene edits: ${editsPath.replace(repoRoot + '/', '')}`);
   if (targetSh !== srcSh) console.log(`  • SH degree ${srcSh} → ${targetSh}`);
   if (minAlpha > 0) console.log(`  • drop opacity < ${minAlpha}`);
   if (doCull) console.log(`  • cull: orbit-swept frustum (orbit ±${(cullAzimuth / DEG).toFixed(0)}°az / ±${(cullPolar / DEG).toFixed(0)}°pol, fov ${cullFov}°, margin ${cullMargin}°)`);
   if (removeWhites) console.log(`  • remove white artifacts inside scene radius ${whiteRadius}`);
   if (removeDarks) console.log(`  • remove dark floaters inside scene radius ${darkRadius}`);
   if (densityPct != null) console.log(`  • density cap: p${densityPct} per ${densityVoxel}-unit voxel`);
-  if (preserveRadius > 0) console.log(`  • preserve subject: skip density-cap & dark-removal within ${preserveRadius}u of origin`);
-  if (fracBits !== reader.fractionalBits) console.log(`  • fractionalBits ${reader.fractionalBits} → ${fracBits}`);
-  if (targetSh === srcSh && minAlpha <= 0 && !doCull && !removeWhites && !removeDarks && densityPct == null && fracBits === reader.fractionalBits) {
+  if (pruneHidden != null) console.log(`  • prune hidden: splats never covering > ${pruneHidden} px in any reachable view`);
+  if (preserveRadius > 0) console.log(`  • preserve subject: skip density-cap, dark-removal & hidden-pruning within ${preserveRadius}u of origin`);
+  if (fracBits !== splats.fractionalBits) console.log(`  • fractionalBits ${splats.fractionalBits} → ${fracBits}`);
+  if (!editsPath && targetSh === srcSh && minAlpha <= 0 && !doCull && !removeWhites && !removeDarks && densityPct == null && fracBits === splats.fractionalBits) {
     console.log(`  • (none — pure re-encode)`);
   }
 
-  // --- decode ------------------------------------------------------------
+  // --- scene edits (before the other passes, which then treat clones like
+  // any captured splat) -----------------------------------------------------
+  let editReport = null;
+  if (editsPath) {
+    console.log('\nedits  :');
+    editReport = applyEdits(splats, JSON.parse(readFileSync(editsPath, 'utf8')), (line) => console.log(line));
+    splats = editReport.splats;
+  }
+
+  // --- views onto the decoded splats -------------------------------------
+  const n = splats.numSplats;
+  // applyEdits appends clones after the (surviving) captured splats
+  const firstClone = editReport ? n - editReport.added : n;
   const cx = new Float32Array(n);
   const cy = new Float32Array(n);
   const cz = new Float32Array(n);
-  const alpha = new Float32Array(n);
-  const rgb = new Float32Array(n * 3);
-  const scale = new Float32Array(n * 3);
-  const quat = new Float32Array(n * 4);
-  // store SH only for the bands the output keeps
-  const shFloats = (targetSh >= 1 ? SH_BAND[1] : 0) + (targetSh >= 2 ? SH_BAND[2] : 0) + (targetSh >= 3 ? SH_BAND[3] : 0);
-  const sh = shFloats ? new Float32Array(n * shFloats) : null;
-
-  await reader.parseSplats(
-    (i, x, y, z) => { cx[i] = x; cy[i] = y; cz[i] = z; },
-    (i, a) => { alpha[i] = a; },
-    (i, r, g, b) => { rgb[i * 3] = r; rgb[i * 3 + 1] = g; rgb[i * 3 + 2] = b; },
-    (i, sx, sy, sz) => { scale[i * 3] = sx; scale[i * 3 + 1] = sy; scale[i * 3 + 2] = sz; },
-    (i, qx, qy, qz, qw) => { quat[i * 4] = qx; quat[i * 4 + 1] = qy; quat[i * 4 + 2] = qz; quat[i * 4 + 3] = qw; },
-    sh
-      ? (i, sh1, sh2, sh3) => {
-          let o = i * shFloats;
-          for (let k = 0; k < SH_BAND[1]; k++) sh[o++] = sh1[k];
-          if (targetSh >= 2 && sh2) for (let k = 0; k < SH_BAND[2]; k++) sh[o++] = sh2[k];
-          if (targetSh >= 3 && sh3) for (let k = 0; k < SH_BAND[3]; k++) sh[o++] = sh3[k];
-        }
-      : undefined,
-  );
+  for (let i = 0; i < n; i++) {
+    cx[i] = splats.centers[i * 3];
+    cy[i] = splats.centers[i * 3 + 1];
+    cz[i] = splats.centers[i * 3 + 2];
+  }
+  const alpha = splats.alphas;
+  const rgb = splats.rgb;
+  const scale = splats.scales;
 
   // --- keep mask ---------------------------------------------------------
   const keep = new Uint8Array(n).fill(1);
@@ -324,11 +397,14 @@ async function main() {
     // random excess dropped — flattens captures where one region was
     // photographed from many more angles than the rest. Splats inside the
     // preserve sphere (chair / subject) are excluded entirely — the cap is
-    // measured on, and applied to, only the non-preserved population.
+    // measured on, and applied to, only the non-preserved population. Scene-
+    // edit clones are excluded too: their density is set by the edit, and
+    // counting them would shift the percentile for the rest of the capture.
     const buckets = new Map();
     for (let i = 0; i < n; i++) {
       if (!keep[i]) continue;
       if (preserved && preserved[i]) continue;
+      if (i >= firstClone) continue;
       const vx = Math.floor(cx[i] / densityVoxel);
       const vy = Math.floor(cy[i] / densityVoxel);
       const vz = Math.floor(cz[i] / densityVoxel);
@@ -363,10 +439,32 @@ async function main() {
     }
     densityStats = { voxels: buckets.size, median, p: densityPct, cap, maxCount, voxelSize: densityVoxel };
   }
+  let droppedHidden = 0;
+  let hiddenViews = 0;
+  if (pruneHidden != null) {
+    // Runs last: occlusion depends on the final population. The chair is
+    // exempt like in the other destructive passes.
+    const keptIdx = [];
+    for (let i = 0; i < n; i++) if (keep[i]) keptIdx.push(i);
+    const kept = selectSplats(splats, keptIdx);
+    const maxCover = new Float32Array(keptIdx.length);
+    const views = buildVisibilityViews();
+    hiddenViews = views.length;
+    views.forEach((v, k) => {
+      const cover = splatCoverage(kept, v);
+      for (let j = 0; j < cover.length; j++) if (cover[j] > maxCover[j]) maxCover[j] = cover[j];
+      process.stdout.write(`\r  prune-hidden: view ${k + 1}/${views.length}`);
+    });
+    process.stdout.write('\n');
+    keptIdx.forEach((i, j) => {
+      if (maxCover[j] < pruneHidden && !(preserved && preserved[i])) { keep[i] = 0; droppedHidden++; }
+    });
+  }
   let kept = 0;
   for (let i = 0; i < n; i++) if (keep[i]) kept++;
 
-  console.log(`\nsplats : ${fmt(n)} → ${fmt(kept)}  (kept ${((kept / n) * 100).toFixed(1)}%)`);
+  console.log(`\nsplats : ${fmt(srcN)} → ${fmt(kept)}  (kept ${((kept / srcN) * 100).toFixed(1)}%)`);
+  if (editReport) console.log(`  scene edits        : -${fmt(editReport.removed)} cleared, +${fmt(editReport.added)} cloned`);
   if (minAlpha > 0) console.log(`  dropped by opacity : ${fmt(droppedAlpha)}`);
   if (doCull) console.log(`  dropped by cull    : ${fmt(droppedCull)}`);
   if (removeWhites) console.log(`  dropped by whites  : ${fmt(droppedWhite)}  (bright > ${whiteBright}, sat < ${whiteSat}, world-radius < ${whiteRadius})`);
@@ -378,45 +476,19 @@ async function main() {
         `cap=${densityStats.cap} at p${densityStats.p}, max was ${densityStats.maxCount})`,
     );
   }
+  if (pruneHidden != null) console.log(`  dropped as hidden  : ${fmt(droppedHidden)}  (never > ${pruneHidden} px in ${hiddenViews} views)`);
 
   if (dry) {
     console.log('\n--dry: nothing written.\n');
     return;
   }
 
-  // --- re-encode ---------------------------------------------------------
-  const writer = new SpzWriter({
-    numSplats: kept,
+  // --- re-encode (Morton order) ------------------------------------------
+  const order = mortonOrder(cx, cy, cz, keep);
+  const outBytes = encodeSpz(selectSplats(splats, order), {
     shDegree: targetSh,
     fractionalBits: fracBits,
-    flagAntiAlias: reader.flagAntiAlias,
   });
-  const sh1 = new Float32Array(SH_BAND[1]);
-  const sh2 = new Float32Array(SH_BAND[2]);
-  const sh3 = new Float32Array(SH_BAND[3]);
-  let j = 0;
-  for (let i = 0; i < n; i++) {
-    if (!keep[i]) continue;
-    writer.setCenter(j, cx[i], cy[i], cz[i]);
-    writer.setAlpha(j, alpha[i]);
-    writer.setRgb(j, rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
-    writer.setScale(j, scale[i * 3], scale[i * 3 + 1], scale[i * 3 + 2]);
-    writer.setQuat(j, quat[i * 4], quat[i * 4 + 1], quat[i * 4 + 2], quat[i * 4 + 3]);
-    if (sh && targetSh >= 1) {
-      let o = i * shFloats;
-      for (let k = 0; k < SH_BAND[1]; k++) sh1[k] = sh[o++];
-      if (targetSh >= 2) for (let k = 0; k < SH_BAND[2]; k++) sh2[k] = sh[o++];
-      if (targetSh >= 3) for (let k = 0; k < SH_BAND[3]; k++) sh3[k] = sh[o++];
-      writer.setSh(
-        j,
-        sh1,
-        targetSh >= 2 ? sh2 : undefined,
-        targetSh >= 3 ? sh3 : undefined,
-      );
-    }
-    j++;
-  }
-  const outBytes = await writer.finalize();
 
   // --- output path -------------------------------------------------------
   let outPath;
@@ -424,6 +496,7 @@ async function main() {
     outPath = resolve(repoRoot, args.out);
   } else {
     const tag = [];
+    if (editsPath) tag.push('edits');
     if (targetSh !== srcSh) tag.push(`sh${targetSh}`);
     if (minAlpha > 0) tag.push(`a${minAlpha}`);
     if (doCull) tag.push('cull');
