@@ -6,12 +6,20 @@ way a pen does. Built for dfw's nav arrows; written to be lifted into the 4YP
 
 Design doc, with live figures: https://claude.ai/artifact/9P4krKBDewiEcH64Fi5XUM
 
+**This folder is a copy.** The library's home is
+https://github.com/teacherIan/handline — change it there, then copy `src/` over
+this folder (the files are identical; `README.md` here is dfw's own). The lab
+here (`src/lab/handline`) also shows dfw's old arrows for comparison.
+
 ## Run
 
 - `npm run dev`, then `/lab/handline.html` — playground (drag the ends; every
   option in the Leva panel), gestures, pens, ends, marks, the dfw menu, a 4YP
   mock and a 60-line stress test. Dev server only; not in the build.
 - `npm test` — `node:test`, bundled by Vite's esbuild (`scripts/test-handline.mjs`).
+- Landing: `reach` — px from the target's edge (negative short, default −6;
+  positive inside) or `'center'`. dfw's nav arrows use `NAV_ARROW_REACH`
+  (`navigation/arrowStyle.ts`).
 
 ## Shape
 
