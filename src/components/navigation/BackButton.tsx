@@ -2,7 +2,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
-import { HandlineArt } from '../../lib/handline';
+import { HandlineArt } from 'handline';
 import './navigation.css';
 
 interface BackButtonProps {

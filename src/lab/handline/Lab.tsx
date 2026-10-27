@@ -22,8 +22,8 @@ import {
   type HeadKind,
   type PenName,
   type TailKind,
-} from '../../lib/handline';
-import { measure } from '../../lib/handline/geom';
+} from 'handline';
+import { measure } from 'handline';
 import { LoopArrow, SpiralArrow, WaveArrow } from '../../components/navigation/DesktopArrows';
 
 const GESTURE_NAMES = Object.keys(GESTURES) as GestureName[];

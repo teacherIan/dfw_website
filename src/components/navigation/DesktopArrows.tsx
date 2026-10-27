@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState } from 'react';
-import { DFW_PATHS, Handline, HandlineArt, HandlineLayer } from '../../lib/handline';
+import { DFW_PATHS, Handline, HandlineArt, HandlineLayer } from 'handline';
 import { arrowStyle, NAV_ARROW_REACH, type ArrowEffectsConfig } from './arrowStyle';
 
 interface SpringTransform {

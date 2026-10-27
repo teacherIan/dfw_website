@@ -182,19 +182,17 @@ All positions configurable for fine-tuning:
 - Resets on `resetAnimation` event
 
 ### DesktopArrows.tsx
-Three unique SVG arrow designs for desktop navigation buttons.
+The desktop menu's arrows, drawn with [handline](https://github.com/teacherIan/handline)
+(a dependency, pinned to a tag in package.json).
 
-**Arrow Types:**
-1. **LoopArrow** - Curved path with loop (Gallery)
-2. **SpiralArrow** - Inward spiral design (Ethos)
-3. **WaveArrow** - Gentle wave pattern (Contact)
-
-**Features:**
-- Dashed stroke pattern (strokeDasharray)
-- White color with drop shadow
-- Arrow markers at endpoint
-- Responsive to hover states
-- All paths end horizontally aligned
+- **DesktopNavArrow** — the menu arrow: the row's hand-drawn path (loop for
+  Gallery, spiral for Ethos, wave for Contact; `DFW_PATHS`) at its drawn size,
+  then a live line on into the centre of the row's reserved button slot.
+- **LoopArrow / SpiralArrow / WaveArrow** — the same paths as fixed artwork
+  (`HandlineArt`), used by the gallery pages.
+- Style (pen, head, marks, weight) comes from `arrowStyle.ts`, which also maps
+  the "✏️ Arrow Effects" Leva panel onto the pen; how far into the button an
+  arrow goes is `NAV_ARROW_REACH` there.
 
 ### MobileNavLayout.tsx
 Complete mobile navigation layout with buttons, labels, and positioning.
@@ -214,20 +212,20 @@ Complete mobile navigation layout with buttons, labels, and positioning.
 - All positions configurable via props (Leva controls)
 
 ### MobileArrows.tsx
-Three custom SVG arrows for mobile navigation.
+The phone menu's three arrows, live handline lines from each label to the
+centre of its button.
 
-**Arrow Types:**
-1. **EthosArrow** - Left bracket style curve
-2. **ContactArrow** - Downward curve from label to button
-3. **GalleryArrow** - Right bracket style curve
+- Each keeps its Leva-tuned bend (the "🎯 Arrow Targeting" templates per
+  breakpoint) and carries an ornament on it: Gallery a loop, Ethos a loop,
+  Contact a wave.
+- Starts at a point on the label (Leva anchors); ends at the button centre
+  from `navLayouts.ts`, so it doesn't measure the button.
+- A white dot where the pen lands; a drop shadow on the layer.
+- Sways with the scene drag as a push on the line's middle (`nudge`).
 
-**Features:**
-- Start markers: white dots
-- End markers: white arrows
-- Dashed stroke patterns
-- Drop shadows for depth
-- Positioned absolutely via inline styles
-- Configurable animation delays
+To change the library itself, work in the handline repo (it has the tests and
+a playground), tag a release, and move the tag in package.json. dfw's own lab
+at `/lab/handline.html` (dev server only) compares the old arrows with the new.
 
 ### TextOverlay.tsx
 Animated title display for "Doug's Found Wood".

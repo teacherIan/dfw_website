@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState } from 'react';
 import { useControls, folder } from 'leva';
-import { Handline, HandlineLayer, type GestureSpec } from '../../lib/handline';
+import { Handline, HandlineLayer, type GestureSpec } from 'handline';
 import { arrowStyle, NAV_ARROW_REACH, type ArrowEffectsConfig } from './arrowStyle';
 import {
   useEthosArrowControls,

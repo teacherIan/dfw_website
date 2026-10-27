@@ -5,7 +5,7 @@
  * handline pen and marks instead of the old SVG filters (which wobbled the
  * line but couldn't change its weight, and re-rendered every frame of the draw).
  */
-import type { HeadSpec, LineStyle, MarksSpec, PenInput, Reach } from '../../lib/handline';
+import type { HeadSpec, LineStyle, MarksSpec, PenInput, Reach } from 'handline';
 
 export interface ArrowEffectsConfig {
   // Master toggle
