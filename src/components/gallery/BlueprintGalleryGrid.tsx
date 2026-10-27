@@ -75,6 +75,14 @@ export const BlueprintGalleryGrid = () => {
     };
   }, [updateScrollState, images.length, isVisible]);
 
+  const handleBack = useCallback(() => {
+    setIsExiting(true);
+    setIsVisible(false);
+    setTimeout(() => {
+      backToPicker();
+    }, 400);
+  }, [backToPicker]);
+
   // Keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // If expanded, only handle Escape
@@ -100,7 +108,7 @@ export const BlueprintGalleryGrid = () => {
     } else if (e.key === 'Escape') {
       handleBack();
     }
-  }, [isExpanded, activeIndex, images.length]);
+  }, [isExpanded, activeIndex, images.length, handleBack]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -115,14 +123,6 @@ export const BlueprintGalleryGrid = () => {
     if (thumbnail) {
       thumbnail.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
-  };
-
-  const handleBack = () => {
-    setIsExiting(true);
-    setIsVisible(false);
-    setTimeout(() => {
-      backToPicker();
-    }, 400);
   };
 
   const handleThumbnailClick = (index: number) => {

@@ -51,6 +51,9 @@ const resolveSplatUrl = (): string => {
  */
 const ENTRANCE_SETTLE_MARGIN = 1.5 + 5.0 + 1.0;
 
+/** Where the splat mesh sits; nothing moves it. */
+const SPLAT_OFFSET = new Vector3(0, -0.5, 0);
+
 /**
  * Scene component for the 3D splat visualization
  * Handles camera controls, splat mesh rendering, entrance and exit animations
@@ -182,7 +185,6 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
     meshEuler: new Euler(),
     meshQuat: new Quaternion(),
   });
-  const splatOffsetRef = useRef(new Vector3(0, -0.5, 0));
 
   // Teleport/Beam controls
   const teleportSpeedRef = useRef(dyno.dynoFloat(2.0));
@@ -1388,7 +1390,7 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
     sandBasis.meshQuat.setFromEuler(sandBasis.meshEuler).invert();
     sandBasis.localRight.copy(sandBasis.cameraRight).applyQuaternion(sandBasis.meshQuat).normalize();
     sandBasis.localUp.copy(sandBasis.cameraUp).applyQuaternion(sandBasis.meshQuat).normalize();
-    sandBasis.cameraLocal.copy(camera.position).sub(splatOffsetRef.current).applyQuaternion(sandBasis.meshQuat);
+    sandBasis.cameraLocal.copy(camera.position).sub(SPLAT_OFFSET).applyQuaternion(sandBasis.meshQuat);
     sandViewRightRef.current.value.copy(sandBasis.localRight);
     sandViewUpRef.current.value.copy(sandBasis.localUp);
     sandCameraPosRef.current.value.copy(sandBasis.cameraLocal);
@@ -1413,7 +1415,7 @@ const Scene = ({ controlsStore, mobileFov = 50, isMobileView = false, cameraSpee
       <splatMesh
         ref={meshCallbackRef}
         args={[splatMeshArgs]}
-        position={[splatOffsetRef.current.x, splatOffsetRef.current.y, splatOffsetRef.current.z]}
+        position={[SPLAT_OFFSET.x, SPLAT_OFFSET.y, SPLAT_OFFSET.z]}
         rotation={[rotationX, rotationY, rotationZ]}
       />
     </sparkRenderer>

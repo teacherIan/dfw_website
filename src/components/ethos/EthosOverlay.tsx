@@ -84,7 +84,7 @@ const EthosOverlay = ({ isEntering = false, isReturning = false, exitDuration = 
           {/* House image floated left with caption */}
           <figure className={styles.houseImageFloat}>
             <figcaption className={styles.sideCaption}>
-              Doug Malloy's Athens home started as a simple log cabin and has slowly expanded over the years.
+              Doug Malloy&apos;s Athens home started as a simple log cabin and has slowly expanded over the years.
             </figcaption>
             <img src={houseExterior} alt="Doug Malloy's Athens home" />
           </figure>
@@ -107,10 +107,10 @@ const EthosOverlay = ({ isEntering = false, isReturning = false, exitDuration = 
           {/* Subtitle floated right */}
           <aside className={styles.subtitleFloat}>
             <p className={styles.subtitle}>
-              <em>Athens man's<br />
+              <em>Athens man&apos;s<br />
               magical structure<br />
               created from<br />
-              the land's wood<br />
+              the land&apos;s wood<br />
               and stone</em>
             </p>
           </aside>
@@ -119,7 +119,7 @@ const EthosOverlay = ({ isEntering = false, isReturning = false, exitDuration = 
           <div className={styles.articleBody} lang="en">
             <p>
               <span className={styles.dropCap}>I</span>
-              turned where the driveway sign said "No Way" and began winding past little vignettes of Maine — an overgrown field, a stone wall, a gnarled tree in a clearing, a large stand of pines. The drive curled in an "s," and waiting at the end of the road was Doug Malloy with a cup of coffee in his hand.
+              turned where the driveway sign said &quot;No Way&quot; and began winding past little vignettes of Maine — an overgrown field, a stone wall, a gnarled tree in a clearing, a large stand of pines. The drive curled in an &quot;s,&quot; and waiting at the end of the road was Doug Malloy with a cup of coffee in his hand.
             </p>
 
             <p>
@@ -127,7 +127,7 @@ const EthosOverlay = ({ isEntering = false, isReturning = false, exitDuration = 
             </p>
 
             <p>
-              When I caught my breath, I could only ask, "How did you do this?"
+              When I caught my breath, I could only ask, &quot;How did you do this?&quot;
             </p>
 
             <p>
@@ -160,31 +160,31 @@ const EthosOverlay = ({ isEntering = false, isReturning = false, exitDuration = 
             </figure>
 
             <p>
-              Inside, from the soft curves of the kitchen cupboards to the china closet made of elm in the living room to the cedar bathtub — which hasn't leaked in 30 years — he built them all.
+              Inside, from the soft curves of the kitchen cupboards to the china closet made of elm in the living room to the cedar bathtub — which hasn&apos;t leaked in 30 years — he built them all.
             </p>
 
             <p>
-              There is not a hard edge or a squared corner to be found. Visitors can't help caressing the rounded doorways or the silky soft banisters. This is a house that begs to be touched, not just seen.
+              There is not a hard edge or a squared corner to be found. Visitors can&apos;t help caressing the rounded doorways or the silky soft banisters. This is a house that begs to be touched, not just seen.
             </p>
 
             <p>
-              Doug laughed at that, saying he began by just eyeballing all measurements. "I never used a tape measure. In one room, the wall on one side is a full foot longer than the one on the other," he said.
+              Doug laughed at that, saying he began by just eyeballing all measurements. &quot;I never used a tape measure. In one room, the wall on one side is a full foot longer than the one on the other,&quot; he said.
             </p>
 
             <p>
-              He was also quick to explain that he didn't really know what he was doing when he began building his home in the late 1960s. Doug was a chemical engineer, working in plastics in Michigan. But after taking a leave of absence from his engineering job, he visited Maine and never went back.
+              He was also quick to explain that he didn&apos;t really know what he was doing when he began building his home in the late 1960s. Doug was a chemical engineer, working in plastics in Michigan. But after taking a leave of absence from his engineering job, he visited Maine and never went back.
             </p>
 
             <p>
-              "I didn't know a thing about construction," he said. He is, however, a smart guy and a quick learner. He confidently started constructing a small cedar log cabin, using only materials from his 70 acres.
+              &quot;I didn&apos;t know a thing about construction,&quot; he said. He is, however, a smart guy and a quick learner. He confidently started constructing a small cedar log cabin, using only materials from his 70 acres.
             </p>
 
             <p>
-              He quickly discovered he wasn't really alone in his woods. Doug had a squatter, a middle-aged man who was a bit down on his luck and took up residence at the head of the driveway.
+              He quickly discovered he wasn&apos;t really alone in his woods. Doug had a squatter, a middle-aged man who was a bit down on his luck and took up residence at the head of the driveway.
             </p>
 
             <p>
-              "Old John would show up each year and tell me, 'I haven't really gotten it together, Doug. Can I spend the winter here?' and he lived in the old trailer down by the road," Doug said. Old John would come back and say the same thing each year and every year Doug would invite him to stay. He ended up sharing the land for 25 years. "He was my gatekeeper," Doug said.
+              &quot;Old John would show up each year and tell me, &apos;I haven&apos;t really gotten it together, Doug. Can I spend the winter here?&apos; and he lived in the old trailer down by the road,&quot; Doug said. Old John would come back and say the same thing each year and every year Doug would invite him to stay. He ended up sharing the land for 25 years. &quot;He was my gatekeeper,&quot; Doug said.
             </p>
 
             <p>
@@ -192,11 +192,11 @@ const EthosOverlay = ({ isEntering = false, isReturning = false, exitDuration = 
             </p>
 
             <p>
-              Old John would sit and mostly just watch Doug work. Every so often, though, the squatter would make a comment such as "If a man wanted to, he could…," followed by a bit of construction advice.
+              Old John would sit and mostly just watch Doug work. Every so often, though, the squatter would make a comment such as &quot;If a man wanted to, he could…,&quot; followed by a bit of construction advice.
             </p>
 
             <p>
-              "Of course, his way was the right way," Doug admitted. In this gentle manner, Old John imparted his knowledge to the rookie woodsman until he passed away five years ago.
+              &quot;Of course, his way was the right way,&quot; Doug admitted. In this gentle manner, Old John imparted his knowledge to the rookie woodsman until he passed away five years ago.
             </p>
 
             <p>
@@ -204,43 +204,43 @@ const EthosOverlay = ({ isEntering = false, isReturning = false, exitDuration = 
             </p>
 
             <p>
-              He shares the home with his son, Ian, 22, who attends Thomas College and recently spent his spring break nailing shakes on one of the house's roofs.
+              He shares the home with his son, Ian, 22, who attends Thomas College and recently spent his spring break nailing shakes on one of the house&apos;s roofs.
             </p>
 
             <p>
-              "This is my little art form. If I kept track of the hours that it takes me, I wouldn't want to do it," Doug admitted. "The nice thing about this little log and stone house is that I have spent lots and lots of time in its creation but relatively little money."
+              &quot;This is my little art form. If I kept track of the hours that it takes me, I wouldn&apos;t want to do it,&quot; Doug admitted. &quot;The nice thing about this little log and stone house is that I have spent lots and lots of time in its creation but relatively little money.&quot;
             </p>
 
             <p>
-              When asked if his construction is rooted in environmentalism or is because he is a cheap Scotsman, he laughed. "Hmmm," he said. "That's a good question."
+              When asked if his construction is rooted in environmentalism or is because he is a cheap Scotsman, he laughed. &quot;Hmmm,&quot; he said. &quot;That&apos;s a good question.&quot;
             </p>
 
             <p>
-              "I do believe in treading lightly on the earth," he said. "I practice that in the way that I harvest. I have become so attached to these trees in the past 30 years that it sometimes becomes too hard to cut them down. It is a very good thing when one falls or is blown down." He carefully manages his forest, saying, "When I leave this place, I will leave the good wood for somebody else."
+              &quot;I do believe in treading lightly on the earth,&quot; he said. &quot;I practice that in the way that I harvest. I have become so attached to these trees in the past 30 years that it sometimes becomes too hard to cut them down. It is a very good thing when one falls or is blown down.&quot; He carefully manages his forest, saying, &quot;When I leave this place, I will leave the good wood for somebody else.&quot;
             </p>
 
             <p>
-              "The rest of the world has passed this by," he said of the way he has turned scrap wood, leftovers and others' discards into his artistic home. "I feel good when I can use wood such as old telephone poles for wood shakes. The whole house comes from the land."
+              &quot;The rest of the world has passed this by,&quot; he said of the way he has turned scrap wood, leftovers and others&apos; discards into his artistic home. &quot;I feel good when I can use wood such as old telephone poles for wood shakes. The whole house comes from the land.&quot;
             </p>
 
             <p>
-              "The nice thing about wood is that it naturally grows into shapes," Doug said. "I always build, whether it is the house or my furniture, by following what the wood suggests. It tells me by its shape if it is a chair, a window, whatever. Cedar is the best. It curves and sweeps and it's rugged."
+              &quot;The nice thing about wood is that it naturally grows into shapes,&quot; Doug said. &quot;I always build, whether it is the house or my furniture, by following what the wood suggests. It tells me by its shape if it is a chair, a window, whatever. Cedar is the best. It curves and sweeps and it&apos;s rugged.&quot;
             </p>
 
             <p>
-              Making his one-of-a-kind door latches has become almost a game. Some are simple cherry wood burls while others are a foot tall and complicated. "I take this little joy each morning in operating one of the latches," he said.
+              Making his one-of-a-kind door latches has become almost a game. Some are simple cherry wood burls while others are a foot tall and complicated. &quot;I take this little joy each morning in operating one of the latches,&quot; he said.
             </p>
 
             <p>
-              "People really take pleasure in seeing how things work," Doug said. "As more and more of the ability to fix things ourselves is taken away from us, we lose something as a culture, as a society."
+              &quot;People really take pleasure in seeing how things work,&quot; Doug said. &quot;As more and more of the ability to fix things ourselves is taken away from us, we lose something as a culture, as a society.&quot;
             </p>
 
             <p>
-              Semiretired these days, he works half-time as a science teacher at Madison High School and spends the rest of his time in his workshop creating custom furniture from branches, burls, roots and slabs. "Many people come to Maine with a vision of the Maine wilderness and my furniture fits that vision perfectly," he said.
+              Semiretired these days, he works half-time as a science teacher at Madison High School and spends the rest of his time in his workshop creating custom furniture from branches, burls, roots and slabs. &quot;Many people come to Maine with a vision of the Maine wilderness and my furniture fits that vision perfectly,&quot; he said.
             </p>
 
             <p>
-              But mostly, he continues to work on the house. His latest venture is to create a slow, gentle curve of the roof of the main, original cabin. Sweeping his hand through the air to illustrate, Doug said, "It will be lovely."
+              But mostly, he continues to work on the house. His latest venture is to create a slow, gentle curve of the roof of the main, original cabin. Sweeping his hand through the air to illustrate, Doug said, &quot;It will be lovely.&quot;
             </p>
           </div>
         </article>

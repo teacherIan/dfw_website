@@ -701,9 +701,12 @@ export const useSceneControls = ({
   useControls({
     '🏠 Base.📊 Monitor': folder(
       {
+        // Leva calls a monitor's getter from its own component and timer, not during this render.
+        /* eslint-disable react-hooks/refs */
         cameraX: monitor(() => currentCameraX.current, { graph: false }),
         cameraY: monitor(() => currentCameraY.current, { graph: false }),
         cameraZ: monitor(() => currentCameraZ.current, { graph: false }),
+        /* eslint-enable react-hooks/refs */
       },
       { collapsed: true }
     ),
