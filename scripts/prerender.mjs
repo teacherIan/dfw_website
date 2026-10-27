@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sirv from 'sirv';
@@ -10,7 +10,7 @@ const dist = join(__dirname, '..', 'dist');
 const PORT = 7321;
 const USER_AGENT = 'DFWPrerender/1.0';
 const HYDRATION_WAIT_MS = 2500;
-const SITE_URL = (process.env.VITE_SITE_URL ?? 'https://dougsfoundwood.com').replace(
+const SITE_URL = (process.env.VITE_SITE_URL ?? 'https://www.dfw.earth').replace(
   /\/+$/,
   '',
 );
@@ -117,6 +117,7 @@ const run = async () => {
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlset}\n</urlset>\n`;
     writeFileSync(join(dist, 'sitemap.xml'), sitemap, 'utf8');
     console.log(`  wrote dist/sitemap.xml (${urls.length} urls)`);
+    appendFileSync(join(dist, 'robots.txt'), `\nSitemap: ${SITE_URL}/sitemap.xml\n`, 'utf8');
 
     console.log(`\nprerendered ${snapshots.size} routes`);
   } finally {

@@ -4,7 +4,7 @@
 
 export const SITE_URL: string = (
   (import.meta.env.VITE_SITE_URL as string | undefined) ??
-  'https://dougsfoundwood.com'
+  'https://www.dfw.earth'
 ).replace(/\/+$/, '');
 
 export const SITE_NAME = "Doug's Found Wood";

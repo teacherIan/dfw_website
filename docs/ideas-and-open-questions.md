@@ -60,11 +60,10 @@ These come from reading the code; none of them were tried.
 
 ### Questions the code can't answer
 
-- **Which Vercel project is production?** Both `dfw` and `dfw-website` build and deploy every push. If only one of them serves dougsfoundwood.com, the other one doubles the builds and the preview links.
-- **Does production run the prerender step?**
-  - What it does: `npm run build:prerender` (`scripts/prerender.mjs`) writes static HTML for each route, for search engines and link previews. It also writes the `sitemap.xml` that `robots.txt` points to.
-  - Why it's in doubt: there's no `vercel.json`, and Vercel runs `npm run build` unless the project's Build Command says otherwise.
-  - Quick test: open dougsfoundwood.com/sitemap.xml. If it isn't there, the prerender isn't running. The live site couldn't be reached from the environment this was written in.
+- **Which Vercel project is production?** Both `dfw` and `dfw-website` build and deploy every push. Each project's Domains page says whether it serves www.dfw.earth; the one that doesn't doubles the builds and the preview links.
+- **Should production run the prerender step?** It doesn't now: www.dfw.earth/sitemap.xml was a 404 on 2026-10-27.
+  - What it does: `npm run build:prerender` (`scripts/prerender.mjs`) writes static HTML for each route, for search engines and link previews. It also writes `sitemap.xml` and adds its `Sitemap:` line to `robots.txt`.
+  - Why it doesn't run: there's no `vercel.json`, and Vercel runs `npm run build` unless the project's Build Command says otherwise.
 
 ## Questions for you
 
