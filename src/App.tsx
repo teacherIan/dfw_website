@@ -29,7 +29,6 @@ import { useStandaloneMode, useWindowWidth, DESKTOP_BREAKPOINT, useArrowEffectsC
 import { useSceneSeo } from './seo/useSceneSeo';
 import { isPrerender } from './seo/prerender';
 import SeoContent from './components/seo/SeoContent';
-import { ArrowFilterDefs } from './components/navigation/ArrowFilters';
 import './types/r3f.d';
 
 // Lazy boundary — three.js / r3f / drei / Spark load in their own chunk so
@@ -269,9 +268,6 @@ function AppContent() {
     <div className={`relative w-screen overflow-hidden bg-[#f8f5ef] text-white ${isStandalone ? 'h-dvh' : 'h-svh'}`}>
       {/* Visually hidden semantic HTML for crawlers/prerender */}
       <SeoContent />
-
-      {/* SVG filter definitions for arrow woodworker effects */}
-      <ArrowFilterDefs config={arrowEffectsConfig} />
 
       {/* Loading screen - signals when animation can start */}
       {!isPrerender() && (

@@ -1,6 +1,5 @@
-import { AnimatedArrowhead } from './ArrowComponents';
-import { getArrowFilterUrl, defaultArrowEffectsConfig } from './ArrowFilters';
-import type { ArrowEffectsConfig } from './ArrowFilters';
+import { DFW_PATHS, HandlineArt } from '../../lib/handline';
+import { arrowStyle, type ArrowEffectsConfig } from './arrowStyle';
 
 interface SpringTransform {
   rotate: number;
@@ -25,221 +24,54 @@ interface ArrowProps {
   effectsConfig?: ArrowEffectsConfig;
 }
 
-// 1. LOOP ARROW (Top)
-export const LoopArrow = ({
+/**
+ * The sway each arrow does with the scene drag: a transform of the whole
+ * svg, a different mix per arrow so the three don't move in lockstep.
+ */
+type Sway = (st: SpringTransform | undefined, ox: number, oy: number) => string;
+
+const SWAYS: Record<keyof typeof DFW_PATHS, Sway> = {
+  loop: (st, ox, oy) =>
+    `translate(${(st?.translateX ?? 0) + ox * 0.1}px, ${(st?.translateY ?? 0) + oy * 0.1}px) rotate(${(st?.rotate ?? 0) + ox * 0.2}deg) skewY(${oy * 0.25}deg)`,
+  spiral: (st, ox, oy) =>
+    `translate(${(st?.translateX ?? 0) + ox * 0.08}px, ${(st?.translateY ?? 0) + oy * 0.12}px) rotate(${(st?.rotate ?? 0) - ox * 0.17}deg) skewX(${ox * 0.2}deg)`,
+  wave: (st, ox, oy) =>
+    `translate(${(st?.translateX ?? 0) + ox * 0.07}px, ${(st?.translateY ?? 0) + oy * 0.14}px) rotate(${(st?.rotate ?? 0) + ox * 0.14}deg) skewY(${-oy * 0.35}deg) scaleY(${1 + Math.abs(oy) * 0.007})`,
+};
+
+function DesktopArrow({
+  shape,
   className = 'nav-arrow',
   isVisible = true,
   delay = 0,
   springTransform,
   curveOffset,
   effectsConfig,
-}: ArrowProps) => {
-  const config = effectsConfig ?? defaultArrowEffectsConfig;
-  const filterUrl = getArrowFilterUrl(config);
-
-  const pathStyle = {
-    strokeDashoffset: isVisible ? 0 : 1,
-    transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
-  };
-
-  // Arrowhead appears when line finishes drawing
-  const arrowheadDelay = delay + 500;
-
-  // End point and angle for arrowhead (last segment points right)
-  const endX = 76;
-  const endY = 25;
-  const arrowAngle = 0; // Points right
-
-  // Use curveOffset for smooth whole-path deformation via transform
-  const ox = curveOffset?.x ?? 0;
-  const oy = curveOffset?.y ?? 0;
-
-  // Build transform - combines spring transform with curve-based skew for organic bending
-  const svgTransform = springTransform || curveOffset
-    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.1}px, ${(springTransform?.translateY ?? 0) + oy * 0.1}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.2}deg) skewY(${oy * 0.25}deg)`
-    : undefined;
-
+}: ArrowProps & { shape: keyof typeof DFW_PATHS }) {
+  const sway =
+    springTransform || curveOffset
+      ? SWAYS[shape](springTransform, curveOffset?.x ?? 0, curveOffset?.y ?? 0)
+      : undefined;
   return (
-    <svg
+    <HandlineArt
       className={className}
       viewBox="0 0 70 50"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{
-        overflow: 'visible',
-        transform: svgTransform,
-        transformOrigin: 'left center',
-      }}
-    >
-      <path
-        d="M2 25
-           C 10 25, 14 15, 20 12
-           C 26 9, 30 18, 27 24
-           C 24 30, 18 27, 21 21
-           C 24 15, 34 12, 44 16
-           C 50 18, 55 25, 76 25"
-        stroke="white"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        pathLength={1}
-        strokeDasharray="1"
-        style={pathStyle}
-        fill="none"
-        opacity="0.95"
-        filter={filterUrl}
-      />
-      <AnimatedArrowhead
-        x={endX}
-        y={endY}
-        angle={arrowAngle}
-        isVisible={isVisible}
-        delay={arrowheadDelay}
-        style={config.arrowheadStyle}
-      />
-    </svg>
+      d={DFW_PATHS[shape]}
+      seed={`desktop-${shape}`}
+      color="white"
+      play={isVisible}
+      delay={delay}
+      style={{ transform: sway, transformOrigin: 'left center', opacity: 0.95 }}
+      {...arrowStyle(effectsConfig, 'desktop')}
+    />
   );
-};
+}
+
+// 1. LOOP ARROW (Top)
+export const LoopArrow = (props: ArrowProps) => <DesktopArrow shape="loop" {...props} />;
 
 // 2. SPIRAL ARROW (Middle)
-export const SpiralArrow = ({
-  className = 'nav-arrow',
-  isVisible = true,
-  delay = 0,
-  springTransform,
-  curveOffset,
-  effectsConfig,
-}: ArrowProps) => {
-  const config = effectsConfig ?? defaultArrowEffectsConfig;
-  const filterUrl = getArrowFilterUrl(config);
-
-  const pathStyle = {
-    strokeDashoffset: isVisible ? 0 : 1,
-    transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
-  };
-
-  const arrowheadDelay = delay + 500;
-  const endX = 76;
-  const endY = 25;
-  const arrowAngle = 0;
-
-  // Use curveOffset for smooth whole-path deformation via transform
-  const ox = curveOffset?.x ?? 0;
-  const oy = curveOffset?.y ?? 0;
-
-  // Build transform - spiral gets a different skew direction for variety
-  const svgTransform = springTransform || curveOffset
-    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.08}px, ${(springTransform?.translateY ?? 0) + oy * 0.12}px) rotate(${(springTransform?.rotate ?? 0) - ox * 0.17}deg) skewX(${ox * 0.2}deg)`
-    : undefined;
-
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 70 50"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{
-        overflow: 'visible',
-        transform: svgTransform,
-        transformOrigin: 'left center',
-      }}
-    >
-      <path
-        d="M5 25
-           C 12 35, 22 38, 30 32
-           C 38 26, 35 18, 28 18
-           C 21 18, 20 25, 26 28
-           C 32 31, 42 28, 50 25
-           C 55 24, 60 25, 76 25"
-        stroke="white"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        pathLength={1}
-        strokeDasharray="1"
-        style={pathStyle}
-        fill="none"
-        opacity="0.95"
-        filter={filterUrl}
-      />
-      <AnimatedArrowhead
-        x={endX}
-        y={endY}
-        angle={arrowAngle}
-        isVisible={isVisible}
-        delay={arrowheadDelay}
-        style={config.arrowheadStyle}
-      />
-    </svg>
-  );
-};
+export const SpiralArrow = (props: ArrowProps) => <DesktopArrow shape="spiral" {...props} />;
 
 // 3. WAVE ARROW (Bottom)
-export const WaveArrow = ({
-  className = 'nav-arrow',
-  isVisible = true,
-  delay = 0,
-  springTransform,
-  curveOffset,
-  effectsConfig,
-}: ArrowProps) => {
-  const config = effectsConfig ?? defaultArrowEffectsConfig;
-  const filterUrl = getArrowFilterUrl(config);
-
-  const pathStyle = {
-    strokeDashoffset: isVisible ? 0 : 1,
-    transition: `stroke-dashoffset 0.6s ease-out ${delay}ms`,
-  };
-
-  const arrowheadDelay = delay + 500;
-  const endX = 76;
-  const endY = 25;
-  const arrowAngle = 0;
-
-  // Use curveOffset for smooth whole-path deformation via transform
-  const ox = curveOffset?.x ?? 0;
-  const oy = curveOffset?.y ?? 0;
-
-  // Build transform - wave gets vertical skew for a bouncy wave effect
-  const svgTransform = springTransform || curveOffset
-    ? `translate(${(springTransform?.translateX ?? 0) + ox * 0.07}px, ${(springTransform?.translateY ?? 0) + oy * 0.14}px) rotate(${(springTransform?.rotate ?? 0) + ox * 0.14}deg) skewY(${-oy * 0.35}deg) scaleY(${1 + Math.abs(oy) * 0.007})`
-    : undefined;
-
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 70 50"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{
-        overflow: 'visible',
-        transform: svgTransform,
-        transformOrigin: 'left center',
-      }}
-    >
-      <path
-        d="M5 25
-           C 15 15, 25 35, 35 25
-           C 45 15, 55 25, 76 25"
-        stroke="white"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        pathLength={1}
-        strokeDasharray="1"
-        style={pathStyle}
-        fill="none"
-        opacity="0.95"
-        filter={filterUrl}
-      />
-      <AnimatedArrowhead
-        x={endX}
-        y={endY}
-        angle={arrowAngle}
-        isVisible={isVisible}
-        delay={arrowheadDelay}
-        style={config.arrowheadStyle}
-      />
-    </svg>
-  );
-};
+export const WaveArrow = (props: ArrowProps) => <DesktopArrow shape="wave" {...props} />;

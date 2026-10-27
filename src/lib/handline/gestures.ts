@@ -6,19 +6,30 @@
  * a loop keeps its size in pixels whether the arrow is 80 px or 800 px long.
  * fit.ts turns the frame to face the target.
  */
-import { clamp, cubicAt, flattenPath, measure, resample, type Pt } from './geom';
+import { clamp, cubicAt, flattenPath, measure, resample, sampleAt, type Pt } from './geom';
 import type { Rng } from './random';
+
+/**
+ * Waves, loops and springs are ornaments: they ride a baseline. By default
+ * that's the chord (bowed by `bow`); `along` rides an authored path instead,
+ * stretched start-to-end like a 'path' gesture — so a loop can sit on a
+ * hand-tuned curve rather than replace it. `flip` puts it on the other side.
+ */
+export interface Ornament {
+  along?: string;
+  flip?: boolean;
+}
 
 export type GestureSpec =
   | { kind: 'straight' }
   /** A plain bowed line. `bow` is the bulge as a fraction of the length. */
   | { kind: 'arc'; bow?: number }
-  | { kind: 'wave'; waves?: number; amp?: number; bow?: number }
+  | ({ kind: 'wave'; waves?: number; amp?: number; bow?: number } & Ornament)
   /** One loop-de-loop, its centre at `at` (0–1) along the line. */
-  | { kind: 'loop'; size?: number; at?: number; bow?: number }
-  | { kind: 'loops'; count?: number; size?: number; at?: number; bow?: number }
+  | ({ kind: 'loop'; size?: number; at?: number; bow?: number } & Ornament)
+  | ({ kind: 'loops'; count?: number; size?: number; at?: number; bow?: number } & Ornament)
   /** Small tight coils along most of the line, like a phone cord. */
-  | { kind: 'spring'; size?: number; bow?: number }
+  | ({ kind: 'spring'; size?: number; bow?: number } & Ornament)
   /** Overshoots the target and comes back into it from the side. */
   | { kind: 'hook'; bow?: number }
   /** An S. */
@@ -225,6 +236,24 @@ export function gesturePoints(
   opts: GestureOptions = {}
 ): Pt[] {
   const spec = resolveGesture(g);
+  const len = Math.max(L, 1);
+  const pts = shape(spec, len, r);
+  const orn = 'along' in spec || 'flip' in spec ? (spec as Ornament) : undefined;
+  if (orn?.flip) for (const p of pts) p.y = -p.y;
+  if (orn?.along) return ride(pts, len, authored(orn.along, len));
   const own = spec.kind === 'arc' ? (spec.bow ?? 0.16) : 'bow' in spec ? (spec.bow ?? 0) : 0;
-  return bend(shape(spec, Math.max(L, 1), r), Math.max(L, 1), own + (opts.bow ?? 0));
+  return bend(pts, len, own + (opts.bow ?? 0));
+}
+
+/**
+ * Lays an ornament built on a straight chord along another baseline: a point
+ * (x, y) lands at the baseline's point the same fraction along it, pushed y
+ * along its normal.
+ */
+function ride(pts: Pt[], L: number, baseline: Pt[]): Pt[] {
+  const m = measure(baseline);
+  return pts.map((p) => {
+    const b = sampleAt(m, (p.x / L) * m.length);
+    return { x: b.x - Math.sin(b.angle) * p.y, y: b.y + Math.cos(b.angle) * p.y };
+  });
 }

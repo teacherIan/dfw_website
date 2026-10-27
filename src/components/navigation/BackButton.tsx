@@ -2,6 +2,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import BlueprintButtonSVG from './BlueprintButtonSVG';
+import { HandlineArt } from '../../lib/handline';
 import './navigation.css';
 
 interface BackButtonProps {
@@ -27,48 +28,25 @@ const BackButton = ({ onClick }: BackButtonProps) => {
       <button
         type="button"
         onClick={onClick}
-        className={clsx(
-          'nav-button-circle',
-          'nav-button-circle--size-sm',
-          'pointer-events-auto'
-        )}
+        className={clsx('nav-button-circle', 'nav-button-circle--size-sm', 'pointer-events-auto')}
         aria-label="Go back to home"
       >
         <BlueprintButtonSVG />
       </button>
 
       {/* Arrow pointing to button - hidden on mobile */}
-      <svg
+      <HandlineArt
         className="hidden md:block"
         viewBox="0 0 50 30"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        style={{
-          width: '50px',
-          height: '30px',
-          overflow: 'visible',
-        }}
-      >
-        {/* Curved arrow line */}
-        <path
-          d="M48 15 C 35 15, 25 8, 15 10 C 8 12, 4 15, 2 15"
-          stroke="#333"
-          strokeWidth="1"
-          strokeLinecap="round"
-          fill="none"
-          opacity="0.8"
-        />
-        {/* Arrowhead pointing left */}
-        <path
-          d="M6 11 L2 15 L6 19"
-          stroke="#333"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-          opacity="0.8"
-        />
-      </svg>
+        d="M48 15 C 35 15, 25 8, 15 10 C 8 12, 4 15, 2 15"
+        seed="back-button"
+        color="#333"
+        pen={{ base: 'ink', width: 1.1, jitter: 0.1, taperIn: 0.4, taperOut: 0.75 }}
+        head={{ kind: 'chevron', size: 5.5, angle: 40 }}
+        delay={250}
+        timing={{ min: 380, max: 480 }}
+        style={{ width: '50px', height: '30px', opacity: 0.8 }}
+      />
 
       {/* Exit label - hidden on mobile */}
       <span

@@ -2,7 +2,7 @@ import { memo, useLayoutEffect, useRef, useState, type MutableRefObject, type Re
 import { useControls, folder } from 'leva';
 import { EthosArrow, ContactArrow, GalleryArrow } from './MobileArrows';
 import NavLabel from './NavLabel';
-import type { ArrowEffectsConfig } from './ArrowFilters';
+import type { ArrowEffectsConfig } from './arrowStyle';
 import { createFadeSlideStyle } from '../../utils/styles';
 import { MOBILE_NAV_DELAYS } from '../../constants/animation';
 import { useArrowUnravel } from '../../hooks';

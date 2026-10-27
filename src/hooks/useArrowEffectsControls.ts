@@ -1,5 +1,5 @@
 import { useControls, folder } from 'leva';
-import type { ArrowEffectsConfig } from '../components/navigation/ArrowFilters';
+import type { ArrowEffectsConfig } from '../components/navigation/arrowStyle';
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 

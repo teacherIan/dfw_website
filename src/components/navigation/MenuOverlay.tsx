@@ -7,7 +7,7 @@ import NavButtonLayer from './NavButtonLayer';
 import { ANIMATION_TIMING, navItems, fontOptions, fontFamilyMap } from '../../constants';
 import { NAV_TIMING } from '../../constants/navLayouts';
 import type { ArrowType, SceneId } from '../../constants';
-import type { ArrowEffectsConfig } from './ArrowFilters';
+import type { ArrowEffectsConfig } from './arrowStyle';
 import { useArrowUnravel } from '../../hooks';
 import { useAnimationStore, useIsContactOverlayOpen } from '../../stores/animationStore';
 

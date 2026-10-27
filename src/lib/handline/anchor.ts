@@ -20,6 +20,10 @@ export interface AnchorSpec {
    * border-radius, so a round button trims as a circle.
    */
   shape?: 'auto' | 'rect' | 'circle' | 'none';
+  /** A point target's coordinates: the layer's (default) or the viewport's. */
+  space?: 'layer' | 'viewport';
+  /** A point target trims as a circle this size, px — a button known only by its centre. */
+  radius?: number;
 }
 
 export type AnchorInput = AnchorTarget | AnchorSpec;
@@ -66,7 +70,12 @@ export function resolveAnchor(
   if (!el) {
     const t = spec.target as Pt;
     if (typeof t?.x !== 'number') return null;
-    return { point: { x: t.x + ox, y: t.y + oy } };
+    const vx = spec.space === 'viewport' ? origin.left : 0;
+    const vy = spec.space === 'viewport' ? origin.top : 0;
+    const point = { x: t.x - vx + ox, y: t.y - vy + oy };
+    return spec.radius
+      ? { point, shape: { kind: 'circle', cx: point.x, cy: point.y, r: spec.radius } }
+      : { point };
   }
   const b = el.getBoundingClientRect();
   if (b.width === 0 && b.height === 0) return null;

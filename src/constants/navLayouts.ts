@@ -176,6 +176,10 @@ export const mobileButtonCenter = (
   };
 };
 
+/** A mobile button's diameter, px, from the same spec its centre comes from. */
+export const mobileButtonSize = (id: NavButtonId, breakpoint: NavBreakpoint): number =>
+  mobileSpecs[breakpoint][id].size;
+
 /**
  * Signed px translate that parks a mobile button fully off its `side` edge.
  * Computed from the button's resting geometry so it clears the screen no

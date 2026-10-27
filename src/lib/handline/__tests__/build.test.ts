@@ -42,6 +42,18 @@ describe('gestures', () => {
     }
   });
 
+  it('a loop riding an authored curve still lands on the chord ends, and still loops', () => {
+    const along = 'M -46 18 Q -66 -100, 148 -85'; // the phone Ethos arrow's tuned bend
+    for (const flip of [false, true]) {
+      const p = gesturePoints({ kind: 'loop', size: 9, along, flip }, 160, rng('x'));
+      near(p[0].x, 0, 1e-6);
+      near(p[0].y, 0, 1e-6);
+      near(p[p.length - 1].x, 160, 1e-6);
+      near(p[p.length - 1].y, 0, 1e-6);
+      assert.ok(selfCrossings(p) >= 1, `flip ${flip}`);
+    }
+  });
+
   it('a loop keeps its size in px whatever the length', () => {
     const h = (L: number) => {
       const p = gesturePoints({ kind: 'loop', size: 12 }, L, rng('x'));

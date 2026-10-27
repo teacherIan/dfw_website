@@ -1,67 +1,103 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useLayoutEffect, useState } from 'react';
 import { useControls, folder } from 'leva';
-import { AnimatedArrowhead, AnimatedDot } from './ArrowComponents';
-import HashMarks from './HashMarks';
-import ScribeMarks from './ScribeMarks';
-import { getArrowFilterUrl, defaultArrowEffectsConfig } from './ArrowFilters';
-import type { ArrowEffectsConfig } from './ArrowFilters';
-import { useEthosArrowControls, useContactArrowControls, useGalleryArrowControls } from '../../hooks/useMobileArrowControls';
-import { mobileButtonCenter, type NavButtonId } from '../../constants/navLayouts';
+import { Handline, HandlineLayer, type GestureSpec } from '../../lib/handline';
+import { arrowStyle, type ArrowEffectsConfig } from './arrowStyle';
+import {
+  useEthosArrowControls,
+  useContactArrowControls,
+  useGalleryArrowControls,
+} from '../../hooks/useMobileArrowControls';
+import { mobileButtonCenter, mobileButtonSize, type NavButtonId } from '../../constants/navLayouts';
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
 
 // Arrow targeting controls for end point (button center)
 const useArrowEndControls = (controlsStore?: LevaStore) => {
-  return useControls({
-    '🎯 Arrow Targeting': folder({
-      'End Point': folder({
-        endYOffset: { value: 0, min: -50, max: 50, step: 1, label: 'Y Offset (px)' },
-      }, { collapsed: true }),
-    }, { collapsed: false }),
-  }, { store: controlsStore });
+  return useControls(
+    {
+      '🎯 Arrow Targeting': folder(
+        {
+          'End Point': folder(
+            {
+              endYOffset: { value: 0, min: -50, max: 50, step: 1, label: 'Y Offset (px)' },
+            },
+            { collapsed: true }
+          ),
+        },
+        { collapsed: false }
+      ),
+    },
+    { store: controlsStore }
+  );
 };
 
 // Arrow start controls for Ethos (bottom-right of label)
 const useEthosStartControls = (controlsStore?: LevaStore) => {
-  return useControls({
-    '🎯 Arrow Targeting': folder({
-      'Ethos Start': folder({
-        ethosStartX: { value: 0.4, min: 0, max: 1, step: 0.1, label: 'Anchor X (0-1)' },
-        ethosStartY: { value: 1.0, min: 0, max: 1, step: 0.1, label: 'Anchor Y (0-1)' },
-        ethosOffsetX: { value: 16, min: -50, max: 50, step: 1, label: 'Offset X (px)' },
-        ethosOffsetY: { value: 11, min: -50, max: 50, step: 1, label: 'Offset Y (px)' },
-      }, { collapsed: true }),
-    }, { collapsed: false }),
-  }, { store: controlsStore });
+  return useControls(
+    {
+      '🎯 Arrow Targeting': folder(
+        {
+          'Ethos Start': folder(
+            {
+              ethosStartX: { value: 0.4, min: 0, max: 1, step: 0.1, label: 'Anchor X (0-1)' },
+              ethosStartY: { value: 1.0, min: 0, max: 1, step: 0.1, label: 'Anchor Y (0-1)' },
+              ethosOffsetX: { value: 16, min: -50, max: 50, step: 1, label: 'Offset X (px)' },
+              ethosOffsetY: { value: 11, min: -50, max: 50, step: 1, label: 'Offset Y (px)' },
+            },
+            { collapsed: true }
+          ),
+        },
+        { collapsed: false }
+      ),
+    },
+    { store: controlsStore }
+  );
 };
 
 // Arrow start controls for Contact (bottom of label)
 const useContactStartControls = (controlsStore?: LevaStore) => {
-  return useControls({
-    '🎯 Arrow Targeting': folder({
-      'Contact Start': folder({
-        contactStartX: { value: 0.5, min: 0, max: 1, step: 0.1, label: 'Anchor X (0-1)' },
-        contactStartY: { value: 1, min: 0, max: 1, step: 0.1, label: 'Anchor Y (0-1)' },
-        contactOffsetX: { value: 0, min: -50, max: 50, step: 1, label: 'Offset X (px)' },
-        contactOffsetY: { value: 6, min: -50, max: 50, step: 1, label: 'Offset Y (px)' },
-      }, { collapsed: true }),
-    }, { collapsed: false }),
-  }, { store: controlsStore });
+  return useControls(
+    {
+      '🎯 Arrow Targeting': folder(
+        {
+          'Contact Start': folder(
+            {
+              contactStartX: { value: 0.5, min: 0, max: 1, step: 0.1, label: 'Anchor X (0-1)' },
+              contactStartY: { value: 1, min: 0, max: 1, step: 0.1, label: 'Anchor Y (0-1)' },
+              contactOffsetX: { value: 0, min: -50, max: 50, step: 1, label: 'Offset X (px)' },
+              contactOffsetY: { value: 6, min: -50, max: 50, step: 1, label: 'Offset Y (px)' },
+            },
+            { collapsed: true }
+          ),
+        },
+        { collapsed: false }
+      ),
+    },
+    { store: controlsStore }
+  );
 };
 
 // Arrow start controls for Gallery (left side of label)
 const useGalleryStartControls = (controlsStore?: LevaStore) => {
-  return useControls({
-    '🎯 Arrow Targeting': folder({
-      'Gallery Start': folder({
-        galleryStartX: { value: 0, min: 0, max: 1, step: 0.1, label: 'Anchor X (0-1)' },
-        galleryStartY: { value: 0.5, min: 0, max: 1, step: 0.1, label: 'Anchor Y (0-1)' },
-        galleryOffsetX: { value: -6, min: -50, max: 50, step: 1, label: 'Offset X (px)' },
-        galleryOffsetY: { value: 0, min: -50, max: 50, step: 1, label: 'Offset Y (px)' },
-      }, { collapsed: true }),
-    }, { collapsed: false }),
-  }, { store: controlsStore });
+  return useControls(
+    {
+      '🎯 Arrow Targeting': folder(
+        {
+          'Gallery Start': folder(
+            {
+              galleryStartX: { value: 0, min: 0, max: 1, step: 0.1, label: 'Anchor X (0-1)' },
+              galleryStartY: { value: 0.5, min: 0, max: 1, step: 0.1, label: 'Anchor Y (0-1)' },
+              galleryOffsetX: { value: -6, min: -50, max: 50, step: 1, label: 'Offset X (px)' },
+              galleryOffsetY: { value: 0, min: -50, max: 50, step: 1, label: 'Offset Y (px)' },
+            },
+            { collapsed: true }
+          ),
+        },
+        { collapsed: false }
+      ),
+    },
+    { store: controlsStore }
+  );
 };
 
 interface ViewportSize {
@@ -73,7 +109,8 @@ const useViewportSize = (): ViewportSize => {
   // Initialize with actual viewport size to avoid 0x0 on first render
   const [size, setSize] = useState<ViewportSize>(() => ({
     width: typeof window !== 'undefined' ? (window.visualViewport?.width ?? window.innerWidth) : 0,
-    height: typeof window !== 'undefined' ? (window.visualViewport?.height ?? window.innerHeight) : 0,
+    height:
+      typeof window !== 'undefined' ? (window.visualViewport?.height ?? window.innerHeight) : 0,
   }));
 
   useLayoutEffect(() => {
@@ -81,7 +118,9 @@ const useViewportSize = (): ViewportSize => {
       const viewport = window.visualViewport;
       const width = viewport?.width ?? window.innerWidth;
       const height = viewport?.height ?? window.innerHeight;
-      setSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+      setSize((prev) =>
+        prev.width === width && prev.height === height ? prev : { width, height }
+      );
     };
 
     update();
@@ -106,148 +145,6 @@ const useViewportSize = (): ViewportSize => {
   return size;
 };
 
-/**
- * Forces a re-render every frame for a short window after `active` turns true.
- *
- * The arrow's start point is measured from the label's live rect. The label
- * slides in via a CSS transition, which fires no resize/scroll/ResizeObserver
- * event — the things `useElementPoint` listens for — so without this the start
- * point wouldn't follow the slide and would snap to the settled position
- * whenever an unrelated re-render next occurred. Ticking through the entrance
- * keeps the start point glued to the label as it slides.
- */
-const useEntranceTracking = (active: boolean, durationMs = 1500) => {
-  const [, force] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    let raf = 0;
-    const stopAt = performance.now() + durationMs;
-    const tick = () => {
-      force((n) => (n + 1) % 1_000_000);
-      if (performance.now() < stopAt) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [active, durationMs]);
-};
-
-interface AnchorPoint {
-  x: number;
-  y: number;
-  offsetX?: number;
-  offsetY?: number;
-}
-
-const useElementPoint = (
-  element: HTMLElement | null | undefined,
-  anchor: AnchorPoint,
-  originElement?: HTMLElement | null
-): { x: number; y: number } | null => {
-  // Force re-render on viewport changes
-  const [, setTick] = useState(0);
-
-  useLayoutEffect(() => {
-    const update = () => setTick((t) => t + 1);
-
-    update();
-    const frame = requestAnimationFrame(update);
-
-    window.addEventListener('resize', update);
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('orientationchange', update);
-
-    const viewport = window.visualViewport;
-    viewport?.addEventListener('resize', update);
-    viewport?.addEventListener('scroll', update);
-
-    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
-    if (element) resizeObserver?.observe(element);
-    if (originElement) resizeObserver?.observe(originElement);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener('resize', update);
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('orientationchange', update);
-      viewport?.removeEventListener('resize', update);
-      viewport?.removeEventListener('scroll', update);
-      resizeObserver?.disconnect();
-    };
-  }, [element, originElement, anchor.x, anchor.y, anchor.offsetX, anchor.offsetY]);
-
-  // Compute point directly during render - responds immediately to anchor changes
-  if (!element) return null;
-
-  const rect = element.getBoundingClientRect();
-  if (rect.width === 0 && rect.height === 0) return null;
-
-  let x = rect.left + rect.width * anchor.x + (anchor.offsetX ?? 0);
-  let y = rect.top + rect.height * anchor.y + (anchor.offsetY ?? 0);
-
-  if (originElement) {
-    const originRect = originElement.getBoundingClientRect();
-    x -= originRect.left;
-    y -= originRect.top;
-  }
-
-  return { x, y };
-};
-
-const useElementRect = (element: HTMLElement | null | undefined) => {
-  const [rect, setRect] = useState<{ width: number; height: number } | null>(null);
-
-  useLayoutEffect(() => {
-    if (!element) {
-      return;
-    }
-
-    const update = () => {
-      if (!element) {
-        return;
-      }
-      const bounds = element.getBoundingClientRect();
-      setRect((prev) => {
-        if (prev && prev.width === bounds.width && prev.height === bounds.height) {
-          return prev;
-        }
-        return { width: bounds.width, height: bounds.height };
-      });
-    };
-
-    update();
-    const frame = requestAnimationFrame(update);
-
-    window.addEventListener('resize', update);
-    window.addEventListener('orientationchange', update);
-    const viewport = window.visualViewport;
-    viewport?.addEventListener('resize', update);
-    viewport?.addEventListener('scroll', update);
-
-    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
-    resizeObserver?.observe(element);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener('resize', update);
-      window.removeEventListener('orientationchange', update);
-      viewport?.removeEventListener('resize', update);
-      viewport?.removeEventListener('scroll', update);
-      resizeObserver?.disconnect();
-    };
-  }, [element]);
-
-  return rect;
-};
-
-interface SpringTransform {
-  rotate: number;
-  skewX: number;
-  skewY: number;
-  translateX: number;
-  translateY: number;
-  scale: number;
-}
-
 interface CurveOffset {
   x: number;
   y: number;
@@ -256,27 +153,18 @@ interface CurveOffset {
 interface ArrowProps {
   isVisible: boolean;
   delay?: number;
-  unravelOffset?: number;
-  springTransform?: SpringTransform;
+  /** Accepted for the layout's call sites; the arrows sway by `curveOffset`. */
+  springTransform?: unknown;
   curveOffset?: CurveOffset;
   controlsStore?: LevaStore;
-  // Label element — the arrow start still measures the local label (its size
-  // is text-dependent). The endpoint is config-derived (see computeButtonEndpoint).
+  // Label element — the arrow starts at a point on the label (its size is
+  // text-dependent). The end is config-derived: the button's centre from
+  // navLayouts, trimmed to the button's edge.
   labelElement?: HTMLElement | null;
+  /** No longer needed: the arrow's layer measures itself. */
   containerElement?: HTMLElement | null;
-  // Woodworker-style effects configuration
   effectsConfig?: ArrowEffectsConfig;
 }
-
-/**
- * Calculate arrowhead angle from the last control point to the endpoint
- * For cubic bezier, use the second control point of the last C command
- */
-const getArrowAngle = (lastControlX: number, lastControlY: number, endX: number, endY: number): number => {
-  const dx = endX - lastControlX;
-  const dy = endY - lastControlY;
-  return Math.atan2(dy, dx) * (180 / Math.PI);
-};
 
 type BreakpointKey = 'small' | 'mid' | 'tablet' | 'ipadPro';
 
@@ -288,32 +176,6 @@ const getBreakpoint = (width: number): BreakpointKey => {
   return 'ipadPro';
 };
 
-/**
- * Arrow endpoint = the button's centre, derived from the navLayouts config.
- * The button is now rendered by NavButtonLayer (a different component tree),
- * so the arrow no longer measures a button DOM element — it computes the same
- * position the button uses. The result is made container-relative to match
- * the arrow's SVG coordinate space.
- */
-const computeButtonEndpoint = (
-  id: NavButtonId,
-  breakpoint: BreakpointKey,
-  viewport: ViewportSize,
-  containerElement: HTMLElement | null | undefined,
-  yOffset: number,
-): { x: number; y: number } | null => {
-  if (viewport.width <= 0 || viewport.height <= 0) return null;
-  const center = mobileButtonCenter(id, breakpoint, viewport);
-  let x = center.x;
-  let y = center.y + yOffset;
-  if (containerElement) {
-    const origin = containerElement.getBoundingClientRect();
-    x -= origin.left;
-    y -= origin.top;
-  }
-  return { x, y };
-};
-
 interface ArrowTemplate {
   startX: number;
   startY: number;
@@ -321,351 +183,132 @@ interface ArrowTemplate {
   ctrlY: number;
   endX: number;
   endY: number;
-  angleOffset: number;
 }
 
-interface MappedPath {
-  d: string;
-  start: { x: number; y: number };
-  ctrl: { x: number; y: number };
-  end: { x: number; y: number };
-  angleOffset: number;
-}
-
-const buildMappedPath = (
-  template: ArrowTemplate,
-  start: { x: number; y: number },
-  end: { x: number; y: number },
-  curveOffset?: CurveOffset
-): MappedPath => {
-  const templateStart = { x: template.startX, y: template.startY };
-  const templateEnd = { x: template.endX, y: template.endY };
-  const templateCtrl = { x: template.ctrlX, y: template.ctrlY };
-
-  const v0x = templateEnd.x - templateStart.x;
-  const v0y = templateEnd.y - templateStart.y;
-  const v1x = end.x - start.x;
-  const v1y = end.y - start.y;
-  const len0 = Math.hypot(v0x, v0y) || 1;
-  const len1 = Math.hypot(v1x, v1y) || 1;
-  const scale = len1 / len0;
-  const angle0 = Math.atan2(v0y, v0x);
-  const angle1 = Math.atan2(v1y, v1x);
-  const rotation = angle1 - angle0;
-  const cos = Math.cos(rotation);
-  const sin = Math.sin(rotation);
-
-  const applyTransform = (point: { x: number; y: number }) => {
-    const dx = (point.x - templateStart.x) * scale;
-    const dy = (point.y - templateStart.y) * scale;
-    return {
-      x: start.x + dx * cos - dy * sin,
-      y: start.y + dx * sin + dy * cos,
-    };
-  };
-
-  const ctrl = applyTransform(templateCtrl);
-  if (curveOffset) {
-    ctrl.x += curveOffset.x * scale;
-    ctrl.y += curveOffset.y * scale;
-  }
-
-  return {
-    d: `M ${start.x} ${start.y} Q ${ctrl.x} ${ctrl.y}, ${end.x} ${end.y}`,
-    start,
-    ctrl,
-    end,
-    angleOffset: template.angleOffset,
-  };
+/**
+ * Each phone arrow keeps its tuned bend (the Leva template, stretched from the
+ * label to the button) and carries the ornament of its desktop twin on it:
+ * Gallery a loop, Ethos a double curl, Contact a wave.
+ */
+const ORNAMENTS: Record<NavButtonId, (along: string) => GestureSpec> = {
+  gallery: (along) => ({ kind: 'loop', size: 10, at: 0.4, along }),
+  ethos: (along) => ({ kind: 'loops', count: 2, size: 7, at: 0.45, along, flip: true }),
+  contact: (along) => ({ kind: 'wave', waves: 2, amp: 5, along }),
 };
+
+interface MobileArrowProps extends ArrowProps {
+  id: NavButtonId;
+  template: ArrowTemplate;
+  start: { x: number; y: number; ox: number; oy: number };
+}
+
+function MobileArrow({
+  id,
+  template: t,
+  start,
+  isVisible,
+  delay = 0,
+  curveOffset,
+  controlsStore,
+  labelElement,
+  effectsConfig,
+}: MobileArrowProps) {
+  const { endYOffset } = useArrowEndControls(controlsStore);
+  const viewport = useViewportSize();
+  const breakpoint = getBreakpoint(viewport.width);
+  const ready = !!labelElement && viewport.width > 0 && viewport.height > 0;
+  const center = ready ? mobileButtonCenter(id, breakpoint, viewport) : null;
+
+  return (
+    <HandlineLayer
+      className={`nav-mobile-${id}-arrow`}
+      style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))' }}
+    >
+      {center && labelElement && (
+        <Handline
+          from={{ target: labelElement, at: [start.x, start.y], offset: [start.ox, start.oy] }}
+          to={{
+            target: { x: center.x, y: center.y + endYOffset },
+            space: 'viewport',
+            radius: mobileButtonSize(id, breakpoint) / 2,
+          }}
+          gesture={ORNAMENTS[id](
+            `M ${t.startX} ${t.startY} Q ${t.ctrlX} ${t.ctrlY}, ${t.endX} ${t.endY}`
+          )}
+          side={1}
+          gap={5}
+          tail="dot"
+          color="white"
+          seed={`mobile-${id}`}
+          play={isVisible}
+          delay={delay}
+          // The label slides in by CSS transition, which fires no event.
+          follow={1500}
+          // Sways with the scene drag: a push on the line's middle, ends fixed.
+          nudge={curveOffset ? { x: curveOffset.x * 0.6, y: curveOffset.y * 0.6 } : undefined}
+          {...arrowStyle(effectsConfig, 'mobile')}
+        />
+      )}
+    </HandlineLayer>
+  );
+}
 
 // =============================================================================
 // ETHOS ARROW - Left side, loops up-left toward button
-// ViewBox: 120×160, starts near label (bottom-right), ends pointing at button (upper-left)
 // =============================================================================
-export const EthosArrow = ({ isVisible, delay = 300, curveOffset, controlsStore, labelElement, containerElement, effectsConfig }: ArrowProps) => {
-  useEntranceTracking(isVisible);
-  const controls = useEthosArrowControls(controlsStore);
-  const { endYOffset } = useArrowEndControls(controlsStore);
-  const { ethosStartX, ethosStartY, ethosOffsetX, ethosOffsetY } = useEthosStartControls(controlsStore);
+export const EthosArrow = (props: ArrowProps) => {
+  const controls = useEthosArrowControls(props.controlsStore);
+  const { ethosStartX, ethosStartY, ethosOffsetX, ethosOffsetY } = useEthosStartControls(
+    props.controlsStore
+  );
   const viewport = useViewportSize();
-  const containerRect = useElementRect(containerElement);
-  const breakpoint = getBreakpoint(viewport.width);
-  const template = controls[breakpoint] as ArrowTemplate;
-
-  const startPoint = useElementPoint(labelElement, { x: ethosStartX, y: ethosStartY, offsetX: ethosOffsetX, offsetY: ethosOffsetY }, containerElement);
-  const endPoint = computeButtonEndpoint('ethos', breakpoint, viewport, containerElement, endYOffset);
-  // IMPORTANT: Use || not ?? here. Container may have height=0 before layout completes.
-  // ?? only falls back on null/undefined, but || also falls back on 0.
-  const width = containerRect?.width || viewport.width;
-  const height = containerRect?.height || viewport.height;
-
-  // Gate on isVisible too: the endpoint is now config-derived (always
-  // available), so without this the arrow's SVG — and its start dot — would
-  // render before the nav entrance has begun.
-  const ready = !!(isVisible && startPoint && endPoint && width > 0 && height > 0);
-
-  if (!ready) {
-    return <svg className="nav-mobile-ethos-arrow" style={{ opacity: 0, transition: 'opacity 0.15s ease' }} width={width || 1} height={height || 1} />;
-  }
-
-  const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
-  const pathDelaySeconds = delay / 1000;
-  const dotDelay = delay;
-  const arrowheadDelay = delay + 500;
-  const config = effectsConfig ?? defaultArrowEffectsConfig;
-  const filterUrl = getArrowFilterUrl(config);
-
   return (
-    <svg
-      className="nav-mobile-ethos-arrow"
-      style={{ opacity: 1, transition: 'opacity 0.15s ease' }}
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      fill="none"
-    >
-      <motion.path
-        d={pathData.d}
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        filter={filterUrl}
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: isVisible ? 1 : 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
-      />
-      {/* Hash marks - small perpendicular lines */}
-      {config.enabled && config.hashEnabled && (
-        <HashMarks
-          pathData={pathData.d}
-          density={config.hashDensity}
-          length={config.hashLength}
-          spacing={config.hashSpacing}
-          opacity={config.hashOpacity}
-          isVisible={isVisible}
-          delay={delay + 200}
-          seed={42}
-        />
-      )}
-      {/* Scribe marks - thin parallel lines */}
-      {config.enabled && config.scribeEnabled && (
-        <ScribeMarks
-          pathData={pathData.d}
-          offset={config.scribeOffset}
-          strokeWidth={config.scribeWidth}
-          dashPattern={config.scribeDash}
-          opacity={config.scribeOpacity}
-          isVisible={isVisible}
-          delay={delay + 100}
-        />
-      )}
-      <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
-      <AnimatedArrowhead
-        size="mobile"
-        x={pathData.end.x}
-        y={pathData.end.y}
-        angle={getArrowAngle(pathData.ctrl.x, pathData.ctrl.y, pathData.end.x, pathData.end.y) + pathData.angleOffset}
-        isVisible={isVisible}
-        delay={arrowheadDelay}
-        style={config.arrowheadStyle}
-      />
-    </svg>
+    <MobileArrow
+      id="ethos"
+      template={controls[getBreakpoint(viewport.width)] as ArrowTemplate}
+      start={{ x: ethosStartX, y: ethosStartY, ox: ethosOffsetX, oy: ethosOffsetY }}
+      delay={300}
+      {...props}
+    />
   );
 };
 
 // =============================================================================
-// CONTACT ARROW - Center, spirals down toward button below
-// ViewBox: 80×120, starts near top (label area), ends pointing down at button
+// CONTACT ARROW - Center, curves down toward button below
 // =============================================================================
-export const ContactArrow = ({ isVisible, delay = 400, curveOffset, controlsStore, labelElement, containerElement, effectsConfig }: ArrowProps) => {
-  useEntranceTracking(isVisible);
-  const controls = useContactArrowControls(controlsStore);
-  const { endYOffset } = useArrowEndControls(controlsStore);
-  const { contactStartX, contactStartY, contactOffsetX, contactOffsetY } = useContactStartControls(controlsStore);
+export const ContactArrow = (props: ArrowProps) => {
+  const controls = useContactArrowControls(props.controlsStore);
+  const { contactStartX, contactStartY, contactOffsetX, contactOffsetY } = useContactStartControls(
+    props.controlsStore
+  );
   const viewport = useViewportSize();
-  const containerRect = useElementRect(containerElement);
-  const breakpoint = getBreakpoint(viewport.width);
-  const template = controls[breakpoint] as ArrowTemplate;
-
-  const startPoint = useElementPoint(labelElement, { x: contactStartX, y: contactStartY, offsetX: contactOffsetX, offsetY: contactOffsetY }, containerElement);
-  const endPoint = computeButtonEndpoint('contact', breakpoint, viewport, containerElement, endYOffset);
-  // IMPORTANT: Use || not ?? here. Container may have height=0 before layout completes.
-  // ?? only falls back on null/undefined, but || also falls back on 0.
-  const width = containerRect?.width || viewport.width;
-  const height = containerRect?.height || viewport.height;
-
-  // Gate on isVisible too: the endpoint is now config-derived (always
-  // available), so without this the arrow's SVG — and its start dot — would
-  // render before the nav entrance has begun.
-  const ready = !!(isVisible && startPoint && endPoint && width > 0 && height > 0);
-
-  if (!ready) {
-    return <svg className="nav-mobile-contact-arrow" style={{ opacity: 0, transition: 'opacity 0.15s ease' }} width={width || 1} height={height || 1} />;
-  }
-
-  const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
-  const pathDelaySeconds = delay / 1000;
-  const dotDelay = delay;
-  const arrowheadDelay = delay + 500;
-  const config = effectsConfig ?? defaultArrowEffectsConfig;
-  const filterUrl = getArrowFilterUrl(config);
-
   return (
-    <svg
-      className="nav-mobile-contact-arrow"
-      style={{ opacity: 1, transition: 'opacity 0.15s ease' }}
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      fill="none"
-    >
-      <motion.path
-        d={pathData.d}
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        filter={filterUrl}
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: isVisible ? 1 : 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
-      />
-      {/* Hash marks - small perpendicular lines */}
-      {config.enabled && config.hashEnabled && (
-        <HashMarks
-          pathData={pathData.d}
-          density={config.hashDensity}
-          length={config.hashLength}
-          spacing={config.hashSpacing}
-          opacity={config.hashOpacity}
-          isVisible={isVisible}
-          delay={delay + 200}
-          seed={84}
-        />
-      )}
-      {/* Scribe marks - thin parallel lines */}
-      {config.enabled && config.scribeEnabled && (
-        <ScribeMarks
-          pathData={pathData.d}
-          offset={config.scribeOffset}
-          strokeWidth={config.scribeWidth}
-          dashPattern={config.scribeDash}
-          opacity={config.scribeOpacity}
-          isVisible={isVisible}
-          delay={delay + 100}
-        />
-      )}
-      <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
-      <AnimatedArrowhead
-        size="mobile"
-        x={pathData.end.x}
-        y={pathData.end.y}
-        angle={getArrowAngle(pathData.ctrl.x, pathData.ctrl.y, pathData.end.x, pathData.end.y) + pathData.angleOffset}
-        isVisible={isVisible}
-        delay={arrowheadDelay}
-        style={config.arrowheadStyle}
-      />
-    </svg>
+    <MobileArrow
+      id="contact"
+      template={controls[getBreakpoint(viewport.width)] as ArrowTemplate}
+      start={{ x: contactStartX, y: contactStartY, ox: contactOffsetX, oy: contactOffsetY }}
+      delay={400}
+      {...props}
+    />
   );
 };
 
 // =============================================================================
-// GALLERY ARROW - Right side, waves right toward button
-// ViewBox: 180×110, starts left, loops/waves, ends pointing right at button
+// GALLERY ARROW - Right side, sweeps right toward button
 // =============================================================================
-export const GalleryArrow = ({ isVisible, delay = 500, curveOffset, controlsStore, labelElement, containerElement, effectsConfig }: ArrowProps) => {
-  useEntranceTracking(isVisible);
-  const controls = useGalleryArrowControls(controlsStore);
-  const { endYOffset } = useArrowEndControls(controlsStore);
-  const { galleryStartX, galleryStartY, galleryOffsetX, galleryOffsetY } = useGalleryStartControls(controlsStore);
+export const GalleryArrow = (props: ArrowProps) => {
+  const controls = useGalleryArrowControls(props.controlsStore);
+  const { galleryStartX, galleryStartY, galleryOffsetX, galleryOffsetY } = useGalleryStartControls(
+    props.controlsStore
+  );
   const viewport = useViewportSize();
-  const containerRect = useElementRect(containerElement);
-  const breakpoint = getBreakpoint(viewport.width);
-  const template = controls[breakpoint] as ArrowTemplate;
-
-  const startPoint = useElementPoint(labelElement, { x: galleryStartX, y: galleryStartY, offsetX: galleryOffsetX, offsetY: galleryOffsetY }, containerElement);
-  const endPoint = computeButtonEndpoint('gallery', breakpoint, viewport, containerElement, endYOffset);
-  // IMPORTANT: Use || not ?? here. Container may have height=0 before layout completes.
-  // ?? only falls back on null/undefined, but || also falls back on 0.
-  const width = containerRect?.width || viewport.width;
-  const height = containerRect?.height || viewport.height;
-
-  // Gate on isVisible too: the endpoint is now config-derived (always
-  // available), so without this the arrow's SVG — and its start dot — would
-  // render before the nav entrance has begun.
-  const ready = !!(isVisible && startPoint && endPoint && width > 0 && height > 0);
-
-  if (!ready) {
-    return <svg className="nav-mobile-gallery-arrow" style={{ opacity: 0, transition: 'opacity 0.15s ease' }} width={width || 1} height={height || 1} />;
-  }
-
-  const pathData = buildMappedPath(template, startPoint, endPoint, curveOffset);
-  const pathDelaySeconds = delay / 1000;
-  const dotDelay = delay;
-  const arrowheadDelay = delay + 500;
-  const config = effectsConfig ?? defaultArrowEffectsConfig;
-  const filterUrl = getArrowFilterUrl(config);
-
   return (
-    <svg
-      className="nav-mobile-gallery-arrow"
-      style={{ opacity: 1, transition: 'opacity 0.15s ease' }}
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      fill="none"
-    >
-      <motion.path
-        d={pathData.d}
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        filter={filterUrl}
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: isVisible ? 1 : 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut', delay: pathDelaySeconds }}
-      />
-      {/* Hash marks - small perpendicular lines */}
-      {config.enabled && config.hashEnabled && (
-        <HashMarks
-          pathData={pathData.d}
-          density={config.hashDensity}
-          length={config.hashLength}
-          spacing={config.hashSpacing}
-          opacity={config.hashOpacity}
-          isVisible={isVisible}
-          delay={delay + 200}
-          seed={126}
-        />
-      )}
-      {/* Scribe marks - thin parallel lines */}
-      {config.enabled && config.scribeEnabled && (
-        <ScribeMarks
-          pathData={pathData.d}
-          offset={config.scribeOffset}
-          strokeWidth={config.scribeWidth}
-          dashPattern={config.scribeDash}
-          opacity={config.scribeOpacity}
-          isVisible={isVisible}
-          delay={delay + 100}
-        />
-      )}
-      <AnimatedDot x={pathData.start.x} y={pathData.start.y} isVisible={isVisible} delay={dotDelay} />
-      <AnimatedArrowhead
-        size="mobile"
-        x={pathData.end.x}
-        y={pathData.end.y}
-        angle={getArrowAngle(pathData.ctrl.x, pathData.ctrl.y, pathData.end.x, pathData.end.y) + pathData.angleOffset}
-        isVisible={isVisible}
-        delay={arrowheadDelay}
-        style={config.arrowheadStyle}
-      />
-    </svg>
+    <MobileArrow
+      id="gallery"
+      template={controls[getBreakpoint(viewport.width)] as ArrowTemplate}
+      start={{ x: galleryStartX, y: galleryStartY, ox: galleryOffsetX, oy: galleryOffsetY }}
+      delay={500}
+      {...props}
+    />
   );
 };
