@@ -16,8 +16,10 @@ export interface AnchorSpec {
   /** px added after `at`. */
   offset?: [number, number];
   /**
-   * What a centre anchor is trimmed to. 'auto' reads the element's
-   * border-radius, so a round button trims as a circle.
+   * What the anchor trims to. 'auto' reads the element's border-radius, so a
+   * round button trims as a circle. Default: 'auto' for a centre anchor,
+   * 'none' with `at` — set it with `at` to aim off-centre and still stop at
+   * (or `land` inside) the element.
    */
   shape?: 'auto' | 'rect' | 'circle' | 'none';
   /** A point target's coordinates: the layer's (default) or the viewport's. */
@@ -43,6 +45,12 @@ function elementOf(t: AnchorTarget): Element | null {
   return null;
 }
 
+/** A ref whose element isn't attached yet: nothing will say when it is. */
+export function anchorMissing(a: AnchorInput): boolean {
+  const t = isSpec(a) ? a.target : a;
+  return typeof t === 'object' && t !== null && 'current' in t && !t.current;
+}
+
 /** The element an anchor follows, if any — for observing its size. */
 export function anchorElement(a: AnchorInput): Element | null {
   return elementOf(isSpec(a) ? a.target : a);
@@ -60,38 +68,47 @@ function radiusOf(el: Element, w: number, h: number): number {
   return raw.endsWith('%') ? (v / 100) * Math.min(w, h) : v;
 }
 
-export function resolveAnchor(
-  a: AnchorInput,
-  origin: { left: number; top: number }
-): Resolved | null {
+/**
+ * The layer's box on screen, and its scale: on-screen px per layer px. The
+ * scale is 1 unless an ancestor is zoomed or transformed (CSS `zoom`,
+ * `transform: scale()`); screen measurements are divided by it, so lines land
+ * where they should inside a scaled container.
+ */
+export interface Origin {
+  left: number;
+  top: number;
+  scale?: number;
+}
+
+export function resolveAnchor(a: AnchorInput, origin: Origin): Resolved | null {
+  const k = origin.scale || 1;
   const spec: AnchorSpec = isSpec(a) ? a : { target: a };
   const el = elementOf(spec.target);
   const [ox, oy] = spec.offset ?? [0, 0];
   if (!el) {
     const t = spec.target as Pt;
     if (typeof t?.x !== 'number') return null;
-    const vx = spec.space === 'viewport' ? origin.left : 0;
-    const vy = spec.space === 'viewport' ? origin.top : 0;
-    const point = { x: t.x - vx + ox, y: t.y - vy + oy };
+    // Viewport points are screen px; layer points are already layer px.
+    const point =
+      spec.space === 'viewport'
+        ? { x: (t.x - origin.left) / k + ox, y: (t.y - origin.top) / k + oy }
+        : { x: t.x + ox, y: t.y + oy };
     return spec.radius
       ? { point, shape: { kind: 'circle', cx: point.x, cy: point.y, r: spec.radius } }
       : { point };
   }
   const b = el.getBoundingClientRect();
   if (b.width === 0 && b.height === 0) return null;
-  const rect = { x: b.left - origin.left, y: b.top - origin.top, w: b.width, h: b.height };
-  if (spec.at) {
-    return {
-      point: { x: rect.x + rect.w * spec.at[0] + ox, y: rect.y + rect.h * spec.at[1] + oy },
-      rect,
-      shape:
-        spec.shape && spec.shape !== 'auto' && spec.shape !== 'none'
-          ? shapeFor(spec.shape, rect, 0)
-          : undefined,
-    };
-  }
-  const point = { x: rect.x + rect.w / 2 + ox, y: rect.y + rect.h / 2 + oy };
-  const kind = spec.shape ?? 'auto';
+  const rect = {
+    x: (b.left - origin.left) / k,
+    y: (b.top - origin.top) / k,
+    w: b.width / k,
+    h: b.height / k,
+  };
+  const point = spec.at
+    ? { x: rect.x + rect.w * spec.at[0] + ox, y: rect.y + rect.h * spec.at[1] + oy }
+    : { x: rect.x + rect.w / 2 + ox, y: rect.y + rect.h / 2 + oy };
+  const kind = spec.shape ?? (spec.at ? 'none' : 'auto');
   if (kind === 'none') return { point, rect };
   const r = radiusOf(el, rect.w, rect.h);
   // A full radius on a square box is a circle; on anything else (a pill, an

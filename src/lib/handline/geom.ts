@@ -402,6 +402,17 @@ export function trimEnd(pts: Pt[], shape: Shape, gap = 0): Pt[] {
   return [...pts.slice(0, j + 1), boundary(pts[j], pts[j + 1], shape, gap)];
 }
 
+/** The line up to arc length `s` (the whole line if s ≥ its length). */
+export function cutAt(pts: Pt[], s: number): Pt[] {
+  const m = measure(pts);
+  if (s >= m.length) return pts;
+  if (s <= 0) return [pts[0], pts[0]];
+  let i = 0;
+  while (i < pts.length - 1 && m.cum[i + 1] < s) i++;
+  const p = sampleAt(m, s);
+  return [...pts.slice(0, i + 1), { x: p.x, y: p.y }];
+}
+
 /** trimEnd's mirror: starts the line where it first leaves `shape`. */
 export function trimStart(pts: Pt[], shape: Shape, gap = 0): Pt[] {
   return trimEnd([...pts].reverse(), shape, gap).reverse();

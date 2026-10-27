@@ -61,6 +61,8 @@ export interface LineInput extends LineStyle {
   fromShape?: Shape;
   toShape?: Shape;
   gap?: number;
+  /** How far into the target the tip goes: 0 its edge (minus `gap`), 1 the aim point. */
+  land?: number;
   within?: Rect;
   avoid?: Shape[];
   nudge?: Pt;

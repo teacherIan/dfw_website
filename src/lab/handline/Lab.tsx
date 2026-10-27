@@ -258,6 +258,9 @@ function Playground() {
     side: { value: 'auto', options: ['auto', 'left', 'right'] },
     bow: { value: 0, min: -0.4, max: 0.4, step: 0.01 },
     gap: { value: 8, min: 0, max: 30, step: 1 },
+    land: { value: 0, min: 0, max: 1, step: 0.05, label: 'land (0 edge, 1 aim)' },
+    aimX: { value: 0.5, min: 0, max: 1, step: 0.05, label: 'aim x' },
+    aimY: { value: 0.5, min: 0, max: 1, step: 0.05, label: 'aim y' },
     seed: 'playground',
   });
   const [pen, setPen] = useControls('Pen', () => ({
@@ -327,11 +330,12 @@ function Playground() {
         <Handline
           key={replay}
           from={ra}
-          to={rb}
+          to={{ target: rb, at: [line.aimX, line.aimY], shape: 'auto' }}
           gesture={gesture}
           side={line.side === 'auto' ? 'auto' : line.side === 'left' ? 1 : -1}
           bow={line.bow}
           gap={line.gap}
+          land={line.land}
           seed={line.seed}
           pen={{
             base: pen.preset,
@@ -560,6 +564,7 @@ function AnchoredGarden({ k }: { k: number }) {
             key={`${row.label}-${k}`}
             from={{ target: labels[i], at: [1, 0.55], offset: [10, 0] }}
             to={buttons[i]}
+            land={1}
             gesture={row.gesture}
             side={1}
             gap={7}
@@ -659,7 +664,8 @@ function GraphPaper() {
             <Handline
               key={`here-${k}`}
               from={{ target: here, at: [0, 0.2], offset: [-5, -2] }}
-              to={{ target: cell, at: [0.28, 1], offset: [0, 6] }}
+              to={{ target: cell, at: [0.3, 0.72], shape: 'auto' }}
+              land={0.3}
               gesture={{ kind: 'loop', size: 7, at: 0.45, bow: 0.12 }}
               side={1}
               pen={{ base: 'ink', width: 1.5, jitter: 0.2 }}

@@ -1,7 +1,7 @@
 import { useLayoutEffect, useState } from 'react';
 import { useControls, folder } from 'leva';
 import { Handline, HandlineLayer, type GestureSpec } from '../../lib/handline';
-import { arrowStyle, type ArrowEffectsConfig } from './arrowStyle';
+import { arrowStyle, NAV_ARROW_LAND, type ArrowEffectsConfig } from './arrowStyle';
 import {
   useEthosArrowControls,
   useContactArrowControls,
@@ -159,7 +159,7 @@ interface ArrowProps {
   controlsStore?: LevaStore;
   // Label element — the arrow starts at a point on the label (its size is
   // text-dependent). The end is config-derived: the button's centre from
-  // navLayouts, trimmed to the button's edge.
+  // navLayouts; NAV_ARROW_LAND says how far into the button it goes.
   labelElement?: HTMLElement | null;
   /** No longer needed: the arrow's layer measures itself. */
   containerElement?: HTMLElement | null;
@@ -236,6 +236,7 @@ function MobileArrow({
             `M ${t.startX} ${t.startY} Q ${t.ctrlX} ${t.ctrlY}, ${t.endX} ${t.endY}`
           )}
           side={1}
+          land={NAV_ARROW_LAND}
           gap={5}
           tail="dot"
           color="white"

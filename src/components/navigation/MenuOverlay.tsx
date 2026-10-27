@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useControls, folder } from 'leva';
 import clsx from 'clsx';
 import MobileNavLayout from './MobileNavLayout';
-import { LoopArrow, SpiralArrow, WaveArrow } from './DesktopArrows';
+import { DesktopNavArrow } from './DesktopArrows';
 import NavButtonLayer from './NavButtonLayer';
 import { ANIMATION_TIMING, navItems, fontOptions, fontFamilyMap } from '../../constants';
 import { NAV_TIMING } from '../../constants/navLayouts';
@@ -12,13 +12,6 @@ import { useArrowUnravel } from '../../hooks';
 import { useAnimationStore, useIsContactOverlayOpen } from '../../stores/animationStore';
 
 type LevaStore = ReturnType<typeof import('leva').useCreateStore>;
-
-// Arrow component mapping for desktop navigation
-const ArrowComponents: Record<ArrowType, typeof LoopArrow> = {
-  loop: LoopArrow,
-  spiral: SpiralArrow,
-  wave: WaveArrow,
-};
 
 const MENU_RETURN_DELAY = 160;
 
@@ -60,18 +53,19 @@ const DesktopNavRow = ({
   label: string;
   isVisible: boolean;
   delay: number;
-  arrowType: keyof typeof ArrowComponents;
+  arrowType: ArrowType;
   currentFont: string;
   fontSize: number;
   effectsConfig?: ArrowEffectsConfig;
 }) => {
-  const ArrowComponent = ArrowComponents[arrowType];
+  // The reserved button slot: the arrow lands in it (the button sits over it).
+  const [slot, setSlot] = useState<HTMLSpanElement | null>(null);
 
   // Phase 2: labels + arrows start after the buttons have settled.
   const labelDelay = NAV_TIMING.detailsOffset + delay;
   const arrowDelay = NAV_TIMING.detailsOffset + delay + 150;
 
-  const { hasCompletedInitialAnimation, transform, curveOffset } = useArrowUnravel({
+  const { hasCompletedInitialAnimation, curveOffset } = useArrowUnravel({
     isVisible,
     delay: arrowDelay,
   });
@@ -110,10 +104,11 @@ const DesktopNavRow = ({
 
       {/* Unique arrow per row - desktop only - draw-in animation */}
       <span className={clsx('desktop-arrow-only', 'hidden xl:block', 'relative z-10')}>
-        <ArrowComponent
+        <DesktopNavArrow
+          shape={arrowType}
+          slot={slot}
           isVisible={isVisible}
           delay={arrowDelay}
-          springTransform={hasCompletedInitialAnimation ? transform : undefined}
           curveOffset={hasCompletedInitialAnimation ? curveOffset : undefined}
           effectsConfig={effectsConfig}
         />
@@ -123,6 +118,7 @@ const DesktopNavRow = ({
           sits exactly here. Keeps the row height = button height so the
           column stacking matches navLayouts. */}
       <span
+        ref={setSlot}
         aria-hidden="true"
         style={{
           display: 'inline-block',
@@ -150,15 +146,21 @@ const MenuOverlay = ({
   const toggleContactOverlay = useAnimationStore((state) => state.toggleContactOverlay);
   const isContactOverlayOpen = useIsContactOverlayOpen();
 
-  const { menuFont } = useControls({
-    '🏠 Base.🎨 Menu Style': folder({
-      menuFont: {
-        value: 'Caveat',
-        options: [...fontOptions],
-        label: 'Font Family',
-      },
-    }, { collapsed: true }),
-  }, { store: controlsStore });
+  const { menuFont } = useControls(
+    {
+      '🏠 Base.🎨 Menu Style': folder(
+        {
+          menuFont: {
+            value: 'Caveat',
+            options: [...fontOptions],
+            label: 'Font Family',
+          },
+        },
+        { collapsed: true }
+      ),
+    },
+    { store: controlsStore }
+  );
 
   const currentFont = fontFamilyMap[menuFont];
 
@@ -221,7 +223,7 @@ const MenuOverlay = ({
               label={item.label}
               isVisible={isVisible}
               delay={item.delay}
-              arrowType={item.arrowType as keyof typeof ArrowComponents}
+              arrowType={item.arrowType as ArrowType}
               currentFont={currentFont}
               fontSize={DESKTOP_NAV.labelEm}
               effectsConfig={arrowEffectsConfig}

@@ -65,3 +65,38 @@ describe('review fixes', () => {
     assert.ok(d.duration >= last - 1e-9, `duration ${d.duration} < last stroke ${last}`);
   });
 });
+
+describe('landing: how far into the target the tip goes', () => {
+  const target = { kind: 'circle' as const, cx: 400, cy: 100, r: 30 };
+  const base = {
+    from: { x: 40, y: 100 },
+    to: { x: 400, y: 100 },
+    toShape: target,
+    gesture: 'straight' as const,
+    seed: 'land',
+  };
+
+  it('land 0 stops a gap short of the edge (the default)', () => {
+    near(buildLine({ ...base, gap: 6 }).end.x, 400 - 36, 0.05);
+  });
+
+  it('land 1 reaches the aim point', () => {
+    const d = buildLine({ ...base, land: 1 });
+    near(d.end.x, 400, 1e-6);
+    near(d.end.y, 100, 1e-6);
+  });
+
+  it('land 0.5 stops halfway from the edge to the aim point, along the line', () => {
+    near(buildLine({ ...base, land: 0.5 }).end.x, 400 - 15, 0.05);
+  });
+
+  it('an off-centre aim lands on that point, still trimmed to the shape at 0', () => {
+    const aim = { x: 388, y: 88 }; // up and left of the centre, inside the circle
+    const at1 = buildLine({ ...base, to: aim, land: 1 });
+    near(at1.end.x, aim.x, 1e-6);
+    near(at1.end.y, aim.y, 1e-6);
+    const at0 = buildLine({ ...base, to: aim, land: 0, gap: 0 });
+    const r = Math.hypot(at0.end.x - target.cx, at0.end.y - target.cy);
+    near(r, target.r, 0.05, 'should stop on the edge:');
+  });
+});

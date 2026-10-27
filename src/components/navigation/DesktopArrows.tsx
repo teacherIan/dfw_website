@@ -1,5 +1,6 @@
-import { DFW_PATHS, HandlineArt } from '../../lib/handline';
-import { arrowStyle, type ArrowEffectsConfig } from './arrowStyle';
+import { useLayoutEffect, useState } from 'react';
+import { DFW_PATHS, Handline, HandlineArt, HandlineLayer } from '../../lib/handline';
+import { arrowStyle, NAV_ARROW_LAND, type ArrowEffectsConfig } from './arrowStyle';
 
 interface SpringTransform {
   rotate: number;
@@ -62,7 +63,7 @@ function DesktopArrow({
       play={isVisible}
       delay={delay}
       style={{ transform: sway, transformOrigin: 'left center', opacity: 0.95 }}
-      {...arrowStyle(effectsConfig, 'desktop')}
+      {...arrowStyle(effectsConfig, 'art')}
     />
   );
 }
@@ -75,3 +76,71 @@ export const SpiralArrow = (props: ArrowProps) => <DesktopArrow shape="spiral" {
 
 // 3. WAVE ARROW (Bottom)
 export const WaveArrow = (props: ArrowProps) => <DesktopArrow shape="wave" {...props} />;
+
+/** An element's width, kept current. */
+function useWidth(el: Element | null): number {
+  const [w, setW] = useState(0);
+  useLayoutEffect(() => {
+    if (!el) return;
+    const read = () => setW(el.getBoundingClientRect().width);
+    read();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [el]);
+  return w;
+}
+
+/**
+ * The desktop menu's arrow, live: the row's hand-drawn path at its drawn size
+ * in the arrow's own box, then on into the button (`slot`, the row's reserved
+ * button slot) — NAV_ARROW_LAND says how far in. The box keeps the row's
+ * layout exactly as the fixed arrow had it.
+ */
+export function DesktopNavArrow({
+  shape,
+  slot,
+  isVisible,
+  delay = 0,
+  curveOffset,
+  effectsConfig,
+}: {
+  shape: keyof typeof DFW_PATHS;
+  slot: HTMLElement | null;
+  isVisible: boolean;
+  delay?: number;
+  curveOffset?: CurveOffset;
+  effectsConfig?: ArrowEffectsConfig;
+}) {
+  const [box, setBox] = useState<HTMLSpanElement | null>(null);
+  const width = useWidth(box);
+  return (
+    <span
+      ref={setBox}
+      className="nav-arrow"
+      style={{ display: 'block', aspectRatio: '70 / 50', position: 'relative', filter: 'none' }}
+    >
+      <HandlineLayer style={{ filter: 'drop-shadow(var(--shadow-nav-arrow))' }}>
+        {box && slot && width > 0 && (
+          <Handline
+            // The drawn paths start 2 units into their 70 × 50 box, halfway down,
+            // and span 74 units start to end.
+            from={{ target: box, at: [2 / 70, 0.5] }}
+            to={slot}
+            gesture={{ kind: 'path', d: DFW_PATHS[shape], size: width * (74 / 70) }}
+            side={1}
+            land={NAV_ARROW_LAND}
+            seed={`desktop-${shape}`}
+            color="white"
+            play={isVisible}
+            delay={delay}
+            follow={1500}
+            nudge={curveOffset ? { x: curveOffset.x * 0.5, y: curveOffset.y * 0.5 } : undefined}
+            {...arrowStyle(effectsConfig, 'desktop')}
+          />
+        )}
+      </HandlineLayer>
+    </span>
+  );
+}

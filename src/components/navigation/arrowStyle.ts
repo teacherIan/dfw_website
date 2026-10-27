@@ -70,16 +70,24 @@ export const defaultArrowEffectsConfig: ArrowEffectsConfig = {
   arrowheadStyle: 'standard',
 };
 
-export type ArrowSize = 'desktop' | 'mobile';
+export type ArrowSize = 'art' | 'desktop' | 'mobile';
 
 /**
- * Desktop arrows are drawn in their 70 × 50 viewBox (about 1.6 px a unit at
- * their CSS width); mobile arrows in px. Widths and sizes are in those units.
+ * 'art' arrows are drawn in their 70 × 50 viewBox (about 1.6 px a unit at
+ * their CSS width); the live desktop and mobile arrows in px. Widths and
+ * sizes are in those units.
  */
 const BASE: Record<ArrowSize, { width: number; jitter: number; head: number }> = {
-  desktop: { width: 1.05, jitter: 0.12, head: 6.5 },
+  art: { width: 1.05, jitter: 0.12, head: 6.5 },
+  desktop: { width: 1.6, jitter: 0.2, head: 10 },
   mobile: { width: 2, jitter: 0.3, head: 9 },
 };
+
+/**
+ * How far into its button a nav arrow goes: 1 = to the centre (Ian, 10-26:
+ * the arrows read better landing on the button than stopping at its edge).
+ */
+export const NAV_ARROW_LAND = 1;
 
 const HEADS: Record<ArrowEffectsConfig['arrowheadStyle'], HeadSpec['kind']> = {
   standard: 'chevron',

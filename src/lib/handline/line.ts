@@ -6,7 +6,7 @@
  * rebuilds only when what it measured changed — a moved anchor reshapes the
  * line in place, without replaying the draw.
  */
-import { anchorElement, resolveAnchor, type AnchorInput } from './anchor';
+import { anchorElement, anchorMissing, resolveAnchor, type AnchorInput } from './anchor';
 import { buildLine, type Drawing, type LineInput } from './build';
 import { InkView, type Motion } from './dom';
 import type { Shape } from './geom';
@@ -102,15 +102,17 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
 
   const job = {
     read() {
-      const o = layer.getBoundingClientRect();
+      const box = layer.getBoundingClientRect();
+      const scale = layer.offsetWidth > 0 ? box.width / layer.offsetWidth : 1;
+      const o = { left: box.left, top: box.top, scale };
       const a = resolveAnchor(spec.from, o);
       const b = resolveAnchor(spec.to, o);
       if (!a || !b) {
-        // An anchor not on the page yet (a ref not attached, an element with
-        // no size) fires no event when it arrives: look again shortly.
+        // A hidden element (no size) is observed and reports when it shows.
+        // A ref not attached yet fires nothing when it is: look again shortly.
         measured = null;
         rewatch();
-        if (!retry) {
+        if (!retry && (anchorMissing(spec.from) || anchorMissing(spec.to))) {
           retry = setTimeout(() => {
             retry = null;
             schedule();
@@ -129,7 +131,15 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
         to: b.point,
         fromShape: a.shape,
         toShape: b.shape,
-        within: spec.contain === false ? undefined : { x: 0, y: 0, w: o.width, h: o.height },
+        within:
+          spec.contain === false
+            ? undefined
+            : {
+                x: 0,
+                y: 0,
+                w: layer.offsetWidth || box.width,
+                h: layer.offsetHeight || box.height,
+              },
         avoid,
       };
       measuredKey = JSON.stringify([measured, styleKey], (_, v) =>

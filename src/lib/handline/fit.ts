@@ -3,6 +3,7 @@
  * picks which side it bulges to, and trims its ends to the shapes it joins.
  */
 import {
+  cutAt,
   measure,
   sampleAt,
   shapeDistance,
@@ -34,8 +35,14 @@ export interface FitInput {
   fromShape?: Shape;
   /** Trims the end to where the line enters this shape. */
   toShape?: Shape;
-  /** Space between a trimmed end and its shape, px. */
+  /** Space between a trimmed end and its shape, px (when `land` is 0). */
   gap?: number;
+  /**
+   * How far into the target the tip goes: 0 stops `gap` px short of its
+   * edge, 1 reaches the aim point (the centre, or the `at` point), 0.4 stops
+   * 40% of the way from the edge to it, along the line.
+   */
+  land?: number;
   /**
    * A live push on the line's middle, px (0 at the ends, full at the middle) —
    * for a line that sways with a drag without moving its ends.
@@ -82,9 +89,18 @@ function cost(pts: Pt[], within?: Rect, avoid: Shape[] = []): number {
 
 function trim(pts: Pt[], input: FitInput): Pt[] {
   const gap = input.gap ?? 6;
+  const land = Math.min(1, Math.max(0, input.land ?? 0));
   let out = pts;
   if (input.fromShape) out = trimStart(out, input.fromShape, gap);
-  if (input.toShape) out = trimEnd(out, input.toShape, gap);
+  if (input.toShape) {
+    if (land > 0) {
+      // Where the line crosses into the target, then `land` of the rest of
+      // the way to the aim point.
+      const edge = measure(trimEnd(out, input.toShape, 0)).length;
+      const full = measure(out).length;
+      out = cutAt(out, edge + land * (full - edge));
+    } else out = trimEnd(out, input.toShape, gap);
+  }
   return out.length >= 2 ? out : pts;
 }
 

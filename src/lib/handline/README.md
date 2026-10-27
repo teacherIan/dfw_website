@@ -15,21 +15,21 @@ Design doc, with live figures: https://claude.ai/artifact/9P4krKBDewiEcH64Fi5XUM
 
 ## Shape
 
-| File | Does |
-| --- | --- |
-| `geom.ts` | SVG path → dense polylines, arc length, curvature, trim to a shape |
-| `random.ts` | seeded streams and 1-D noise; each feature forks its own |
-| `gestures.ts` | the shape between two points, built at the real length; `DFW_PATHS` |
-| `fit.ts` | turn a gesture to face the target, pick a side, trim the ends |
-| `pen.ts` | wander, width, timing; cut into constant-width strokes; `PENS` |
-| `ends.ts` | heads, tails, ticks/scribe/dimension marks, the ring |
-| `build.ts` | `buildLine` / `buildArt`: description in, `Drawing` out — pure |
-| `dom.ts` | `InkView`: a `Drawing` as SVG, drawn on/out from one timeline position |
-| `clock.ts` | one frame loop for every drawing line |
-| `track.ts` | one layout tracker: reads before writes, once a frame |
-| `anchor.ts` | element / ref / point (layer or viewport) → point + trim shape |
-| `line.ts` | `createLine`: a live line between anchors, no framework |
-| `react.tsx` | `<Handline>`, `<HandlineArt>`, `<HandlineLayer>` |
+| File          | Does                                                                   |
+| ------------- | ---------------------------------------------------------------------- |
+| `geom.ts`     | SVG path → dense polylines, arc length, curvature, trim to a shape     |
+| `random.ts`   | seeded streams and 1-D noise; each feature forks its own               |
+| `gestures.ts` | the shape between two points, built at the real length; `DFW_PATHS`    |
+| `fit.ts`      | turn a gesture to face the target, pick a side, trim the ends          |
+| `pen.ts`      | wander, width, timing; cut into constant-width strokes; `PENS`         |
+| `ends.ts`     | heads, tails, ticks/scribe/dimension marks, the ring                   |
+| `build.ts`    | `buildLine` / `buildArt`: description in, `Drawing` out — pure         |
+| `dom.ts`      | `InkView`: a `Drawing` as SVG, drawn on/out from one timeline position |
+| `clock.ts`    | one frame loop for every drawing line                                  |
+| `track.ts`    | one layout tracker: reads before writes, once a frame                  |
+| `anchor.ts`   | element / ref / point (layer or viewport) → point + trim shape         |
+| `line.ts`     | `createLine`: a live line between anchors, no framework                |
+| `react.tsx`   | `<Handline>`, `<HandlineArt>`, `<HandlineLayer>`                       |
 
 ## Rules it keeps
 
