@@ -109,6 +109,24 @@ export function buildArt(input: ArtInput): Drawing {
   return inkDrawing(pts, input, r, 1);
 }
 
+const EMPTY_PEN_OPACITY = 1;
+
+/** A drawing with nothing in it: an empty or M-only path, or a point. */
+function emptyDrawing(at: Pt, seed: number): Drawing {
+  return {
+    strokes: [],
+    fills: [],
+    layers: [{ opacity: EMPTY_PEN_OPACITY }],
+    bbox: { x: at.x, y: at.y, w: 0, h: 0 },
+    duration: 0,
+    grain: 0,
+    seed,
+    start: at,
+    end: { ...at, angle: 0 },
+    centerline: [at],
+  };
+}
+
 function inkDrawing(
   pts: Pt[],
   style: LineStyle,
@@ -116,6 +134,7 @@ function inkDrawing(
   side: Side,
   ring?: Shape
 ): Drawing {
+  if (pts.length < 2) return emptyDrawing(pts[0] ?? { x: 0, y: 0 }, r.seed);
   const pen = resolvePen(style.pen);
   const timing = style.timing ?? {};
   const m = measure(pts);
@@ -136,6 +155,7 @@ function inkDrawing(
   const layers: Layer[] = [{ opacity: pen.opacity }];
 
   // Extra passes: thinner, fainter, wandering on their own seed, a beat behind.
+  let passEnd = 0;
   for (let p = 1; p < Math.round(pen.passes); p++) {
     layers.push({ opacity: pen.opacity * 0.42 });
     const extra = ink(pts, { ...pen, jitter: pen.jitter * 1.7 + 0.25 }, r.fork(`pass${p}`), {
@@ -145,9 +165,10 @@ function inkDrawing(
       duration: [line.t1 - t.t1, line.t1 - t.t1],
     });
     strokes.push(...extra.strokes);
+    passEnd = Math.max(passEnd, extra.t1);
   }
 
-  let t1 = line.t1;
+  let t1 = Math.max(line.t1, passEnd);
   const headSpec = resolveHead(style.head);
   if (headSpec.kind !== 'none') {
     const h = drawHead(endPt, a1, headSpec, pen, r.fork('head'), line.t1 + (timing.pause ?? 30));

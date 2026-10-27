@@ -30,9 +30,14 @@ export interface LiveLine extends Omit<
 }
 
 export interface LineController {
-  /** Draws the line on, after `delay` ms (waits for the first layout if needed). */
-  play(delay?: number): Promise<void>;
-  undraw(): Promise<void>;
+  /**
+   * Draws the line on, after `delay` ms (waits for the first layout if
+   * needed). Resolves true when the line finished drawing, false when
+   * something else (another play, a hide, destroy) took over first.
+   */
+  play(delay?: number): Promise<boolean>;
+  /** Resolves true once the line is gone, false if something took over first. */
+  undraw(): Promise<boolean>;
   /** Shows the line already drawn. */
   show(): void;
   hide(): void;
@@ -43,7 +48,12 @@ export interface LineController {
   readonly drawing: Drawing | null;
 }
 
-type Pending = { kind: 'play'; delay: number; at: number; resolve: () => void } | { kind: 'show' };
+type Pending =
+  | { kind: 'play'; delay: number; at: number; resolve: (finished: boolean) => void }
+  | { kind: 'show' };
+
+/** How often to look again for an anchor that isn't on the page yet, ms. */
+const RETRY_MS = 250;
 
 const round = (n: number) => Math.round(n * 4) / 4;
 
@@ -66,6 +76,13 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
   let drawing: Drawing | null = null;
   let pending: Pending | null = null;
   let observed = new Set<Element>();
+  let retry: ReturnType<typeof setTimeout> | null = null;
+
+  /** A play queued before the first layout is superseded: it resolves false. */
+  const dropPending = () => {
+    if (pending?.kind === 'play') pending.resolve(false);
+    pending = null;
+  };
 
   const elements = () => {
     const set = new Set<Element>([layer]);
@@ -89,7 +106,16 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
       const a = resolveAnchor(spec.from, o);
       const b = resolveAnchor(spec.to, o);
       if (!a || !b) {
+        // An anchor not on the page yet (a ref not attached, an element with
+        // no size) fires no event when it arrives: look again shortly.
         measured = null;
+        rewatch();
+        if (!retry) {
+          retry = setTimeout(() => {
+            retry = null;
+            schedule();
+          }, RETRY_MS);
+        }
         return;
       }
       const avoid: Shape[] = [];
@@ -130,7 +156,10 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
       if (!view) {
         view = new InkView(layer, drawing, { mode: 'absolute', color, className, motion });
         runPending();
-      } else view.setDrawing(drawing);
+      } else {
+        view.configure({ color, className, motion }, false);
+        view.setDrawing(drawing);
+      }
     },
   };
 
@@ -154,20 +183,24 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
     },
     play(delay = 0) {
       if (view) return view.play({ delay });
-      return new Promise<void>((resolve) => {
+      dropPending();
+      return new Promise<boolean>((resolve) => {
         pending = { kind: 'play', delay, at: performance.now(), resolve };
       });
     },
     undraw() {
-      pending = null;
-      return view ? view.undraw() : Promise.resolve();
+      dropPending();
+      return view ? view.undraw() : Promise.resolve(true);
     },
     show() {
       if (view) view.showDrawn();
-      else pending = { kind: 'show' };
+      else {
+        dropPending();
+        pending = { kind: 'show' };
+      }
     },
     hide() {
-      pending = null;
+      dropPending();
       view?.hide();
     },
     update(next) {
@@ -184,6 +217,9 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
       followFrames(ms);
     },
     destroy() {
+      dropPending();
+      if (retry) clearTimeout(retry);
+      retry = null;
       stop();
       for (const e of observed) unwatch(e);
       observed.clear();

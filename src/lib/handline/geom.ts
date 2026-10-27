@@ -55,6 +55,14 @@ export function flattenPath(d: string, step = 1.5): Pt[][] {
   let cy = 0;
   const isCmd = (t: string) => /^[a-z]$/i.test(t);
   const num = () => parseFloat(tok[i++]);
+  // An arc flag is one character, and flags may run into the next number
+  // ("a5 5 0 1010 0" is flags 1 and 0, then x = 10).
+  const flag = () => {
+    const t = tok[i] ?? '0';
+    if (t.length > 1 && (t[0] === '0' || t[0] === '1')) tok[i] = t.slice(1);
+    else i++;
+    return t[0] === '1';
+  };
   const close = () => {
     if (cur.length > 1) out.push(cur);
     cur = [];
@@ -148,11 +156,11 @@ export function flattenPath(d: string, step = 1.5): Pt[][] {
         const rx = num();
         const ry = num();
         const rot = num();
-        const large = num();
-        const sweep = num();
+        const large = flag();
+        const sweep = flag();
         const nx = num() + ox;
         const ny = num() + oy;
-        arc(cur, { x, y }, rx, ry, rot, !!large, !!sweep, { x: nx, y: ny }, step);
+        arc(cur, { x, y }, rx, ry, rot, large, sweep, { x: nx, y: ny }, step);
         x = cx = nx;
         y = cy = ny;
         break;
@@ -163,6 +171,7 @@ export function flattenPath(d: string, step = 1.5): Pt[][] {
         y = cy = sy;
         close();
         cur = [{ x, y }];
+        cmd = ''; // numbers straight after Z belong to no command: skip them
         break;
       }
       default:

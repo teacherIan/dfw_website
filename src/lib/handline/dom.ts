@@ -4,8 +4,11 @@
  * Each stroke reveals with its own dash offset over its own window, driven by
  * one shared frame loop (clock.ts) that touches only the strokes whose state
  * changed — no framer-motion, no per-stroke Web Animation. The pen's speed
- * lives in the strokes' timing, not an easing curve. A view can retarget
- * mid-draw: the new geometry picks up at the same moment.
+ * lives in the strokes' timing, not an easing curve.
+ *
+ * The view keeps one position on the drawing's timeline and moves it forward
+ * (play) or back (undraw) from wherever it is, so reversing mid-draw, or new
+ * geometry arriving mid-draw or mid-undraw, carries on from the same moment.
  *
  * Under prefers-reduced-motion a line is simply there, drawn.
  */
@@ -33,7 +36,10 @@ export interface ViewOptions {
 
 export interface PlayOptions {
   delay?: number;
-  /** Start this many ms into the drawing (a retarget mid-draw). */
+  /**
+   * Where on the drawing's timeline to start, ms. Default: from the start —
+   * or, while undrawing, from wherever the undraw has got to.
+   */
   from?: number;
   /** Undraw only: speed relative to drawing (default 1.6× faster). */
   speed?: number;
@@ -55,6 +61,13 @@ const el = <K extends keyof SVGElementTagNameMap>(
 
 const FILL_FADE = 120;
 
+/** The view's motion: a position on the timeline, moving at `rate` after `startAt`. */
+interface Travel {
+  pos: number;
+  rate: number;
+  startAt: number;
+}
+
 export class InkView {
   readonly svg: SVGSVGElement;
   state: ViewState = 'hidden';
@@ -65,14 +78,14 @@ export class InkView {
   /** Last progress written per stroke, then per fill: −1 unknown, 0 hidden, 1 drawn. */
   private shown = new Float32Array(0);
   private stop: (() => void) | null = null;
-  private resolve: (() => void) | null = null;
-  /** performance.now() at the drawing's t = 0. */
-  private origin = 0;
+  /** The pending play/undraw promise: resolves true when it reached its end. */
+  private resolve: ((finished: boolean) => void) | null = null;
+  private travel: Travel = { pos: 0, rate: 0, startAt: 0 };
   private readonly id = ++uid;
-  private readonly opts: ViewOptions;
+  private opts: ViewOptions;
 
   constructor(host: Element, drawing: Drawing, opts: ViewOptions) {
-    this.opts = opts;
+    this.opts = { ...opts };
     this.drawing = drawing;
     if (opts.mode === 'inline') {
       this.svg = host as SVGSVGElement;
@@ -96,136 +109,139 @@ export class InkView {
     return this.drawing.duration;
   }
 
-  /** Replace the geometry. A drawn line stays drawn; a line mid-draw carries on. */
+  private get end() {
+    return this.drawing.duration + (this.drawing.fills.length ? FILL_FADE : 0);
+  }
+
+  /** Where the pen is on the drawing's timeline, ms. */
+  position(now = performance.now()): number {
+    if (this.state === 'drawn') return this.end;
+    if (this.state === 'hidden') return 0;
+    const m = this.travel;
+    return Math.min(this.end, Math.max(0, m.pos + m.rate * Math.max(0, now - m.startAt)));
+  }
+
+  /** Colour, class or motion changed: a colour or class re-renders in place. */
+  configure(next: Partial<Omit<ViewOptions, 'mode'>>, rerender = true) {
+    const recolor = next.color !== this.opts.color || next.className !== this.opts.className;
+    this.opts = { ...this.opts, ...next, mode: this.opts.mode };
+    if (!recolor) return;
+    if (this.opts.mode === 'absolute') {
+      if (this.opts.className) this.svg.setAttribute('class', this.opts.className);
+      else this.svg.removeAttribute('class');
+    }
+    if (rerender) this.setDrawing(this.drawing);
+  }
+
+  /** Replace the geometry. The line carries on from the same moment, in the same direction. */
   setDrawing(d: Drawing) {
-    const elapsed = performance.now() - this.origin;
+    const now = performance.now();
     const prev = this.state;
+    const pos = this.position(now);
+    const delayLeft = Math.max(0, this.travel.startAt - now);
     const resolve = this.resolve;
-    this.resolve = null; // the running play's promise carries over to the new one
+    this.resolve = null; // the pending promise carries over to the resumed motion
     this.halt();
     this.drawing = d;
     this.render();
-    if (prev === 'drawing' && elapsed < d.duration) {
-      void this.play({ delay: Math.max(0, -elapsed), from: Math.max(0, elapsed) }).then(() =>
-        resolve?.()
-      );
-      return;
+    if (prev === 'drawing') {
+      this.move(Math.min(pos, this.end), 1, delayLeft, resolve);
+    } else if (prev === 'undrawing') {
+      this.move(Math.min(pos, this.end), -this.undrawRate, delayLeft, resolve);
+    } else {
+      this.state = prev;
+      this.paint(prev === 'drawn' ? this.end : 0);
+      this.svg.style.visibility = prev === 'drawn' ? 'visible' : 'hidden';
+      resolve?.(true);
     }
-    if (prev === 'drawing' || prev === 'drawn') this.showDrawn();
-    else this.hide();
-    resolve?.();
   }
 
-  play(o: PlayOptions = {}): Promise<void> {
-    const motion = this.opts.motion ?? 'auto';
-    if (motion === 'never' || (motion === 'auto' && prefersReducedMotion())) {
+  play(o: PlayOptions = {}): Promise<boolean> {
+    if (this.still()) {
       this.showDrawn();
-      return Promise.resolve();
+      return Promise.resolve(true);
     }
+    const from = o.from ?? (this.state === 'undrawing' ? this.position() : 0);
     this.halt();
-    this.origin = performance.now() + (o.delay ?? 0) - (o.from ?? 0);
-    this.state = 'drawing';
-    this.svg.style.visibility = 'visible';
-    const { strokes, fills, duration } = this.drawing;
-    const frame = (now: number) => {
-      const e = now - this.origin;
-      this.apply(
-        (i) => (e - strokes[i].t0) / Math.max(1e-3, strokes[i].t1 - strokes[i].t0),
-        (i) => (e - fills[i].t0) / FILL_FADE
-      );
-    };
-    frame(performance.now()); // hide what hasn't started before the first paint
-    return this.run(
-      () => this.elapsed() >= duration + FILL_FADE,
-      () => this.showDrawn(),
-      frame
-    );
+    this.settle(false); // a superseded play or undraw didn't reach its end
+    return new Promise<boolean>((resolve) => this.move(from, 1, o.delay ?? 0, resolve));
   }
 
-  /** Draws the line out again, last stroke first. */
-  undraw(o: PlayOptions = {}): Promise<void> {
-    if (this.state === 'hidden') return Promise.resolve();
-    const motion = this.opts.motion ?? 'auto';
-    if (motion === 'never' || (motion === 'auto' && prefersReducedMotion())) {
+  /** Draws the line out again from wherever it has got to, last stroke first. */
+  undraw(o: PlayOptions = {}): Promise<boolean> {
+    if (this.state === 'hidden') return Promise.resolve(true);
+    if (this.still()) {
       this.hide();
-      return Promise.resolve();
+      return Promise.resolve(true);
     }
+    const from = this.position();
+    this.undrawRate = o.speed ?? 1.6;
     this.halt();
-    const k = 1 / (o.speed ?? 1.6);
-    const { strokes, fills, duration } = this.drawing;
-    this.origin = performance.now() + (o.delay ?? 0);
-    this.state = 'undrawing';
-    const at = (now: number) => now - this.origin;
-    return this.run(
-      () => this.elapsed() >= duration * k,
-      () => this.hide(),
-      (now) =>
-        this.apply(
-          (i) => {
-            const s = strokes[i];
-            const len = Math.max(1, (s.t1 - s.t0) * k);
-            return 1 - (at(now) - (duration - s.t1) * k) / len;
-          },
-          (i) => 1 - (at(now) - (duration - fills[i].t0) * k) / 90
-        )
+    this.settle(false);
+    return new Promise<boolean>((resolve) =>
+      this.move(from, -this.undrawRate, o.delay ?? 0, resolve)
     );
   }
 
   showDrawn() {
     this.halt();
     this.state = 'drawn';
-    this.apply(
-      () => 1,
-      () => 1
-    );
+    this.paint(this.end);
     this.svg.style.visibility = 'visible';
-    this.settle();
+    this.settle(true);
   }
 
   hide() {
     this.halt();
+    const wasUndrawing = this.state === 'undrawing';
     this.state = 'hidden';
     this.svg.style.visibility = 'hidden';
     this.shown.fill(-1); // next play rewrites every stroke
-    this.settle();
+    this.settle(wasUndrawing);
   }
 
   destroy() {
     this.halt();
-    this.settle();
+    this.settle(false);
     if (this.opts.mode === 'absolute') this.svg.remove();
     else this.root.remove();
   }
 
-  private elapsed() {
-    return performance.now() - this.origin;
+  private undrawRate = 1.6;
+
+  private still() {
+    const m = this.opts.motion ?? 'auto';
+    return m === 'never' || (m === 'auto' && prefersReducedMotion());
   }
 
-  /** Runs `frame` every frame until `done()`; then `finish()` and settles. */
-  private run(
-    done: () => boolean,
-    finish: () => void,
-    frame: (now: number) => void
-  ): Promise<void> {
-    this.settle(); // a superseded play's promise resolves now
-    return new Promise<void>((resolve) => {
-      this.resolve = resolve;
-      this.stop = onFrame((now) => {
-        frame(now);
-        if (done()) {
-          this.stop = null;
-          finish();
-          return false;
-        }
-        return true;
-      });
+  /** Starts moving along the timeline from `pos` at `rate` after `delay` ms. */
+  private move(pos: number, rate: number, delay: number, resolve: ((f: boolean) => void) | null) {
+    this.resolve = resolve;
+    this.travel = { pos, rate, startAt: performance.now() + delay };
+    this.state = rate > 0 ? 'drawing' : 'undrawing';
+    this.svg.style.visibility = 'visible';
+    this.paint(pos); // hide what hasn't started before the first paint
+    this.stop = onFrame((now) => {
+      const p = this.position(now);
+      this.paint(p);
+      if (rate > 0 && p >= this.end) {
+        this.stop = null;
+        this.showDrawn();
+        return false;
+      }
+      if (rate < 0 && p <= 0) {
+        this.stop = null;
+        this.hide();
+        return false;
+      }
+      return true;
     });
   }
 
-  private settle() {
+  private settle(finished: boolean) {
     const r = this.resolve;
     this.resolve = null;
-    r?.();
+    r?.(finished);
   }
 
   private halt() {
@@ -234,18 +250,20 @@ export class InkView {
   }
 
   /**
-   * Writes each stroke's progress (0 hidden … 1 drawn) and each fill's
-   * opacity, touching the DOM only where the value changed.
+   * Shows the line as it is at `pos` ms into its timeline: each stroke's
+   * progress (0 hidden … 1 drawn) and each fill's opacity, touching the DOM
+   * only where the value changed.
    */
-  private apply(stroke: (i: number) => number, fill: (i: number) => number) {
+  private paint(pos: number) {
+    const { strokes, fills } = this.drawing;
     const n = this.paths.length;
     const shown = this.shown;
     for (let i = 0; i < n; i++) {
-      const p = Math.min(1, Math.max(0, stroke(i)));
+      const s = strokes[i];
+      const p = Math.min(1, Math.max(0, (pos - s.t0) / Math.max(1e-3, s.t1 - s.t0)));
       const q = p <= 0 ? 0 : p >= 1 ? 1 : Math.round(p * 1000) / 1000;
       if (shown[i] === q) continue;
-      const path = this.paths[i];
-      const st = path.style;
+      const st = this.paths[i].style;
       if (q === 0) {
         st.visibility = 'hidden';
       } else if (q === 1) {
@@ -260,7 +278,7 @@ export class InkView {
       shown[i] = q;
     }
     for (let j = 0; j < this.fills.length; j++) {
-      const p = Math.min(1, Math.max(0, fill(j)));
+      const p = Math.min(1, Math.max(0, (pos - fills[j].t0) / FILL_FADE));
       const q = Math.round(p * 100) / 100;
       if (shown[n + j] === q) continue;
       this.fills[j].style.opacity = q === 1 ? '' : String(q);

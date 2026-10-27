@@ -71,8 +71,9 @@ function markSeen(key: string) {
 }
 
 /**
- * True once `el` has been at least half in view (and stays true). Without
- * IntersectionObserver it is true at once.
+ * True once `el` has been at least half in view — or, for an element taller
+ * than the viewport, once it fills at least half the viewport — and stays
+ * true. Without IntersectionObserver it is true at once.
  */
 function useInView(el: Element | null, enabled: boolean): boolean {
   const [seenIt, setSeen] = useState(false);
@@ -82,14 +83,24 @@ function useInView(el: Element | null, enabled: boolean): boolean {
       setSeen(true);
       return;
     }
+    // A layer covers its whole positioned parent, which can be far taller
+    // than the screen; its ratio would never reach 0.5. Count how much of
+    // the viewport it fills as well.
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
+        const enough = entries.some((e) => {
+          const view = e.rootBounds?.height ?? window.innerHeight;
+          return (
+            e.isIntersecting &&
+            (e.intersectionRatio >= 0.5 || e.intersectionRect.height >= view * 0.5)
+          );
+        });
+        if (enough) {
           setSeen(true);
           io.disconnect();
         }
       },
-      { threshold: 0.5 }
+      { threshold: [0, 0.1, 0.25, 0.5, 0.75, 1] }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -170,8 +181,10 @@ export function Handline(props: HandlineProps) {
       return;
     }
     let live = true;
-    void c.play(delay).then(() => {
-      if (!live) return;
+    void c.play(delay).then((finished) => {
+      // Only a line that drew all the way counts: an unmount or a newer play
+      // resolves this false, and `once` must not record a half-drawn line.
+      if (!live || !finished) return;
       if (once) markSeen(once);
       latest.current.onDrawn?.();
     });
@@ -235,7 +248,9 @@ export function HandlineArt({
       return;
     }
     let live = true;
-    void v.play({ delay }).then(() => live && done.current?.());
+    void v.play({ delay }).then((finished) => {
+      if (live && finished) done.current?.();
+    });
     return () => {
       live = false;
     };

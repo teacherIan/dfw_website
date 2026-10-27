@@ -272,7 +272,8 @@ export function marks(
     const off = (spec.scribe.offset ?? 4) * side;
     const [on, gapLen] = spec.scribe.dash ?? [6, 4];
     const kap = curvatures(m.pts);
-    for (let q = 0; q < L - 1; q += on + gapLen) {
+    const period = on > 0 ? on + Math.max(0, gapLen) : Infinity;
+    for (let q = 0; q < L - 1; q += period) {
       const dash: Pt[] = [];
       let cusp = false;
       for (let u = q; u <= Math.min(q + on, L); u += 1) {

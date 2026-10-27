@@ -190,18 +190,32 @@ function authored(d: string, L: number, size?: number): Pt[] {
     ];
   const a = poly[0];
   const b = poly[poly.length - 1];
-  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-  const ang = Math.atan2(b.y - a.y, b.x - a.x);
+  let len = Math.hypot(b.x - a.x, b.y - a.y);
+  let ang = Math.atan2(b.y - a.y, b.x - a.x);
+  // A path that ends where it starts has no direction to stretch along:
+  // size it by its own extent, as drawn, and run on to the end from there.
+  const xs = poly.map((p) => p.x);
+  const ys = poly.map((p) => p.y);
+  const extent = Math.max(
+    Math.max(...xs) - Math.min(...xs),
+    Math.max(...ys) - Math.min(...ys),
+    1e-6
+  );
+  const closed = len < extent * 0.05;
+  if (closed) {
+    len = extent;
+    ang = 0;
+  }
   const cos = Math.cos(-ang);
   const sin = Math.sin(-ang);
-  const span = size ? Math.min(size, L) : L;
+  const span = size ? Math.min(size, L) : closed ? L * 0.6 : L;
   const s = span / len;
   const mapped = poly.map((p) => {
     const dx = p.x - a.x;
     const dy = p.y - a.y;
     return { x: (dx * cos - dy * sin) * s, y: -(dx * sin + dy * cos) * s };
   });
-  if (span < L) mapped.push({ x: L, y: 0 });
+  if (span < L || closed) mapped.push({ x: L, y: 0 });
   return resample(measure(mapped), STEP);
 }
 

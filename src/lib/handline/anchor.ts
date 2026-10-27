@@ -94,8 +94,17 @@ export function resolveAnchor(
   const kind = spec.shape ?? 'auto';
   if (kind === 'none') return { point, rect };
   const r = radiusOf(el, rect.w, rect.h);
-  const round = kind === 'circle' || (kind === 'auto' && r >= Math.min(rect.w, rect.h) / 2 - 1);
-  return { point, rect, shape: shapeFor(round ? 'circle' : 'rect', rect, r) };
+  // A full radius on a square box is a circle; on anything else (a pill, an
+  // oval) it's a rect with its corners fully rounded, which shapeDistance
+  // already handles — a circle would cut the line inside a wide button.
+  const square = Math.abs(rect.w - rect.h) <= 2;
+  const round =
+    kind === 'circle' || (kind === 'auto' && square && r >= Math.min(rect.w, rect.h) / 2 - 1);
+  return {
+    point,
+    rect,
+    shape: shapeFor(round ? 'circle' : 'rect', rect, Math.min(r, rect.w / 2, rect.h / 2)),
+  };
 }
 
 function shapeFor(kind: 'rect' | 'circle', r: Rect, radius: number): Shape {
