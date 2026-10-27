@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState } from 'react';
 import { DFW_PATHS, Handline, HandlineArt, HandlineLayer } from '../../lib/handline';
-import { arrowStyle, NAV_ARROW_LAND, type ArrowEffectsConfig } from './arrowStyle';
+import { arrowStyle, NAV_ARROW_REACH, type ArrowEffectsConfig } from './arrowStyle';
 
 interface SpringTransform {
   rotate: number;
@@ -95,7 +95,7 @@ function useWidth(el: Element | null): number {
 /**
  * The desktop menu's arrow, live: the row's hand-drawn path at its drawn size
  * in the arrow's own box, then on into the button (`slot`, the row's reserved
- * button slot) — NAV_ARROW_LAND says how far in. The box keeps the row's
+ * button slot) — NAV_ARROW_REACH says how far in. The box keeps the row's
  * layout exactly as the fixed arrow had it.
  */
 export function DesktopNavArrow({
@@ -130,7 +130,7 @@ export function DesktopNavArrow({
             to={slot}
             gesture={{ kind: 'path', d: DFW_PATHS[shape], size: width * (74 / 70) }}
             side={1}
-            land={NAV_ARROW_LAND}
+            reach={NAV_ARROW_REACH}
             seed={`desktop-${shape}`}
             color="white"
             play={isVisible}

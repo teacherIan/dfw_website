@@ -36,6 +36,11 @@ export interface LineController {
    * something else (another play, a hide, destroy) took over first.
    */
   play(delay?: number): Promise<boolean>;
+  /**
+   * Draws the line on the first time its target (or, without an element
+   * target, its layer) is half in view — or fills half the viewport.
+   */
+  playInView(delay?: number): Promise<boolean>;
   /** Resolves true once the line is gone, false if something took over first. */
   undraw(): Promise<boolean>;
   /** Shows the line already drawn. */
@@ -63,8 +68,55 @@ function keyOf(s: LiveLine): string {
   return JSON.stringify(rest);
 }
 
+let lines = 0;
+const warned = new WeakSet<Element>();
+
+/** A point given in the layer's own coordinates (not an element, not the viewport's). */
+function isLayerPoint(a: AnchorInput): boolean {
+  const spec = typeof a === 'object' && a !== null && 'target' in a ? a : { target: a };
+  const t = spec.target as unknown;
+  if (typeof t !== 'object' || t === null || 'current' in t) return false;
+  if (typeof Element !== 'undefined' && t instanceof Element) return false;
+  return (spec as { space?: string }).space !== 'viewport';
+}
+
+/**
+ * A layer absolutely positioned over a parent that isn't positioned covers
+ * some other ancestor instead. Element and viewport anchors still land right
+ * (they're measured against the layer's real box), but points given in layer
+ * coordinates land somewhere else without a word. Say so, once.
+ */
+function checkLayer(layer: HTMLElement, spec: LiveLine) {
+  if (!isLayerPoint(spec.from) && !isLayerPoint(spec.to)) return;
+  if (typeof getComputedStyle !== 'function' || warned.has(layer)) return;
+  const pos = getComputedStyle(layer).position;
+  const parent = layer.parentElement;
+  if (
+    (pos === 'absolute' || pos === 'fixed') &&
+    parent &&
+    layer.offsetParent &&
+    layer.offsetParent !== parent
+  ) {
+    warned.add(layer);
+    console.warn(
+      "handline: the layer's parent isn't positioned, so the layer covers another element and points given in layer coordinates land in the wrong place. Give the parent `position: relative`.",
+      parent
+    );
+  }
+}
+
 export function createLine(layer: HTMLElement, initial: LiveLine): LineController {
   let spec = initial;
+  // Unseeded lines each get their own seed (stable for the line's life), so
+  // two lines on one page don't wander identically.
+  const ownSeed = `line-${++lines}`;
+  let seen: { io: IntersectionObserver; resolve: (f: boolean) => void } | null = null;
+  const stopWatching = () => {
+    if (!seen) return;
+    seen.io.disconnect();
+    seen.resolve(false);
+    seen = null;
+  };
   let styleKey = keyOf(spec);
   let builtKey = '';
   let measuredKey = '';
@@ -106,7 +158,7 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
       const scale = layer.offsetWidth > 0 ? box.width / layer.offsetWidth : 1;
       const o = { left: box.left, top: box.top, scale };
       const a = resolveAnchor(spec.from, o);
-      const b = resolveAnchor(spec.to, o);
+      const b = resolveAnchor(spec.to, o, 'to');
       if (!a || !b) {
         // A hidden element (no size) is observed and reports when it shows.
         // A ref not attached yet fires nothing when it is: look again shortly.
@@ -161,7 +213,7 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
         onBuild,
         ...style
       } = spec;
-      drawing = buildLine({ ...style, ...measured });
+      drawing = buildLine({ ...style, seed: style.seed ?? ownSeed, ...measured });
       onBuild?.(drawing);
       if (!view) {
         view = new InkView(layer, drawing, { mode: 'absolute', color, className, motion });
@@ -185,13 +237,40 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
   };
 
   const stop = track(job);
+  checkLayer(layer, spec);
   rewatch();
 
   return {
     get drawing() {
       return drawing;
     },
+    playInView(delay = 0) {
+      stopWatching();
+      const el = anchorElement(spec.to) ?? layer;
+      if (typeof IntersectionObserver === 'undefined') return this.play(delay);
+      return new Promise<boolean>((resolve) => {
+        const io = new IntersectionObserver(
+          (entries) => {
+            const enough = entries.some((e) => {
+              const view = e.rootBounds?.height ?? window.innerHeight;
+              return (
+                e.isIntersecting &&
+                (e.intersectionRatio >= 0.5 || e.intersectionRect.height >= view * 0.5)
+              );
+            });
+            if (!enough) return;
+            io.disconnect();
+            seen = null;
+            void this.play(delay).then(resolve);
+          },
+          { threshold: [0, 0.1, 0.25, 0.5, 0.75, 1] }
+        );
+        seen = { io, resolve };
+        io.observe(el);
+      });
+    },
     play(delay = 0) {
+      stopWatching();
       if (view) return view.play({ delay });
       dropPending();
       return new Promise<boolean>((resolve) => {
@@ -199,10 +278,12 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
       });
     },
     undraw() {
+      stopWatching();
       dropPending();
       return view ? view.undraw() : Promise.resolve(true);
     },
     show() {
+      stopWatching();
       if (view) view.showDrawn();
       else {
         dropPending();
@@ -210,6 +291,7 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
       }
     },
     hide() {
+      stopWatching();
       dropPending();
       view?.hide();
     },
@@ -227,6 +309,7 @@ export function createLine(layer: HTMLElement, initial: LiveLine): LineControlle
       followFrames(ms);
     },
     destroy() {
+      stopWatching();
       dropPending();
       if (retry) clearTimeout(retry);
       retry = null;

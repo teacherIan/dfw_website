@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from 'react';
 import { Leva, button, useControls } from 'leva';
 import {
   DFW_PATHS,
@@ -173,16 +181,33 @@ function Section({ title, lede, children }: { title: string; lede: string; child
 function Card({
   name,
   dark,
+  outside,
   children,
 }: {
   name: string;
   dark?: boolean;
+  /** Real content (text a line points at): kept out of the aria-hidden layer. */
+  outside?: ReactNode;
   children: (k: number) => ReactNode;
 }) {
   const [k, setK] = useState(0);
+  const again = () => setK((n) => n + 1);
   return (
-    <div className={`card${dark ? 'dark' : ''}`} onClick={() => setK((n) => n + 1)}>
+    <div
+      className={dark ? 'card dark' : 'card'}
+      role="button"
+      tabIndex={0}
+      aria-label={`Draw ${name} again`}
+      onClick={again}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          again();
+        }
+      }}
+    >
       <span className="card-name">{name}</span>
+      {outside}
       <HandlineLayer>{children(k)}</HandlineLayer>
     </div>
   );
@@ -210,9 +235,9 @@ function Hero() {
           head="none"
           tail="hook"
           ring
-          gap={10}
+          reach={-10}
           seed="hero"
-          side={-1}
+          side="right"
           delay={300}
         />
       </HandlineLayer>
@@ -243,6 +268,41 @@ function useDrag(pos: P, set: (p: P) => void) {
   };
 }
 
+/** Arrow keys move a draggable end 12 px. */
+function nudgeKeys(pos: P, set: (p: P) => void) {
+  return (e: KeyboardEvent<HTMLElement>) => {
+    const d = { ArrowLeft: [-12, 0], ArrowRight: [12, 0], ArrowUp: [0, -12], ArrowDown: [0, 12] }[
+      e.key
+    ];
+    if (!d) return;
+    e.preventDefault();
+    set({ x: pos.x + d[0], y: pos.y + d[1] });
+    follow(120);
+  };
+}
+
+const TARGETS = ['circle', 'card', 'pill', 'text'] as const;
+type TargetKind = (typeof TARGETS)[number];
+
+function Target({ kind, label }: { kind: TargetKind; label?: string }) {
+  if (kind === 'circle') return null;
+  return <>{label}</>;
+}
+
+/** The playground's settings as JSX someone can paste. */
+function toJSX(props: Record<string, unknown>): string {
+  const attr = ([k, v]: [string, unknown]) =>
+    v === true
+      ? k
+      : typeof v === 'string'
+        ? `${k}="${v}"`
+        : `${k}={${JSON.stringify(v)
+            .replace(/"(\w+)":/g, '$1: ')
+            .replace(/"/g, "'")}}`;
+  const parts = Object.entries(props).filter(([, v]) => v !== undefined && v !== false);
+  return `<Handline\n  from={label}\n  to={target}\n${parts.map((p) => `  ${attr(p)}`).join('\n')}\n/>`;
+}
+
 function Playground() {
   const [a, setA] = useState<P>({ x: 120, y: 330 });
   const [b, setB] = useState<P>({ x: 760, y: 130 });
@@ -250,6 +310,7 @@ function Playground() {
   const rb = useRef<HTMLDivElement>(null);
   const [replay, setReplay] = useState(0);
   const [built, setBuilt] = useState<Drawing | null>(null);
+  const [copied, setCopied] = useState('');
 
   const line = useControls('Line', {
     gesture: { value: 'loops' as GestureName, options: GESTURE_NAMES },
@@ -257,11 +318,15 @@ function Playground() {
     loopCount: { value: 2, min: 1, max: 6, step: 1 },
     side: { value: 'auto', options: ['auto', 'left', 'right'] },
     bow: { value: 0, min: -0.4, max: 0.4, step: 0.01 },
-    gap: { value: 8, min: 0, max: 30, step: 1 },
-    land: { value: 0, min: 0, max: 1, step: 0.05, label: 'land (0 edge, 1 aim)' },
+    seed: 'playground',
+  });
+  const land = useControls('Target & landing', {
+    target: { value: 'circle' as TargetKind, options: [...TARGETS] },
+    toCentre: { value: false, label: "reach 'center'" },
+    reach: { value: -6, min: -30, max: 30, step: 1, label: 'reach (px)' },
     aimX: { value: 0.5, min: 0, max: 1, step: 0.05, label: 'aim x' },
     aimY: { value: 0.5, min: 0, max: 1, step: 0.05, label: 'aim y' },
-    seed: 'playground',
+    overlay: { value: false, label: 'show centreline, aim, tip' },
   });
   const [pen, setPen] = useControls('Pen', () => ({
     preset: { value: 'pencil' as PenName, options: PEN_NAMES },
@@ -289,13 +354,17 @@ function Playground() {
   }, [pen.preset, setPen]);
   const ends = useControls('Ends & marks', {
     head: { value: 'chevron' as HeadKind, options: HEADS },
+    headSize: { value: 0, min: 0, max: 24, step: 1, label: 'head size (0 auto)' },
     tail: { value: 'dot' as TailKind, options: TAILS },
     ring: false,
     ticks: false,
     scribe: false,
     dimension: false,
   });
-  useControls('Play', { replay: button(() => setReplay((n) => n + 1)) });
+  const play = useControls('Play', {
+    slow: { value: false, label: 'quarter speed' },
+    replay: button(() => setReplay((n) => n + 1)),
+  });
 
   const gesture: GestureSpec | GestureName =
     line.gesture === 'loop'
@@ -306,71 +375,149 @@ function Playground() {
           ? { kind: 'spring', size: Math.max(3, line.loopSize / 3) }
           : line.gesture;
 
+  const style = {
+    gesture,
+    side: line.side as 'auto' | 'left' | 'right',
+    bow: line.bow || undefined,
+    reach: land.toCentre ? ('center' as const) : land.reach,
+    seed: line.seed,
+    pen: {
+      base: pen.preset,
+      width: pen.width,
+      jitter: pen.jitter,
+      pressure: pen.pressure,
+      curveInk: pen.curveInk,
+      passes: pen.passes,
+      grain: pen.grain,
+      speed: play.slow ? pen.speed / 4 : pen.speed,
+      curveSlow: pen.curveSlow,
+    },
+    head: ends.headSize ? { kind: ends.head, size: ends.headSize } : ends.head,
+    tail: ends.tail,
+    ring: ends.ring,
+    marks:
+      ends.ticks || ends.scribe || ends.dimension
+        ? {
+            ticks: ends.ticks ? { count: 6 } : undefined,
+            scribe: ends.scribe ? {} : undefined,
+            dimension: ends.dimension ? {} : undefined,
+          }
+        : undefined,
+    timing: play.slow ? { min: 1000, max: 8000 } : undefined,
+  };
+
+  const copy = () => {
+    const { pen: p, ...rest } = style;
+    const preset = PENS[p.base];
+    const changed = Object.fromEntries(
+      Object.entries(p).filter(([k, v]) => k === 'base' || preset[k as keyof typeof preset] !== v)
+    );
+    const jsx = toJSX({
+      ...rest,
+      to: undefined,
+      pen: Object.keys(changed).length > 1 ? changed : p.base,
+      timing: undefined,
+    }).replace(
+      'to={target}',
+      land.aimX === 0.5 && land.aimY === 0.5
+        ? 'to={target}'
+        : `to={{ target, at: [${land.aimX}, ${land.aimY}] }}`
+    );
+    navigator.clipboard?.writeText(jsx).then(
+      () => setCopied('Copied'),
+      () => setCopied(jsx)
+    );
+  };
+
   const dragA = useDrag(a, setA);
   const dragB = useDrag(b, setB);
   const len = built ? Math.round(measure(built.centerline).length) : 0;
+  const targetClass =
+    land.target === 'circle'
+      ? 'dot-target'
+      : land.target === 'card'
+        ? 'card-target'
+        : land.target === 'pill'
+          ? 'pill-target'
+          : 'text-target';
 
   return (
-    <div className="paper play">
-      <div
-        ref={ra}
-        className="chip"
-        style={{ left: a.x, top: a.y, transform: 'translate(-50%, -50%)' }}
-        {...dragA}
-      >
-        Gallery
+    <>
+      <div className="paper play">
+        <div
+          ref={ra}
+          className="chip"
+          tabIndex={0}
+          aria-label="Line start: drag, or use the arrow keys"
+          style={{ left: a.x, top: a.y, transform: 'translate(-50%, -50%)' }}
+          onKeyDown={nudgeKeys(a, setA)}
+          {...dragA}
+        >
+          Gallery
+        </div>
+        <div
+          ref={rb}
+          className={targetClass}
+          tabIndex={0}
+          aria-label="Line target: drag, or use the arrow keys"
+          style={{ left: b.x, top: b.y, transform: 'translate(-50%, -50%)' }}
+          onKeyDown={nudgeKeys(b, setB)}
+          {...dragB}
+        >
+          <Target
+            kind={land.target}
+            label={
+              land.target === 'card'
+                ? 'Grade 10'
+                : land.target === 'pill'
+                  ? 'Chemistry'
+                  : 'this one'
+            }
+          />
+        </div>
+        <HandlineLayer>
+          <Handline
+            key={`${replay}-${land.target}`}
+            from={ra}
+            to={{ target: rb, at: [land.aimX, land.aimY] }}
+            {...style}
+            onBuild={setBuilt}
+          />
+        </HandlineLayer>
+        {land.overlay && built && <Overlay d={built} />}
+        <div className="stats">
+          {built && (
+            <>
+              {len} px · {built.strokes.length} strokes · {Math.round(built.duration)} ms to draw
+            </>
+          )}
+        </div>
       </div>
-      <div
-        ref={rb}
-        className="dot-target"
-        style={{ left: b.x, top: b.y, transform: 'translate(-50%, -50%)' }}
-        {...dragB}
-      />
-      <HandlineLayer>
-        <Handline
-          key={replay}
-          from={ra}
-          to={{ target: rb, at: [line.aimX, line.aimY], shape: 'auto' }}
-          gesture={gesture}
-          side={line.side === 'auto' ? 'auto' : line.side === 'left' ? 1 : -1}
-          bow={line.bow}
-          gap={line.gap}
-          land={line.land}
-          seed={line.seed}
-          pen={{
-            base: pen.preset,
-            width: pen.width,
-            jitter: pen.jitter,
-            pressure: pen.pressure,
-            curveInk: pen.curveInk,
-            passes: pen.passes,
-            grain: pen.grain,
-            speed: pen.speed,
-            curveSlow: pen.curveSlow,
-          }}
-          head={ends.head}
-          tail={ends.tail}
-          ring={ends.ring}
-          marks={
-            ends.ticks || ends.scribe || ends.dimension
-              ? {
-                  ticks: ends.ticks ? { count: 6 } : undefined,
-                  scribe: ends.scribe ? {} : undefined,
-                  dimension: ends.dimension ? {} : undefined,
-                }
-              : undefined
-          }
-          onBuild={setBuilt}
+      <div className="legend">
+        <button onClick={copy}>Copy JSX</button>
+        <button onClick={() => setReplay((n) => n + 1)}>Replay</button>
+        {copied && <span>{copied === 'Copied' ? copied : 'Select and copy:'}</span>}
+      </div>
+      {copied && copied !== 'Copied' && <pre className="jsx">{copied}</pre>}
+    </>
+  );
+}
+
+/** The fitted centreline (dashed), where the line was aimed (+), and the tip (dot). */
+function Overlay({ d }: { d: Drawing }) {
+  const pts = d.centerline.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  return (
+    <svg className="overlay" aria-hidden="true">
+      <polyline points={pts} fill="none" stroke="#2f7fb5" strokeWidth={1} strokeDasharray="4 3" />
+      {d.aim && (
+        <path
+          d={`M${d.aim.x - 6} ${d.aim.y}H${d.aim.x + 6}M${d.aim.x} ${d.aim.y - 6}V${d.aim.y + 6}`}
+          stroke="#c4472f"
+          strokeWidth={1.5}
         />
-      </HandlineLayer>
-      <div className="stats">
-        {built && (
-          <>
-            {len} px · {built.strokes.length} strokes · {Math.round(built.duration)} ms to draw
-          </>
-        )}
-      </div>
-    </div>
+      )}
+      <circle cx={d.end.x} cy={d.end.y} r={2.5} fill="#c4472f" />
+    </svg>
   );
 }
 
@@ -424,29 +571,31 @@ function Marks() {
           />
         )}
       </Card>
-      <Card name="ring it">
+      <Card
+        name="ring it"
+        outside={
+          <span
+            ref={word}
+            style={{ position: 'absolute', left: 150, top: 46, font: '600 24px Caveat' }}
+          >
+            this one
+          </span>
+        }
+      >
         {(k) => (
-          <>
-            <span
-              ref={word}
-              style={{ position: 'absolute', left: 150, top: 46, font: '600 24px Caveat' }}
-            >
-              this one
-            </span>
-            <Handline
-              key={k}
-              from={{ x: 24, y: 120 }}
-              to={word}
-              gesture="arc"
-              side={-1}
-              pen="pencil"
-              head="none"
-              ring
-              gap={12}
-              seed="ring"
-              play="in-view"
-            />
-          </>
+          <Handline
+            key={k}
+            from={{ x: 24, y: 120 }}
+            to={word}
+            gesture="arc"
+            side="right"
+            pen="pencil"
+            head="none"
+            ring
+            reach={-12}
+            seed="ring"
+            play="in-view"
+          />
         )}
       </Card>
     </div>
@@ -564,10 +713,9 @@ function AnchoredGarden({ k }: { k: number }) {
             key={`${row.label}-${k}`}
             from={{ target: labels[i], at: [1, 0.55], offset: [10, 0] }}
             to={buttons[i]}
-            land={1}
+            reach="center"
             gesture={row.gesture}
             side={1}
-            gap={7}
             pen={{ base: 'ink', width: 1.5, jitter: 0.2, taperIn: 0.3, taperOut: 0.7 }}
             head={{ kind: 'chevron', size: 7 }}
             color="white"
@@ -623,7 +771,7 @@ function GraphPaper() {
           <div className="year">
             Grade 9<small>Record · 2025-26</small>
           </div>
-          <div className="year now" ref={cell}>
+          <div className="year now" ref={cell} aria-current="step">
             Grade 10<small>This year</small>
           </div>
           <div className="year">Grade 11</div>
@@ -664,8 +812,8 @@ function GraphPaper() {
             <Handline
               key={`here-${k}`}
               from={{ target: here, at: [0, 0.2], offset: [-5, -2] }}
-              to={{ target: cell, at: [0.3, 0.72], shape: 'auto' }}
-              land={0.3}
+              to={{ target: cell, at: [0.3, 0.9] }}
+              reach={12}
               gesture={{ kind: 'loop', size: 7, at: 0.45, bow: 0.12 }}
               side={1}
               pen={{ base: 'ink', width: 1.5, jitter: 0.2 }}
@@ -683,7 +831,7 @@ function GraphPaper() {
             to={course}
             gesture={{ kind: 'arc', bow: 0.12 }}
             side={1}
-            gap={8}
+            reach={-8}
             pen={{ base: 'pencil', width: 1.3, passes: 1, grain: 0.25 }}
             head="none"
             ring

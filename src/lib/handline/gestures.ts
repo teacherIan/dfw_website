@@ -87,11 +87,12 @@ const STEP = 1.5;
 function shape(g: GestureSpec, L: number, r: Rng): Pt[] {
   switch (g.kind) {
     case 'straight':
-    case 'arc':
-      return [
-        { x: 0, y: 0 },
-        { x: L, y: 0 },
-      ];
+    case 'arc': {
+      // Sampled, not two points: bend() moves each point along the bow, and
+      // two endpoints alone would stay a straight line.
+      const n = Math.max(2, Math.ceil(L / STEP));
+      return Array.from({ length: n + 1 }, (_, k) => ({ x: (L * k) / n, y: 0 }));
+    }
     case 'wave': {
       const waves = g.waves ?? 2;
       const amp = g.amp ?? clamp(L * 0.08, 4, 18);

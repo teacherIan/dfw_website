@@ -19,6 +19,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -139,10 +140,13 @@ export function Handline(props: HandlineProps) {
     once,
     within: _w,
     onDrawn: _o,
-    ...spec
+    ...rest
   } = props;
-  const inView = useInView(layer, playProp === 'in-view');
-  const play = playProp === 'in-view' ? inView : playProp;
+  // An unseeded line gets React's id for this component: stable across
+  // renders and a server render, and different from its neighbours'.
+  const id = useId();
+  const spec = { ...rest, seed: rest.seed ?? id };
+  const play = playProp;
 
   useLayoutEffect(() => {
     if (!layer) return;
@@ -155,12 +159,14 @@ export function Handline(props: HandlineProps) {
       onDrawn: _c,
       ...s
     } = latest.current;
-    const c = createLine(layer, s);
+    const c = createLine(layer, { ...s, seed: s.seed ?? id });
     ctl.current = c;
     return () => {
       c.destroy();
       ctl.current = null;
     };
+    // id is stable for the component's life.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layer]);
 
   // Every render hands the line its latest spec; it rebuilds only on change.
@@ -181,7 +187,9 @@ export function Handline(props: HandlineProps) {
       return;
     }
     let live = true;
-    void c.play(delay).then((finished) => {
+    // 'in-view' watches the line's target, not the whole layer, which on a
+    // tall page can be most of the page.
+    void (play === 'in-view' ? c.playInView(delay) : c.play(delay)).then((finished) => {
       // Only a line that drew all the way counts: an unmount or a newer play
       // resolves this false, and `once` must not record a half-drawn line.
       if (!live || !finished) return;

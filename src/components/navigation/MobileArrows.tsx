@@ -1,7 +1,7 @@
 import { useLayoutEffect, useState } from 'react';
 import { useControls, folder } from 'leva';
 import { Handline, HandlineLayer, type GestureSpec } from '../../lib/handline';
-import { arrowStyle, NAV_ARROW_LAND, type ArrowEffectsConfig } from './arrowStyle';
+import { arrowStyle, NAV_ARROW_REACH, type ArrowEffectsConfig } from './arrowStyle';
 import {
   useEthosArrowControls,
   useContactArrowControls,
@@ -159,7 +159,7 @@ interface ArrowProps {
   controlsStore?: LevaStore;
   // Label element — the arrow starts at a point on the label (its size is
   // text-dependent). The end is config-derived: the button's centre from
-  // navLayouts; NAV_ARROW_LAND says how far into the button it goes.
+  // navLayouts; NAV_ARROW_REACH says how far into the button it goes.
   labelElement?: HTMLElement | null;
   /** No longer needed: the arrow's layer measures itself. */
   containerElement?: HTMLElement | null;
@@ -188,11 +188,12 @@ interface ArrowTemplate {
 /**
  * Each phone arrow keeps its tuned bend (the Leva template, stretched from the
  * label to the button) and carries the ornament of its desktop twin on it:
- * Gallery a loop, Ethos a double curl, Contact a wave.
+ * Gallery a loop, Ethos a curl, Contact a wave. Gallery's loop sits past the
+ * template's bend, where it reads as a loop rather than a knot.
  */
 const ORNAMENTS: Record<NavButtonId, (along: string) => GestureSpec> = {
-  gallery: (along) => ({ kind: 'loop', size: 10, at: 0.4, along }),
-  ethos: (along) => ({ kind: 'loops', count: 2, size: 7, at: 0.45, along, flip: true }),
+  gallery: (along) => ({ kind: 'loop', size: 10, at: 0.62, along }),
+  ethos: (along) => ({ kind: 'loop', size: 10.5, at: 0.5, along, flip: true }),
   contact: (along) => ({ kind: 'wave', waves: 2, amp: 5, along }),
 };
 
@@ -236,8 +237,7 @@ function MobileArrow({
             `M ${t.startX} ${t.startY} Q ${t.ctrlX} ${t.ctrlY}, ${t.endX} ${t.endY}`
           )}
           side={1}
-          land={NAV_ARROW_LAND}
-          gap={5}
+          reach={NAV_ARROW_REACH}
           tail="dot"
           color="white"
           seed={`mobile-${id}`}

@@ -5,7 +5,7 @@
  * handline pen and marks instead of the old SVG filters (which wobbled the
  * line but couldn't change its weight, and re-rendered every frame of the draw).
  */
-import type { HeadSpec, LineStyle, MarksSpec, PenInput } from '../../lib/handline';
+import type { HeadSpec, LineStyle, MarksSpec, PenInput, Reach } from '../../lib/handline';
 
 export interface ArrowEffectsConfig {
   // Master toggle
@@ -79,15 +79,17 @@ export type ArrowSize = 'art' | 'desktop' | 'mobile';
  */
 const BASE: Record<ArrowSize, { width: number; jitter: number; head: number }> = {
   art: { width: 1.05, jitter: 0.12, head: 6.5 },
-  desktop: { width: 1.6, jitter: 0.2, head: 10 },
-  mobile: { width: 2, jitter: 0.3, head: 9 },
+  // Closer to the weight of the Caveat labels they join (whose strokes run
+  // ~3.5 px at 60 px); the old 1.5 px read as a different, thinner pen.
+  desktop: { width: 2.2, jitter: 0.2, head: 11 },
+  mobile: { width: 2.5, jitter: 0.3, head: 10 },
 };
 
 /**
- * How far into its button a nav arrow goes: 1 = to the centre (Ian, 10-26:
- * the arrows read better landing on the button than stopping at its edge).
+ * How far into its button a nav arrow goes (Ian, 10-26: the arrows read
+ * better landing on the button than stopping at its edge).
  */
-export const NAV_ARROW_LAND = 1;
+export const NAV_ARROW_REACH: Reach = 'center';
 
 const HEADS: Record<ArrowEffectsConfig['arrowheadStyle'], HeadSpec['kind']> = {
   standard: 'chevron',

@@ -17,9 +17,8 @@ export interface AnchorSpec {
   offset?: [number, number];
   /**
    * What the anchor trims to. 'auto' reads the element's border-radius, so a
-   * round button trims as a circle. Default: 'auto' for a centre anchor,
-   * 'none' with `at` — set it with `at` to aim off-centre and still stop at
-   * (or `land` inside) the element.
+   * round button trims as a circle. Default 'auto', except a start with an
+   * `at` point, which begins exactly there ('none').
    */
   shape?: 'auto' | 'rect' | 'circle' | 'none';
   /** A point target's coordinates: the layer's (default) or the viewport's. */
@@ -80,7 +79,15 @@ export interface Origin {
   scale?: number;
 }
 
-export function resolveAnchor(a: AnchorInput, origin: Origin): Resolved | null {
+/**
+ * `role` is which end this is. With an `at` point, a start begins exactly
+ * there (no trim); an end aims there and still trims to its element.
+ */
+export function resolveAnchor(
+  a: AnchorInput,
+  origin: Origin,
+  role: 'from' | 'to' = 'from'
+): Resolved | null {
   const k = origin.scale || 1;
   const spec: AnchorSpec = isSpec(a) ? a : { target: a };
   const el = elementOf(spec.target);
@@ -108,7 +115,7 @@ export function resolveAnchor(a: AnchorInput, origin: Origin): Resolved | null {
   const point = spec.at
     ? { x: rect.x + rect.w * spec.at[0] + ox, y: rect.y + rect.h * spec.at[1] + oy }
     : { x: rect.x + rect.w / 2 + ox, y: rect.y + rect.h / 2 + oy };
-  const kind = spec.shape ?? (spec.at ? 'none' : 'auto');
+  const kind = spec.shape ?? (spec.at && role === 'from' ? 'none' : 'auto');
   if (kind === 'none') return { point, rect };
   const r = radiusOf(el, rect.w, rect.h);
   // A full radius on a square box is a circle; on anything else (a pill, an

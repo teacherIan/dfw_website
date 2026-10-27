@@ -19,13 +19,27 @@ import type { Rng } from './random';
 
 /** +1 bulges to the left of travel, −1 to the right. */
 export type Side = 1 | -1;
+/** Which way a line bulges: 'left' / 'right' of its direction of travel, or 'auto'. */
+export type SideInput = Side | 'left' | 'right' | 'auto';
+
+/**
+ * How far into the target the tip goes, px from the target's edge along the
+ * line: negative stops short, positive goes past the edge, 'center' reaches
+ * the aim point (the centre, or `at`).
+ */
+export type Reach = number | 'center';
+
+/** Default: stop 6 px short of the edge — safe on any target. */
+export const DEFAULT_REACH = -6;
+/** Space a trimmed start leaves after the shape it starts from, px. */
+const START_GAP = 6;
 
 export interface FitInput {
   from: Pt;
   to: Pt;
   gesture?: GestureSpec | GestureName;
   /** 'auto' tries both and keeps the one that stays in bounds and off obstacles. */
-  side?: Side | 'auto';
+  side?: SideInput;
   bow?: number;
   /** Where the line may go (for side: 'auto'), e.g. the layer's own box. */
   within?: Rect;
@@ -35,14 +49,8 @@ export interface FitInput {
   fromShape?: Shape;
   /** Trims the end to where the line enters this shape. */
   toShape?: Shape;
-  /** Space between a trimmed end and its shape, px (when `land` is 0). */
-  gap?: number;
-  /**
-   * How far into the target the tip goes: 0 stops `gap` px short of its
-   * edge, 1 reaches the aim point (the centre, or the `at` point), 0.4 stops
-   * 40% of the way from the edge to it, along the line.
-   */
-  land?: number;
+  /** How far into `toShape` the tip goes (see Reach). Default −6. */
+  reach?: Reach;
   /**
    * A live push on the line's middle, px (0 at the ends, full at the middle) —
    * for a line that sways with a drag without moving its ends.
@@ -88,31 +96,31 @@ function cost(pts: Pt[], within?: Rect, avoid: Shape[] = []): number {
 }
 
 function trim(pts: Pt[], input: FitInput): Pt[] {
-  const gap = input.gap ?? 6;
-  const land = Math.min(1, Math.max(0, input.land ?? 0));
+  const reach = input.reach ?? DEFAULT_REACH;
   let out = pts;
-  if (input.fromShape) out = trimStart(out, input.fromShape, gap);
-  if (input.toShape) {
-    if (land > 0) {
-      // Where the line crosses into the target, then `land` of the rest of
-      // the way to the aim point.
+  if (input.fromShape) out = trimStart(out, input.fromShape, START_GAP);
+  if (input.toShape && reach !== 'center') {
+    if (reach < 0) out = trimEnd(out, input.toShape, -reach);
+    else {
+      // Where the line crosses into the target, then `reach` px on — never
+      // past the aim point.
       const edge = measure(trimEnd(out, input.toShape, 0)).length;
-      const full = measure(out).length;
-      out = cutAt(out, edge + land * (full - edge));
-    } else out = trimEnd(out, input.toShape, gap);
+      out = cutAt(out, Math.min(measure(out).length, edge + reach));
+    }
   }
   return out.length >= 2 ? out : pts;
 }
+
+const sideOf = (s: SideInput | undefined): Side | 'auto' =>
+  s === 'left' ? 1 : s === 'right' ? -1 : (s ?? 1);
 
 export function fitLine(input: FitInput, r: Rng): Fitted {
   const L = dist(input.from, input.to);
   const chord = gesturePoints(input.gesture, L, r.fork('gesture'), { bow: input.bow });
   const build = (side: Side) => trim(place(chord, input.from, input.to, side, input.nudge), input);
 
-  if (input.side !== 'auto') {
-    const side = input.side ?? 1;
-    return { pts: build(side), side };
-  }
+  const wanted = sideOf(input.side);
+  if (wanted !== 'auto') return { pts: build(wanted), side: wanted };
   const left = build(1);
   const right = build(-1);
   // The start and end shapes themselves don't count as obstacles: the line

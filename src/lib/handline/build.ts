@@ -16,12 +16,13 @@ import {
   type Sample,
   type Shape,
 } from './geom';
-import { fitLine, type Side } from './fit';
+import { DEFAULT_REACH, fitLine, type Reach, type Side, type SideInput } from './fit';
 import type { GestureName, GestureSpec } from './gestures';
 import { ink, resolvePen, type InkStroke, type PenInput } from './pen';
 import {
   head as drawHead,
   marks as drawMarks,
+  headDepth,
   resolveHead,
   ringAround,
   tail as drawTail,
@@ -56,13 +57,17 @@ export interface LineInput extends LineStyle {
   from: Pt;
   to: Pt;
   gesture?: GestureSpec | GestureName;
-  side?: Side | 'auto';
+  side?: SideInput;
   bow?: number;
   fromShape?: Shape;
   toShape?: Shape;
-  gap?: number;
-  /** How far into the target the tip goes: 0 its edge (minus `gap`), 1 the aim point. */
-  land?: number;
+  /**
+   * How far into the target the tip goes, px from its edge along the line:
+   * negative stops short, positive goes past the edge, 'center' reaches the
+   * aim point. Default −6. A reach that would leave an arrowhead straddling
+   * the border snaps to 2 px short or to fully inside.
+   */
+  reach?: Reach;
   within?: Rect;
   avoid?: Shape[];
   nudge?: Pt;
@@ -93,15 +98,33 @@ export interface Drawing {
   end: Sample;
   /** The fitted centreline before the pen — for overlays and debugging. */
   centerline: Pt[];
+  /** Where the line was aimed (before trimming) — for overlays. */
+  aim?: Pt;
+}
+
+/** Keeps an arrowhead clear of the border: fully short of it or fully inside. */
+function snapReach(reach: Reach, head: HeadSpec, pen: ReturnType<typeof resolvePen>): Reach {
+  if (reach === 'center') return reach;
+  const depth = headDepth(head, pen);
+  if (!depth) return reach;
+  const lo = -2;
+  const hi = depth + 3;
+  if (reach <= lo || reach >= hi) return reach;
+  return reach - lo < hi - reach ? lo : hi;
 }
 
 export function buildLine(input: LineInput): Drawing {
   const r = rng(input.seed ?? 'handline');
-  const fitted = fitLine(input, r);
+  const reach = snapReach(
+    input.reach ?? DEFAULT_REACH,
+    resolveHead(input.head),
+    resolvePen(input.pen)
+  );
+  const fitted = fitLine({ ...input, reach }, r);
   let ring: Shape | undefined;
   if (input.ring === true) ring = input.toShape;
   else if (input.ring) ring = input.ring;
-  return inkDrawing(fitted.pts, input, r, fitted.side, ring);
+  return { ...inkDrawing(fitted.pts, input, r, fitted.side, ring), aim: input.to };
 }
 
 export function buildArt(input: ArtInput): Drawing {

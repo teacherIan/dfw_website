@@ -93,7 +93,7 @@ describe('buildLine', () => {
 
   it('stops a gap short of a round target', () => {
     const target = { kind: 'circle' as const, cx: 420, cy: 120, r: 28 };
-    const d = buildLine({ ...base, gesture: 'loop', toShape: target, gap: 6 });
+    const d = buildLine({ ...base, gesture: 'loop', toShape: target, reach: -6 });
     near(shapeDistance(d.end, target, 6), 0, 0.01);
   });
 

@@ -80,6 +80,26 @@ function circleD(c: Pt, r: number): string {
   return `M${f(c.x - r)} ${f(c.y)}a${f(r)} ${f(r)} 0 1 0 ${f(2 * r)} 0a${f(r)} ${f(r)} 0 1 0 ${f(-2 * r)} 0Z`;
 }
 
+/** A head's barb length, px: the spec's, or one sized to the pen. */
+export const headSize = (spec: HeadSpec, pen: Pen) =>
+  spec.size ?? clamp(pen.width * 3.2 + 4, 6, 18);
+
+/** Half the angle between a head's barbs, radians. */
+export const headHalfAngle = (spec: HeadSpec) =>
+  ((spec.angle ?? (spec.kind === 'open' ? 40 : 27)) * Math.PI) / 180;
+
+/** How far a head reaches back from its tip, px — what must not straddle a border. */
+export function headDepth(spec: HeadSpec, pen: Pen): number {
+  if (
+    spec.kind === 'harpoon' ||
+    spec.kind === 'chevron' ||
+    spec.kind === 'open' ||
+    spec.kind === 'triangle'
+  )
+    return headSize(spec, pen) * Math.cos(headHalfAngle(spec));
+  return 0;
+}
+
 export function resolveHead(h: HeadKind | HeadSpec | undefined): HeadSpec {
   return typeof h === 'string' ? { kind: h } : (h ?? { kind: 'chevron' });
 }
@@ -92,8 +112,8 @@ export function head(
   r: Rng,
   t0: number
 ): EndsOut {
-  const size = spec.size ?? clamp(pen.width * 3.2 + 4, 6, 18);
-  const half = ((spec.angle ?? (spec.kind === 'open' ? 40 : 27)) * Math.PI) / 180;
+  const size = headSize(spec, pen);
+  const half = headHalfAngle(spec);
   const back = angle + Math.PI;
   const b1 = at(tip, back - half, size * r.range(0.92, 1.06));
   const b2 = at(tip, back + half, size * r.range(0.92, 1.06));
@@ -327,8 +347,10 @@ export function marks(
  */
 export function ringAround(shape: Shape, from: Pt, pen: Pen, r: Rng, t0: number, pad = 6): EndsOut {
   const c = shapeCenter(shape);
-  const rx = shape.kind === 'circle' ? shape.r + pad : shape.w / 2 + pad * 1.6;
-  const ry = shape.kind === 'circle' ? shape.r + pad : shape.h / 2 + pad;
+  // An ellipse through a rect's corners has radii (w/2)·√2 and (h/2)·√2;
+  // anything tighter cuts the corners.
+  const rx = shape.kind === 'circle' ? shape.r + pad : (shape.w / 2) * Math.SQRT2 + pad * 0.6;
+  const ry = shape.kind === 'circle' ? shape.r + pad : (shape.h / 2) * Math.SQRT2 + pad * 0.6;
   const tilt = r.range(-0.08, 0.08);
   const a0 = Math.atan2(from.y - c.y, from.x - c.x);
   const wob = r.noise('ring');

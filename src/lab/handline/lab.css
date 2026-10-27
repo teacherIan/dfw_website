@@ -292,3 +292,67 @@ body {
     font-size: 38px;
   }
 }
+
+.card-target,
+.pill-target,
+.text-target {
+  position: absolute;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+}
+.card-target {
+  width: 200px;
+  height: 72px;
+  padding: 10px 16px;
+  align-items: flex-start;
+  border-radius: 14px;
+  background: hsl(160 60% 96%);
+  border: 1px solid hsl(160 100% 15%);
+  font-weight: 600;
+  color: hsl(160 100% 15%);
+}
+.pill-target {
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid #9cc8cf;
+  font-weight: 600;
+  color: hsl(160 100% 15%);
+}
+.text-target {
+  font:
+    600 28px Caveat,
+    cursive;
+}
+.chip:focus-visible,
+.dot-target:focus-visible,
+.card-target:focus-visible,
+.pill-target:focus-visible,
+.text-target:focus-visible,
+.card:focus-visible {
+  outline: 2px solid #2f7fb5;
+  outline-offset: 3px;
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+.jsx {
+  font:
+    13px/1.5 ui-monospace,
+    Menlo,
+    monospace;
+  background: white;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  user-select: all;
+}

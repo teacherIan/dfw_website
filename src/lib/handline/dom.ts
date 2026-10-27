@@ -286,6 +286,24 @@ export class InkView {
     }
   }
 
+  /**
+   * The colour strokes are drawn in. A translucent colour would be applied
+   * per stroke, and where neighbouring strokes' round ends overlap the alpha
+   * doubles — a beaded line. So the alpha comes off the colour and goes on
+   * the root group, which composites once.
+   */
+  private inkColor(): string {
+    this.svg.style.color = this.opts.color ?? '';
+    this.root.removeAttribute('opacity');
+    if (typeof getComputedStyle !== 'function') return 'currentColor';
+    const [opaque, alpha] = splitAlpha(getComputedStyle(this.svg).color);
+    if (alpha < 1) {
+      this.svg.style.color = opaque;
+      this.root.setAttribute('opacity', String(alpha));
+    }
+    return 'currentColor';
+  }
+
   private render() {
     const d = this.drawing;
     const { bbox } = d;
@@ -301,7 +319,7 @@ export class InkView {
       );
     }
     this.root.replaceChildren();
-    const color = this.opts.color ?? 'currentColor';
+    const color = this.inkColor();
     // One mask over all the passes: a mask composites every frame the line
     // changes, so one per pass doubles or triples the cost of a grainy pen.
     let inkRoot: SVGGElement = this.root;
@@ -336,6 +354,21 @@ export class InkView {
     });
     this.shown = new Float32Array(this.paths.length + this.fills.length).fill(-1);
   }
+}
+
+/** A computed CSS colour split into its opaque self and its alpha. */
+export function splitAlpha(c: string): [string, number] {
+  const num = (v: string) => (v.endsWith('%') ? parseFloat(v) / 100 : parseFloat(v));
+  const rgb = c.match(/^rgba?\((.+)\)$/);
+  if (rgb) {
+    const parts = rgb[1].split(/[\s,/]+/).filter(Boolean);
+    if (parts.length === 4) return [`rgb(${parts[0]}, ${parts[1]}, ${parts[2]})`, num(parts[3])];
+    return [c, 1];
+  }
+  // color(srgb r g b / a), oklch(l c h / a) and friends.
+  const slash = c.match(/^(.*\S)\s*\/\s*([\d.]+%?)\)$/);
+  if (slash) return [`${slash[1]})`, num(slash[2])];
+  return [c, 1];
 }
 
 /**
